@@ -1,0 +1,11 @@
+version: '2'
+services:
+    ecosapps-postgresql:
+        image: postgres:10.4
+        # volumes:
+        #     - ~/volumes/jhipster/ecosapps/postgresql/:/var/lib/postgresql/data/
+        environment:
+            - POSTGRES_USER=ecosapps
+            - POSTGRES_PASSWORD=
+        ports:
+            - 5432:5432
