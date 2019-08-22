@@ -1,6 +1,8 @@
 package ru.citeck.ecos.apps.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
@@ -9,13 +11,18 @@ import java.util.Objects;
 import java.util.Set;
 
 @Entity
-@Table(name = "ecos_application")
-public class EcosApplication extends AbstractAuditingEntity {
+@Table(name = "ecos_application_version")
+public class EcosApplicationVersion extends AbstractAuditingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
-    private Long id;
+    @Getter private Long id;
+
+    @Getter @Setter private long version;
+    @Getter @Setter private String key;
+    @Getter @Setter private String name;
+    @Getter @Setter private String status;
 
     @JsonIgnore
     @ManyToMany
@@ -24,15 +31,9 @@ public class EcosApplication extends AbstractAuditingEntity {
         joinColumns = {@JoinColumn(name = "app_ver_id", referencedColumnName = "id")},
         inverseJoinColumns = {@JoinColumn(name = "module_ver_id", referencedColumnName = "id")})
     @BatchSize(size = 20)
-    private Set<EcosAppModuleVersion> modules = new HashSet<>();
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getId() {
-        return id;
-    }
+    @Getter private Set<EcosAppModuleVersion> modules = new HashSet<>();
+    @Column(name="app_id")
+    @Getter @Setter private Set<EcosApplication> application;
 
     @Override
     public boolean equals(Object o) {
@@ -42,7 +43,7 @@ public class EcosApplication extends AbstractAuditingEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EcosApplication that = (EcosApplication) o;
+        EcosApplicationVersion that = (EcosApplicationVersion) o;
         return Objects.equals(id, that.id);
     }
 
@@ -55,6 +56,10 @@ public class EcosApplication extends AbstractAuditingEntity {
     public String toString() {
         return "EcosApplication{" +
             "id=" + id +
+            ", version=" + version +
+            ", key='" + key + '\'' +
+            ", name='" + name + '\'' +
+            ", status=" + status +
             ", modules=" + modules +
             '}';
     }
