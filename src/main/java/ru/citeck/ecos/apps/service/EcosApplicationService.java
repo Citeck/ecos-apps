@@ -1,35 +1,27 @@
 package ru.citeck.ecos.apps.service;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import ru.citeck.ecos.apps.config.ApplicationProperties;
-import ru.citeck.ecos.apps.domain.EcosAppModule;
-import ru.citeck.ecos.apps.domain.EcosApplication;
-import ru.citeck.ecos.apps.repository.EcosAppModuleRepository;
-import ru.citeck.ecos.apps.repository.EcosApplicationRepository;
-
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.*;
+import ru.citeck.ecos.apps.repository.EcosAppModulesRepo;
+import ru.citeck.ecos.apps.repository.EcosAppsRepo;
 
 @Service
 @Transactional
 public class EcosApplicationService {
 
     private ApplicationProperties properties;
-    private EcosAppModuleRepository moduleRepository;
-    private EcosApplicationRepository applicationRepository;
+    private EcosAppModulesRepo moduleRepository;
+    private EcosAppsRepo applicationRepository;
 
     private RestTemplate alfrescoRestTemplate;
 
     @Autowired
-    public EcosApplicationService(EcosApplicationRepository applicationRepository,
-                                  EcosAppModuleRepository moduleRepository,
+    public EcosApplicationService(EcosAppsRepo applicationRepository,
+                                  EcosAppModulesRepo moduleRepository,
                                   ApplicationProperties properties,
                                   @Qualifier("alfrescoRestTemplate") RestTemplate alfrescoRestTemplate) {
 
@@ -39,7 +31,9 @@ public class EcosApplicationService {
         this.applicationRepository = applicationRepository;
     }
 
-    public void saveAndDeployModule(EcosAppModule module) {
+
+
+    /*public void saveAndDeployModule(EcosAppModule module) {
 
         if (module.getKey() == null
             || module.getData() == null
@@ -93,10 +87,10 @@ public class EcosApplicationService {
 
         modules.forEach((url, module) ->
             alfrescoRestTemplate.postForObject(url, new ModuleToDeploy(module), Object.class));
-    }
+    }*/
 
 
-    private static class ModuleToDeploy {
+    /*private static class ModuleToDeploy {
 
         private final EcosAppModule module;
 
@@ -124,8 +118,9 @@ public class EcosApplicationService {
             return module.getMimetype();
         }
 
-        public byte[] getData() throws SQLException, IOException {
+        public byte[] getData()
+        throws SQLException, IOException {
             return IOUtils.toByteArray(module.getData().getBinaryStream());
         }
-    }
+    }*/
 }
