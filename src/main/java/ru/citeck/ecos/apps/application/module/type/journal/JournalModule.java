@@ -1,53 +1,34 @@
 package ru.citeck.ecos.apps.application.module.type.journal;
 
-import org.springframework.util.MimeType;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.io.IOUtils;
 import org.springframework.util.MimeTypeUtils;
 import ru.citeck.ecos.apps.application.module.EcosModule;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.function.Consumer;
 
 public class JournalModule implements EcosModule {
 
     public static final String TYPE = "journal";
 
-    private String id;
-    private String key;
-    private String name;
-    private String data;
-
-    @Override
-    public String getId() {
-        return null;
-    }
-
-    @Override
-    public String getType() {
-        return TYPE;
-    }
-
-    @Override
-    public String getKey() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return null;
-    }
-
-    @Override
-    public int getModelVersion() {
-        return 0;
-    }
-
-    @Override
-    public String getMimetype() {
-        return MimeTypeUtils.APPLICATION_XML_VALUE;
-    }
+    @Getter @Setter private String id;
+    @Getter @Setter private String key;
+    @Getter @Setter private String name;
+    @Getter @Setter private String data;
+    @Getter private final String type = TYPE;
+    @Getter private final int modelVersion = 0;
+    @Getter private final String mimetype = MimeTypeUtils.APPLICATION_XML_VALUE;
 
     @Override
     public void readData(Consumer<InputStream> consumer) {
-
+        try (InputStream in = IOUtils.toInputStream(data, Charset.forName("UTF-8"))) {
+            consumer.accept(in);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps.web.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.citeck.ecos.apps.domain.EcosAppModule;
+import ru.citeck.ecos.apps.domain.EcosAppModuleEntity;
 import ru.citeck.ecos.apps.service.EcosApplicationService;
 import ru.citeck.ecos.records2.utils.MandatoryParam;
 
@@ -35,7 +35,7 @@ public class EcosApplicationController {
         MandatoryParam.check("name", module.name);
         MandatoryParam.check("mimetype", module.mimetype);
 
-        EcosAppModule ecosAppModel = new EcosAppModule();
+        EcosAppModuleEntity ecosAppModel = new EcosAppModuleEntity();
 
         ecosAppModel.setType(module.type);
         ecosAppModel.setKey(module.key);

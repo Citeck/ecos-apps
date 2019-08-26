@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import ru.citeck.ecos.apps.config.ApplicationProperties;
-import ru.citeck.ecos.apps.repository.EcosAppModulesRepo;
+import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
 import ru.citeck.ecos.apps.repository.EcosAppsRepo;
 
 @Service
@@ -14,14 +14,14 @@ import ru.citeck.ecos.apps.repository.EcosAppsRepo;
 public class EcosApplicationService {
 
     private ApplicationProperties properties;
-    private EcosAppModulesRepo moduleRepository;
+    private EcosAppModuleRepo moduleRepository;
     private EcosAppsRepo applicationRepository;
 
     private RestTemplate alfrescoRestTemplate;
 
     @Autowired
     public EcosApplicationService(EcosAppsRepo applicationRepository,
-                                  EcosAppModulesRepo moduleRepository,
+                                  EcosAppModuleRepo moduleRepository,
                                   ApplicationProperties properties,
                                   @Qualifier("alfrescoRestTemplate") RestTemplate alfrescoRestTemplate) {
 

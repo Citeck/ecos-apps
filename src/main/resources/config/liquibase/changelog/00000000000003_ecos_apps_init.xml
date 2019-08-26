@@ -10,7 +10,7 @@
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="uuid" type="VARCHAR(36)">
+            <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" unique="true" />
             </column>
             <column name="created_date" type="TIMESTAMP" />
@@ -23,7 +23,7 @@
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="uuid" type="VARCHAR(36)">
+            <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" unique="true" />
             </column>
             <column name="app_id" type="BIGINT">
@@ -52,7 +52,7 @@
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="uuid" type="VARCHAR(36)">
+            <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" />
             </column>
             <column name="type" type="VARCHAR(100)">
@@ -69,7 +69,7 @@
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="uuid" type="VARCHAR(36)">
+            <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" unique="true" />
             </column>
             <column name="module_id" type="BIGINT">
@@ -96,10 +96,10 @@
         <!-- Application modules -->
 
         <createTable tableName="ecos_application_modules">
-            <column name="app_ver_id" type="BIGINT">
+            <column name="app_rev_id" type="BIGINT">
                 <constraints nullable="false" foreignKeyName="fk_app_modules_app_ver" references="ecos_application_revision(id)" />
             </column>
-            <column name="module_ver_id" type="BIGINT">
+            <column name="module_rev_id" type="BIGINT">
                 <constraints nullable="false" foreignKeyName="fk_app_modules_module_ver" references="ecos_app_module_revision(id)" />
             </column>
         </createTable>

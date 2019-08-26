@@ -15,7 +15,7 @@ public interface EcosModule {
 
     int getModelVersion();
 
-    void readData(Consumer<InputStream> consumer);
-
     String getMimetype();
+
+    void readData(Consumer<InputStream> consumer);
 }
