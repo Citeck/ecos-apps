@@ -1,7 +1,7 @@
-package ru.citeck.ecos.apps.application.module.type.journal;
+package ru.citeck.ecos.apps.app.module.type.journal;
 
-import ru.citeck.ecos.apps.application.module.type.ModuleFile;
-import ru.citeck.ecos.apps.application.module.type.ModuleReader;
+import ru.citeck.ecos.apps.app.module.type.ModuleFile;
+import ru.citeck.ecos.apps.app.module.type.ModuleReader;
 
 import java.util.Collections;
 import java.util.List;

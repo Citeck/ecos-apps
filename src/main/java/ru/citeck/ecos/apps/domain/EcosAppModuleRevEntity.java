@@ -26,6 +26,6 @@ public class EcosAppModuleRevEntity extends AbstractAuditingEntity {
     @Getter @Setter private String name;
     @Getter @Setter private String mimetype;
     @Getter @Setter private Blob data;
-    @Getter @Setter private String checksum;
+    @Getter @Setter private String md5;
     @Getter @Setter private Boolean fixed;
 }

@@ -1,6 +1,6 @@
-package ru.citeck.ecos.apps.application.module.type;
+package ru.citeck.ecos.apps.app.module.type;
 
-import ru.citeck.ecos.apps.application.module.EcosModule;
+import ru.citeck.ecos.apps.app.module.EcosModule;
 
 import java.util.List;
 

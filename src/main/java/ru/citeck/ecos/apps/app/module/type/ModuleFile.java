@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.application.module.type;
+package ru.citeck.ecos.apps.app.module.type;
 
 import java.io.InputStream;
 import java.util.function.Consumer;

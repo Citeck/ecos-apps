@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.application.module;
+package ru.citeck.ecos.apps.app.module;
 
 public interface EcosModuleRev extends EcosModule {
 

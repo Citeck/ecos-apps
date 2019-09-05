@@ -35,6 +35,7 @@
             <column name="name" type="VARCHAR(256)">
                 <constraints nullable="false" />
             </column>
+
             <column name="version" type="VARCHAR(64)">
                 <constraints nullable="false" />
             </column>
@@ -84,7 +85,7 @@
             </column>
             <column name="mimetype" type="VARCHAR(128)" />
             <column name="data" type="BLOB" />
-            <column name="checksum" type="VARCHAR(256)" />
+            <column name="hash" type="VARCHAR(64)" />
             <column name="fixed" type="BOOLEAN" />
 
             <column name="created_date" type="TIMESTAMP" />
@@ -105,6 +106,25 @@
         </createTable>
 
         <addUniqueConstraint tableName="ecos_application_modules" columnNames="app_id,module_id" />
+
+        <createTable tableName="ecos_app_upload_meta">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="app_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_upload_meta_app" references="ecos_application(id)"/>
+            </column>
+
+            <column name="hash" type="VARCHAR(64)" />
+            <column name="size" type="BIGINT" />
+            <column name="location" type="VARCHAR(500)" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+        </createTable>
 
     </changeSet>
 

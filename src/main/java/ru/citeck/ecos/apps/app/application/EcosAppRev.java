@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.application;
+package ru.citeck.ecos.apps.app.application;
 
 public interface EcosAppRev extends EcosApp {
 

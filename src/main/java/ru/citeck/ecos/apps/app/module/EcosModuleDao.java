@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.application.module;
+package ru.citeck.ecos.apps.app.module;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -7,6 +7,7 @@ import ru.citeck.ecos.apps.domain.EcosAppModuleRevEntity;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -41,6 +42,6 @@ public class EcosModuleDao {
     }
 
     public List<EcosModule> getModulesByAppRev() {
-
+        return Collections.emptyList();
     }
 }

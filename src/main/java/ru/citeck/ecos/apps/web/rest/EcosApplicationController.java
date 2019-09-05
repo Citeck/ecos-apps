@@ -38,13 +38,13 @@ public class EcosApplicationController {
         EcosAppModuleEntity ecosAppModel = new EcosAppModuleEntity();
 
         ecosAppModel.setType(module.type);
-        ecosAppModel.setKey(module.key);
-        ecosAppModel.setData(new SerialBlob(module.data));
+        //ecosAppModel.setKey(module.key);
+        //ecosAppModel.setData(new SerialBlob(module.data));
 
-        ecosAppModel.setName(module.name);
-        ecosAppModel.setMimetype(module.mimetype);
+        //ecosAppModel.setName(module.name);
+        //ecosAppModel.setMimetype(module.mimetype);
 
-        applicationService.saveAndDeployModule(ecosAppModel);
+        //applicationService.saveAndDeployModule(ecosAppModel);
 
         Map<String, String> result = new HashMap<>();
         result.put("status", "OK");

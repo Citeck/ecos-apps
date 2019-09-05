@@ -1,10 +1,10 @@
-package ru.citeck.ecos.apps.application.module.type.journal;
+package ru.citeck.ecos.apps.app.module.type.journal;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.io.IOUtils;
 import org.springframework.util.MimeTypeUtils;
-import ru.citeck.ecos.apps.application.module.EcosModule;
+import ru.citeck.ecos.apps.app.module.EcosModule;
 
 import java.io.IOException;
 import java.io.InputStream;
