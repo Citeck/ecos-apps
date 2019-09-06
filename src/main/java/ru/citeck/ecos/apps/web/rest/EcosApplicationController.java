@@ -2,11 +2,10 @@ package ru.citeck.ecos.apps.web.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.citeck.ecos.apps.domain.EcosAppModuleEntity;
-import ru.citeck.ecos.apps.service.EcosApplicationService;
+import ru.citeck.ecos.apps.domain.EcosModuleEntity;
+import ru.citeck.ecos.apps.service.EcosApplicationServiceOld;
 import ru.citeck.ecos.records2.utils.MandatoryParam;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,10 +17,10 @@ import java.util.Map;
 @RequestMapping("/application")
 public class EcosApplicationController {
 
-    private EcosApplicationService applicationService;
+    private EcosApplicationServiceOld applicationService;
 
     @Autowired
-    public EcosApplicationController(EcosApplicationService applicationService) {
+    public EcosApplicationController(EcosApplicationServiceOld applicationService) {
         this.applicationService = applicationService;
     }
 
@@ -35,7 +34,7 @@ public class EcosApplicationController {
         MandatoryParam.check("name", module.name);
         MandatoryParam.check("mimetype", module.mimetype);
 
-        EcosAppModuleEntity ecosAppModel = new EcosAppModuleEntity();
+        EcosModuleEntity ecosAppModel = new EcosModuleEntity();
 
         ecosAppModel.setType(module.type);
         //ecosAppModel.setKey(module.key);

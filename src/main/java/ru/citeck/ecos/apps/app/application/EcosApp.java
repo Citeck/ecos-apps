@@ -11,7 +11,7 @@ public interface EcosApp {
 
     String getName();
 
-    String getVersion();
+    AppVersion getVersion();
 
     List<Dependency> getDependencies();
 
@@ -20,6 +20,4 @@ public interface EcosApp {
     String getHash();
 
     long getSize();
-
-    void dispose();
 }

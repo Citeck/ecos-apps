@@ -4,9 +4,9 @@ import ru.citeck.ecos.apps.app.module.EcosModule;
 
 import java.util.List;
 
-public interface ModuleReader<T extends EcosModule> {
+public interface ModuleReader {
 
-    List<T> read(ModuleFile file);
+    List<EcosModule> read(String pattern, ModuleFile file) throws Exception;
 
-    List<String> getModulePatterns();
+    List<String> getFilePatterns();
 }

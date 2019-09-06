@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -13,14 +15,16 @@ import ru.citeck.ecos.apps.app.Digest;
 import ru.citeck.ecos.apps.app.module.Dependency;
 import ru.citeck.ecos.apps.app.module.EcosModule;
 import ru.citeck.ecos.apps.app.module.type.ModuleFile;
+import ru.citeck.ecos.apps.app.module.type.ModuleReader;
+import ru.citeck.ecos.apps.app.module.type.StreamConsumer;
 
 import java.io.*;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -28,19 +32,22 @@ public class EcosAppReader {
 
     private ResourceLoader resourceLoader;
     private ObjectMapper mapper = new ObjectMapper();
+    private List<ModuleReader> moduleReaders;
 
-    public EcosAppReader(ResourceLoader resourceLoader) {
+    public EcosAppReader(ResourceLoader resourceLoader,
+                         List<ModuleReader> moduleReaders) {
         this.resourceLoader = resourceLoader;
+        this.moduleReaders = moduleReaders;
     }
 
-    public EcosApp load(String location) {
-        return load(resourceLoader.getResource(location));
+    public EcosApp read(String location) {
+        return read(resourceLoader.getResource(location));
     }
 
     /**
      * @return application or null if resource is not a valid application
      */
-    public EcosApp load(Resource resource) {
+    public EcosApp read(Resource resource) {
 
         String uri = "";
         try {
@@ -49,77 +56,103 @@ public class EcosAppReader {
             //do nothing
         }
 
-        log.info("Try to upload application. URI: '" + uri + "'");
+        log.info("Try to read application. URI: '" + uri + "'");
 
-        return null;
+        return readApplication(resource);
     }
 
-    private EcosApp loadImpl(Resource resource) {
+    private EcosApp readApplication(Resource resource) {
+
+        ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+
+        try (InputStream in = resource.getInputStream()) {
+            IOUtils.copy(in, bytesOut);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return readFromReusableResource(new ByteArrayResource(bytesOut.toByteArray()));
+    }
+
+    private EcosApp readFromReusableResource(Resource resource) {
 
         File rootDir = AppUtils.getTmpDirToExtractApp();
-        EcosAppImpl app;
-
         try {
-
-            try (InputStream in = resource.getInputStream()) {
-                AppUtils.extractZip(in, rootDir);
-            }
-
             Digest digest;
             try (InputStream in = resource.getInputStream()) {
                 digest = AppUtils.getDigest(in);
             }
-
-            File metaFile = new File(rootDir, "meta.json");
-            EcosAppDto dto = mapper.readValue(metaFile, EcosAppDto.class);
-
-
-            rootDir.
-
-            app = new EcosAppImpl(rootDir, digest, dto);
-
+            try (InputStream in = resource.getInputStream()) {
+                AppUtils.extractZip(in, rootDir);
+            }
+            return loadAppFromFolder(rootDir, digest);
         } catch (Exception e) {
             FileSystemUtils.deleteRecursively(rootDir);
             throw new RuntimeException(e);
         }
-        return null;
     }
 
-    private List<ModuleFile> getFiles(File root, String glob) throws IOException {
+    private EcosApp loadAppFromFolder(File rootDir, Digest digest) throws Exception {
 
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher(glob);
+        File metaFile = new File(rootDir, "meta.json");
+        EcosAppDto dto = mapper.readValue(metaFile, EcosAppDto.class);
 
-        List<Path> filePaths = new ArrayList<>();
+        File modulesRoot = new File(rootDir, "modules");
+        List<EcosModule> modules = new ArrayList<>();
 
-        Files.walkFileTree(Paths.get(root.getAbsolutePath()), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                if (pathMatcher.matches(path)) {
-                    filePaths.add(path);
+        for (ModuleReader reader : moduleReaders) {
+            for (String pattern : reader.getFilePatterns()) {
+
+                List<ModuleFile> moduleFiles = getFiles(modulesRoot, pattern);
+                for (ModuleFile mFile : moduleFiles) {
+                    modules.addAll(reader.read(pattern, mFile));
                 }
-                return FileVisitResult.CONTINUE;
             }
+        }
 
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        if (modules.isEmpty()) {
+            throw new RuntimeException("Application without modules");
+        }
 
-        filePaths.stream().map(p -> {
-
-
-
-        });
+        return new EcosAppImpl(rootDir, digest, dto, modules);
     }
 
-    private File
+    private List<ModuleFile> getFiles(File root, String pattern) {
+        return FileUtils.findFiles(root, pattern)
+                        .stream()
+                        .map(ModuleFileImpl::new)
+                        .collect(Collectors.toList());
+    }
+
+    private class ModuleFileImpl implements ModuleFile {
+
+        private Path path;
+
+        ModuleFileImpl(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public <T> T read(StreamConsumer<T> consumer) {
+            File file = path.toFile();
+            try (InputStream in = new FileInputStream(file)) {
+                return consumer.accept(in);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public String getName() {
+            return path.getFileName().toString();
+        }
+    }
 
     @Data
     public static class EcosAppDto {
         private String id;
         private String name;
-        private String version;
+        private AppVersion version;
         private Map<String, String> dependencies = Collections.emptyMap();
     }
 
@@ -130,15 +163,17 @@ public class EcosAppReader {
         private String version;
     }
 
-    private static class EcosAppImpl implements EcosApp {
+    private static class EcosAppImpl implements EcosApp, Closeable {
 
         private File rootDir;
         private Digest digest;
         private EcosAppDto dto;
+        private List<EcosModule> modules;
 
         private List<Dependency> dependencies = new ArrayList<>();
 
-        public EcosAppImpl(File rootDir, Digest digest, EcosAppDto dto) {
+        public EcosAppImpl(File rootDir, Digest digest, EcosAppDto dto, List<EcosModule> modules) {
+            this.modules = modules;
             this.rootDir = rootDir;
             this.digest = digest;
             this.dto = dto;
@@ -156,7 +191,7 @@ public class EcosAppReader {
         }
 
         @Override
-        public String getVersion() {
+        public AppVersion getVersion() {
             return dto.getVersion();
         }
 
@@ -167,7 +202,7 @@ public class EcosAppReader {
 
         @Override
         public List<EcosModule> getModules() {
-            return null;
+            return modules;
         }
 
         @Override
@@ -181,7 +216,7 @@ public class EcosAppReader {
         }
 
         @Override
-        public void dispose() {
+        public void close() {
             try {
                 FileSystemUtils.deleteRecursively(rootDir);
             } catch (Exception e) {

@@ -2,12 +2,14 @@ package ru.citeck.ecos.apps.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "ecos_app_module")
-public class EcosAppModuleEntity extends AbstractAuditingEntity {
+public class EcosModuleEntity extends AbstractAuditingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_module_id_gen")
@@ -17,4 +19,11 @@ public class EcosAppModuleEntity extends AbstractAuditingEntity {
     @Column(name="ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String type;
+
+    @OneToOne
+    @JoinColumn(name = "upload_rev_id", nullable = false)
+    @Getter @Setter private EcosModuleRevEntity uploadRev;
+
+    @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
+    @Getter @Setter private Set<EcosModuleRevEntity> revisions;
 }

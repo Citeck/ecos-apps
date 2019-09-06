@@ -7,23 +7,23 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import ru.citeck.ecos.apps.config.ApplicationProperties;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
-import ru.citeck.ecos.apps.repository.EcosAppsRepo;
+import ru.citeck.ecos.apps.repository.EcosAppRepo;
 
 @Service
 @Transactional
-public class EcosApplicationService {
+public class EcosApplicationServiceOld {
 
     private ApplicationProperties properties;
     private EcosAppModuleRepo moduleRepository;
-    private EcosAppsRepo applicationRepository;
+    private EcosAppRepo applicationRepository;
 
     private RestTemplate alfrescoRestTemplate;
 
     @Autowired
-    public EcosApplicationService(EcosAppsRepo applicationRepository,
-                                  EcosAppModuleRepo moduleRepository,
-                                  ApplicationProperties properties,
-                                  @Qualifier("alfrescoRestTemplate") RestTemplate alfrescoRestTemplate) {
+    public EcosApplicationServiceOld(EcosAppRepo applicationRepository,
+                                     EcosAppModuleRepo moduleRepository,
+                                     ApplicationProperties properties,
+                                     @Qualifier("alfrescoRestTemplate") RestTemplate alfrescoRestTemplate) {
 
         this.properties = properties;
         this.moduleRepository = moduleRepository;
