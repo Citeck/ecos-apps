@@ -1,7 +1,9 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.Digest;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
@@ -9,16 +11,14 @@ import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.io.ByteArrayInputStream;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.UUID;
 
 @Slf4j
-@Service
+@Component
 public class EcosModuleDao {
 
     private EcosAppModuleRepo modulesRepo;
@@ -30,22 +30,15 @@ public class EcosModuleDao {
         this.moduleRevRepo = moduleRevRepo;
     }
 
-    /*public EcosModuleRev getModuleById(String id) {
+    public EcosModuleRevEntity getLastModuleRev(String type, String id) {
+        Pageable page = PageRequest.of(0, 1);
+        List<EcosModuleRevEntity> result = moduleRevRepo.getModuleRevisions(type, id, page);
+        return result.stream().findFirst().orElse(null);
+    }
 
-        EcosAppModuleEntity moduleById = modulesRepo.getByExtId(id);
-        EcosAppModuleRevEntity revision = moduleRevRepo.getLastRevisionByAppId(moduleById.getId());
-
-        EcosModuleImpl module = new EcosModuleImpl();
-        module.setId(id);
-        module.setRevId(revision.getExtId());
-        module.setData(revision.getData());
-        module.setName(revision.getName());
-        module.setModelVersion(revision.getModelVersion());
-        module.setMimetype(revision.getMimetype());
-        module.setType(moduleById.getType());
-
-        return module;
-    }*/
+    public EcosModuleRevEntity getModuleRev(String revId) {
+        return moduleRevRepo.getRevByExtId(revId);
+    }
 
     public List<EcosModuleRevEntity> uploadModules(List<EcosModule> modules) {
 
@@ -72,16 +65,11 @@ public class EcosModuleDao {
                 || !digest.getHash().equals(uploadRev.getHash())) {
 
                 uploadRev = new EcosModuleRevEntity();
-                try {
-                    uploadRev.setData(new SerialBlob(data));
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-
+                uploadRev.setData(data);
                 uploadRev.setSize(digest.getSize());
                 uploadRev.setHash(digest.getHash());
-                uploadRev.setExtId(module.getId());
-                uploadRev.setMimetype(module.getMimetype());
+                uploadRev.setExtId(UUID.randomUUID().toString());
+                uploadRev.setDataType(module.getDataType());
                 uploadRev.setName(module.getName());
                 uploadRev.setModule(moduleEntity);
                 uploadRev.setModelVersion(module.getModelVersion());
@@ -90,10 +78,10 @@ public class EcosModuleDao {
                 moduleEntity.setUploadRev(uploadRev);
                 modulesRepo.save(moduleEntity);
 
-                log.info("Module uploaded " + module.getId());
+                log.info("Module uploaded: " + module.getId());
 
             } else {
-                log.info("Module already uploaded " + module.getId());
+                log.info("Module already uploaded: " + module.getId());
             }
 
             result.add(uploadRev);

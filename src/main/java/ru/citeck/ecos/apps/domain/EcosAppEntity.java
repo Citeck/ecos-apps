@@ -17,7 +17,8 @@ public class EcosAppEntity extends AbstractAuditingEntity {
     @Column(name="ext_id")
     @Getter @Setter private String extId;
 
-    @Column(name="upload_rev_id")
+    @OneToOne
+    @JoinColumn(name = "upload_rev_id")
     @Getter @Setter private EcosAppRevEntity uploadRev;
 
     @OneToMany(mappedBy = "application", fetch = FetchType.LAZY)

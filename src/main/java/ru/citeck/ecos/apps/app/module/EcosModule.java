@@ -10,7 +10,7 @@ public interface EcosModule {
 
     int getModelVersion();
 
-    String getMimetype();
+    DataType getDataType();
 
     byte[] getData();
 }

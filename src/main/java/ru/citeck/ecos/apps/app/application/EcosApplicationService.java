@@ -103,6 +103,7 @@ public class EcosApplicationService {
         rev.setName(app.getName());
         rev.setVersion(app.getVersion().toString());
         rev.setApplication(entity);
+        rev.setSize(app.getSize());
 
         return appRevRepo.save(rev);
     }

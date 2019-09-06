@@ -1,12 +1,8 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.Getter;
-import org.apache.commons.io.IOUtils;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
-
-import java.io.IOException;
-import java.sql.SQLException;
 
 public class EcosModuleDb implements EcosModuleRev {
 
@@ -15,7 +11,7 @@ public class EcosModuleDb implements EcosModuleRev {
     @Getter String type;
     @Getter String name;
     @Getter int modelVersion;
-    @Getter String mimetype;
+    @Getter DataType dataType;
     @Getter String hash;
     @Getter byte[] data;
     @Getter long size;
@@ -29,11 +25,7 @@ public class EcosModuleDb implements EcosModuleRev {
         this.type = module.getType();
         this.name = entity.getName();
         this.modelVersion = entity.getModelVersion();
-        this.mimetype = entity.getMimetype();
-        try {
-            this.data = IOUtils.toByteArray(entity.getData().getBinaryStream());
-        } catch (IOException | SQLException e) {
-            throw new RuntimeException(e);
-        }
+        this.dataType = entity.getDataType();
+        this.data = entity.getData();
     }
 }

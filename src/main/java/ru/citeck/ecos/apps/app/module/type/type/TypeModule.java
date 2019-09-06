@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps.app.module.type.type;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.MimeTypeUtils;
+import ru.citeck.ecos.apps.app.module.DataType;
 import ru.citeck.ecos.apps.app.module.EcosModule;
 
 import java.nio.charset.StandardCharsets;
@@ -33,8 +33,8 @@ public class TypeModule implements EcosModule {
     }
 
     @Override
-    public String getMimetype() {
-        return MimeTypeUtils.APPLICATION_JSON_VALUE;
+    public DataType getDataType() {
+        return DataType.JSON;
     }
 
     @Override

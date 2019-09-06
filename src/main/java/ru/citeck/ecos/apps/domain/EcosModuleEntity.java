@@ -8,12 +8,12 @@ import javax.persistence.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "ecos_app_module")
+@Table(name = "ecos_module")
 public class EcosModuleEntity extends AbstractAuditingEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_module_id_gen")
-    @SequenceGenerator(name = "ecos_app_module_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_module_id_gen")
+    @SequenceGenerator(name = "ecos_module_id_gen")
     @Getter @Setter private Long id;
 
     @Column(name="ext_id")
@@ -21,7 +21,7 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private String type;
 
     @OneToOne
-    @JoinColumn(name = "upload_rev_id", nullable = false)
+    @JoinColumn(name = "upload_rev_id")
     @Getter @Setter private EcosModuleRevEntity uploadRev;
 
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)

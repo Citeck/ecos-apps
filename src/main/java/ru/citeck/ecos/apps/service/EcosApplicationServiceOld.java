@@ -37,7 +37,7 @@ public class EcosApplicationServiceOld {
 
         if (module.getKey() == null
             || module.getData() == null
-            || module.getMimetype() == null
+            || module.getDataType() == null
             || module.getType() == null) {
 
             throw new IllegalArgumentException("Key, data, type and format is a " +
@@ -114,8 +114,8 @@ public class EcosApplicationServiceOld {
             return module.getType();
         }
 
-        public String getMimetype() {
-            return module.getMimetype();
+        public String getDataType() {
+            return module.getDataType();
         }
 
         public byte[] getData()
