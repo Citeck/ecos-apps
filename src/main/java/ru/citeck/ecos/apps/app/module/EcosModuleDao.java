@@ -8,6 +8,7 @@ import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.Digest;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
 

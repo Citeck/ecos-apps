@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.app.module;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 @Service
 @Transactional

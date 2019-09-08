@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.citeck.ecos.apps.app.module.EcosModule;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.domain.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.EcosAppRevEntity;

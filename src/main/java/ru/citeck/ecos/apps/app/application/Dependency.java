@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.app.module;
+package ru.citeck.ecos.apps.app.application;
 
 public interface Dependency {
 

@@ -3,7 +3,7 @@ package ru.citeck.ecos.apps.domain;
 import lombok.Getter;
 import lombok.Setter;
 import ru.citeck.ecos.apps.app.AppStatus;
-import ru.citeck.ecos.apps.app.module.DataType;
+import ru.citeck.ecos.apps.module.type.DataType;
 
 import javax.persistence.*;
 

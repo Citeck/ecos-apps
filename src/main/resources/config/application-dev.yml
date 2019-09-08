@@ -158,3 +158,6 @@ ecosapps:
         deployUrl:
             #todo: rename model to module
             bpm_process: http://localhost:8080/alfresco/service/citeck/ecos/bpm/process/model/deploy
+
+spring.rabbitmq:
+    host: localhost

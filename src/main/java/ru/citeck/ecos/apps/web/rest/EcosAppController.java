@@ -8,8 +8,11 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
-import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.apps.module.type.DataType;
+import ru.citeck.ecos.apps.module.type.EcosModuleRev;
+import ru.citeck.ecos.apps.queue.DeployModuleMsg;
+import ru.citeck.ecos.apps.queue.EcosAppQueues;
 
 /**
  * Controller for EcosApplication
@@ -54,12 +57,22 @@ public class EcosAppController {
 
     @GetMapping("/rabbit")
     public String test(String msg) {
-        template.convertAndSend("queue1", msg);
+
+        DeployModuleMsg msgg = new DeployModuleMsg();
+        msgg.setId("test_id");
+        msgg.setDataType(DataType.JSON);
+        msgg.setDataUrl("ecosapps/...");
+        msgg.setHash("123123");
+        msgg.setModelVersion(0);
+        msgg.setSize(123123);
+
+        //template.convertAndSend()
+        template.convertAndSend(EcosAppQueues.QUEUE_DEPLOY_ID, msgg);
         return "OK";
     }
 
-    @RabbitListener(queues = "queue1")
-    public void worker1(String message) {
+    @RabbitListener(queues = EcosAppQueues.QUEUE_DEPLOY_ID)
+    public void worker1(DeployModuleMsg message) {
         //logger.info("worker 1 : " + message);
         //Thread.sleep(100 * random.nextInt(20));
         log.info("Receive rabbit message: " + message);

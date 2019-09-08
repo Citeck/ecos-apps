@@ -1,39 +1,46 @@
 package ru.citeck.ecos.apps.app.queue;
 
-import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.citeck.ecos.apps.queue.EcosAppQueue;
+import ru.citeck.ecos.apps.queue.EcosAppQueues;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 public class RabbitMqConfiguration {
 
+
+
+    /*@Bean
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+        return rabbitTemplate;
+    }*/
+
     @Bean
-    public ConnectionFactory connectionFactory() {
-        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
-        connectionFactory.setHost("localhost");
-        connectionFactory.setPort(5672);
-        connectionFactory.setUsername("admin");
-        connectionFactory.setPassword("admin");
-        return connectionFactory;
+    public Jackson2JsonMessageConverter converter() {
+        return new Jackson2JsonMessageConverter();
     }
 
     @Bean
-    public AmqpAdmin amqpAdmin() {
-        return new RabbitAdmin(connectionFactory());
+    public List<Queue> initQueues() {
+
+
+
+        return EcosAppQueues.ALL
+            .stream()
+            .map(this::createQueue)
+            .collect(Collectors.toList());
     }
 
-    @Bean
-    public RabbitTemplate rabbitTemplate() {
-        return new RabbitTemplate(connectionFactory());
-    }
-
-    @Bean
-    public Queue myQueue1() {
-        return new Queue("queue1");
+    private Queue createQueue(EcosAppQueue queue) {
+        return new Queue(queue.getName());
     }
 }

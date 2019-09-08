@@ -3,6 +3,8 @@ package ru.citeck.ecos.apps.app.module;
 import lombok.Getter;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.module.type.DataType;
+import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 public class EcosModuleDb implements EcosModuleRev {
 

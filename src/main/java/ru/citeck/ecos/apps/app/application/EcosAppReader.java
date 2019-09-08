@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.Digest;
-import ru.citeck.ecos.apps.app.module.Dependency;
-import ru.citeck.ecos.apps.app.module.EcosModule;
-import ru.citeck.ecos.apps.app.module.type.ModuleFile;
-import ru.citeck.ecos.apps.app.module.type.ModuleReader;
-import ru.citeck.ecos.apps.app.module.type.StreamConsumer;
+import ru.citeck.ecos.apps.app.EcosModuleTypesFactory;
+import ru.citeck.ecos.apps.module.type.EcosModule;
+import ru.citeck.ecos.apps.module.type.ModuleFile;
+import ru.citeck.ecos.apps.module.type.ModuleReader;
+import ru.citeck.ecos.apps.module.type.StreamConsumer;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -35,9 +35,9 @@ public class EcosAppReader {
     private List<ModuleReader> moduleReaders;
 
     public EcosAppReader(ResourceLoader resourceLoader,
-                         List<ModuleReader> moduleReaders) {
+                         EcosModuleTypesFactory typesFactory) {
         this.resourceLoader = resourceLoader;
-        this.moduleReaders = moduleReaders;
+        this.moduleReaders = typesFactory.getModuleReaders();
     }
 
     public EcosApp read(String location) {

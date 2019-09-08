@@ -2,7 +2,6 @@ package ru.citeck.ecos.apps.domain;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 
 import javax.persistence.*;
 import java.util.Set;
