@@ -43,4 +43,6 @@ public class EcosAppRevEntity extends AbstractAuditingEntity {
         inverseJoinColumns = {@JoinColumn(name = "module_rev_id", referencedColumnName = "id")})
     @BatchSize(size = 20)
     @Getter @Setter private Set<EcosModuleRevEntity> modules = new HashSet<>();
+
+    @Getter @Setter private String source;
 }

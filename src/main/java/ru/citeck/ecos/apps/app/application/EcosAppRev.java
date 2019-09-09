@@ -1,6 +1,8 @@
 package ru.citeck.ecos.apps.app.application;
 
-public interface EcosAppRev extends EcosApp {
+import ru.citeck.ecos.apps.module.type.EcosModuleRev;
+
+public interface EcosAppRev extends EcosAppBase<EcosModuleRev> {
 
     String getRevId();
 }

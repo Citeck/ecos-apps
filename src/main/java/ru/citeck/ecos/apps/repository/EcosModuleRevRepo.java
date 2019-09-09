@@ -9,7 +9,7 @@ import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import java.util.List;
 
 @Repository
-public interface EcosAppModuleRevRepo extends JpaRepository<EcosModuleRevEntity, Long> {
+public interface EcosModuleRevRepo extends JpaRepository<EcosModuleRevEntity, Long> {
 
     @Query("SELECT m FROM EcosModuleRevEntity m JOIN m.module mm WHERE mm.type = ?1 AND mm.extId = ?2 ORDER BY m.id DESC")
     List<EcosModuleRevEntity> getModuleRevisions(String type, String moduleId, Pageable pageable);

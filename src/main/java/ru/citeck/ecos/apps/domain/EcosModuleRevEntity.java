@@ -40,4 +40,6 @@ public class EcosModuleRevEntity extends AbstractAuditingEntity {
 
     @Enumerated(EnumType.ORDINAL)
     @Getter @Setter private AppStatus status = AppStatus.DRAFT;
+    @Column(name = "publish_msg")
+    @Getter @Setter private String publishMsg;
 }

@@ -9,8 +9,8 @@ import ru.citeck.ecos.apps.app.Digest;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.module.type.EcosModule;
-import ru.citeck.ecos.apps.repository.EcosAppModuleRevRepo;
-import ru.citeck.ecos.apps.repository.EcosAppModuleRepo;
+import ru.citeck.ecos.apps.repository.EcosModuleRevRepo;
+import ru.citeck.ecos.apps.repository.EcosModuleRepo;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -22,11 +22,11 @@ import java.util.UUID;
 @Component
 public class EcosModuleDao {
 
-    private EcosAppModuleRepo modulesRepo;
-    private EcosAppModuleRevRepo moduleRevRepo;
+    private EcosModuleRepo modulesRepo;
+    private EcosModuleRevRepo moduleRevRepo;
 
-    public EcosModuleDao(EcosAppModuleRepo modulesRepo,
-                         EcosAppModuleRevRepo moduleRevRepo) {
+    public EcosModuleDao(EcosModuleRepo modulesRepo,
+                         EcosModuleRevRepo moduleRevRepo) {
         this.modulesRepo = modulesRepo;
         this.moduleRevRepo = moduleRevRepo;
     }
@@ -39,6 +39,10 @@ public class EcosModuleDao {
 
     public EcosModuleRevEntity getModuleRev(String revId) {
         return moduleRevRepo.getRevByExtId(revId);
+    }
+
+    public void save(EcosModuleRevEntity entity) {
+        moduleRevRepo.save(entity);
     }
 
     public List<EcosModuleRevEntity> uploadModules(List<EcosModule> modules) {

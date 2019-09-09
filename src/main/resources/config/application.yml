@@ -125,9 +125,6 @@ spring:
             enabled: false
     thymeleaf:
         mode: HTML
-
-
-    rabbitmq:server:
     servlet:
         session:
             cookie:

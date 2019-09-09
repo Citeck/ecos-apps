@@ -24,6 +24,7 @@
         </createTable>
 
         <createTable tableName="ecos_app_rev">
+
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
@@ -49,6 +50,7 @@
             </column>
 
             <column name="status" type="INT" />
+            <column name="source" type="VARCHAR(255)" />
 
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
@@ -111,6 +113,8 @@
             <column name="size" type="BIGINT">
                 <constraints nullable="false" />
             </column>
+
+            <column name="publish_msg" type="VARCHAR" />
 
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />

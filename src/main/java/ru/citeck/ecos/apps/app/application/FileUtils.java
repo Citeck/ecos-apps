@@ -27,11 +27,8 @@ public class FileUtils {
             Files.walkFileTree(Paths.get(root.getAbsolutePath()), new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                    log.info("test file " + path);
                     Path relative = rootPath.relativize(path);
-                    log.info("relative: " + relative);
                     if (pathMatcher.matches(relative)) {
-                        log.info("matches");
                         filePaths.add(path);
                     }
                     return FileVisitResult.CONTINUE;

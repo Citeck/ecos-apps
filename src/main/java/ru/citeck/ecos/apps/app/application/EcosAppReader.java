@@ -5,14 +5,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.Digest;
-import ru.citeck.ecos.apps.app.EcosModuleTypesFactory;
+import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
+import ru.citeck.ecos.apps.app.module.EcosModuleTypesFactory;
 import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.module.type.ModuleFile;
 import ru.citeck.ecos.apps.module.type.ModuleReader;
@@ -40,28 +43,35 @@ public class EcosAppReader {
         this.moduleReaders = typesFactory.getModuleReaders();
     }
 
+    public EcosApp read(File file) {
+        return read(null, new FileSystemResource(file));
+    }
+
     public EcosApp read(String location) {
-        return read(resourceLoader.getResource(location));
+        return read(null, resourceLoader.getResource(location));
     }
 
     /**
      * @return application or null if resource is not a valid application
      */
-    public EcosApp read(Resource resource) {
+    public EcosApp read(String source, Resource resource) {
 
         String uri = "";
         try {
             uri = resource.getURI().toString();
+            if (StringUtils.isBlank(source)) {
+                source = uri;
+            }
         } catch (IOException e) {
             //do nothing
         }
 
         log.info("Try to read application. URI: '" + uri + "'");
 
-        return readApplication(resource);
+        return readApplication(source, resource);
     }
 
-    private EcosApp readApplication(Resource resource) {
+    private EcosApp readApplication(String source, Resource resource) {
 
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
 
@@ -71,10 +81,10 @@ public class EcosAppReader {
             throw new RuntimeException(e);
         }
 
-        return readFromReusableResource(new ByteArrayResource(bytesOut.toByteArray()));
+        return readFromReusableResource(source, new ByteArrayResource(bytesOut.toByteArray()));
     }
 
-    private EcosApp readFromReusableResource(Resource resource) {
+    private EcosApp readFromReusableResource(String source, Resource resource) {
 
         File rootDir = AppUtils.getTmpDirToExtractApp();
         try {
@@ -85,14 +95,17 @@ public class EcosAppReader {
             try (InputStream in = resource.getInputStream()) {
                 AppUtils.extractZip(in, rootDir);
             }
-            return loadAppFromFolder(rootDir, digest);
+            return loadAppFromFolder(source, rootDir, digest);
         } catch (Exception e) {
             FileSystemUtils.deleteRecursively(rootDir);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
             throw new RuntimeException(e);
         }
     }
 
-    private EcosApp loadAppFromFolder(File rootDir, Digest digest) throws Exception {
+    private EcosApp loadAppFromFolder(String source, File rootDir, Digest digest) throws Exception {
 
         File metaFile = new File(rootDir, "meta.json");
         EcosAppDto dto = mapper.readValue(metaFile, EcosAppDto.class);
@@ -104,17 +117,17 @@ public class EcosAppReader {
             for (String pattern : reader.getFilePatterns()) {
 
                 List<ModuleFile> moduleFiles = getFiles(modulesRoot, pattern);
-                for (ModuleFile mFile : moduleFiles) {
-                    modules.addAll(reader.read(pattern, mFile));
+                if (!moduleFiles.isEmpty()) {
+                    modules.addAll(reader.read(pattern, moduleFiles));
                 }
             }
         }
 
         if (modules.isEmpty()) {
-            throw new RuntimeException("Application without modules");
+            throw new ApplicationWithoutModules(dto);
         }
 
-        return new EcosAppImpl(rootDir, digest, dto, modules);
+        return new EcosAppImpl(rootDir, source, digest, dto, modules);
     }
 
     private List<ModuleFile> getFiles(File root, String pattern) {
@@ -169,10 +182,17 @@ public class EcosAppReader {
         private Digest digest;
         private EcosAppDto dto;
         private List<EcosModule> modules;
+        private String source;
 
         private List<Dependency> dependencies = new ArrayList<>();
 
-        public EcosAppImpl(File rootDir, Digest digest, EcosAppDto dto, List<EcosModule> modules) {
+        public EcosAppImpl(File rootDir,
+                           String source,
+                           Digest digest,
+                           EcosAppDto dto,
+                           List<EcosModule> modules) {
+
+            this.source = source;
             this.modules = modules;
             this.rootDir = rootDir;
             this.digest = digest;
@@ -183,6 +203,11 @@ public class EcosAppReader {
         @Override
         public String getId() {
             return dto.getId();
+        }
+
+        @Override
+        public String getSource() {
+            return source;
         }
 
         @Override

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 
 @Repository
-public interface EcosAppModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
+public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
 
     @Query("SELECT m FROM EcosModuleEntity m WHERE m.extId=?1")
     EcosModuleEntity getByExtId(String extId);
