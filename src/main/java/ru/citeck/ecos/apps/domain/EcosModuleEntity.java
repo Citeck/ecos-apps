@@ -19,10 +19,6 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private String extId;
     @Getter @Setter private String type;
 
-    @OneToOne
-    @JoinColumn(name = "upload_rev_id")
-    @Getter @Setter private EcosModuleRevEntity uploadRev;
-
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @Getter @Setter private Set<EcosModuleRevEntity> revisions;
 }

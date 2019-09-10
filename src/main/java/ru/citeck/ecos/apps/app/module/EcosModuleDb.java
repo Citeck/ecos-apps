@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.Getter;
+import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.module.type.DataType;
@@ -21,6 +22,7 @@ public class EcosModuleDb implements EcosModuleRev {
     public EcosModuleDb(EcosModuleRevEntity entity) {
 
         EcosModuleEntity module = entity.getModule();
+        EcosContentEntity content = entity.getContent();
 
         this.id = module.getExtId();
         this.revId = entity.getExtId();
@@ -28,6 +30,9 @@ public class EcosModuleDb implements EcosModuleRev {
         this.name = entity.getName();
         this.modelVersion = entity.getModelVersion();
         this.dataType = entity.getDataType();
-        this.data = entity.getData();
+
+        this.data = content.getData();
+        this.hash = content.getHash();
+        this.size = content.getSize();
     }
 }

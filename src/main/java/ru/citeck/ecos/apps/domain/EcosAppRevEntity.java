@@ -28,11 +28,8 @@ public class EcosAppRevEntity extends AbstractAuditingEntity {
     @Enumerated(EnumType.ORDINAL)
     @Getter @Setter private AppStatus status = AppStatus.DRAFT;
 
-    @Getter @Setter private Long size;
-    @Getter @Setter private String hash;
-
     @ManyToOne
-    @JoinColumn(name = "app_id", nullable = false)
+    @JoinColumn(name = "app_id")
     @Getter @Setter private EcosAppEntity application;
 
     @JsonIgnore
@@ -43,6 +40,4 @@ public class EcosAppRevEntity extends AbstractAuditingEntity {
         inverseJoinColumns = {@JoinColumn(name = "module_rev_id", referencedColumnName = "id")})
     @BatchSize(size = 20)
     @Getter @Setter private Set<EcosModuleRevEntity> modules = new HashSet<>();
-
-    @Getter @Setter private String source;
 }

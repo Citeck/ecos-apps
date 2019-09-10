@@ -1,13 +1,13 @@
 version: '2'
 services:
-    ecosapps-app:
-        image: ecosapps
+    eapps-app:
+        image: eapps
         environment:
             - _JAVA_OPTIONS=-Xmx512m -Xms256m
             - SPRING_PROFILES_ACTIVE=prod,swagger
             - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/eureka
             - SPRING_CLOUD_CONFIG_URI=http://admin:$${jhipster.registry.password}@jhipster-registry:8761/config
-            - SPRING_DATASOURCE_URL=jdbc:postgresql://ecosapps-postgresql:5432/ecosapps
+            - SPRING_DATASOURCE_URL=jdbc:postgresql://eapps-postgresql:5432/eapps
             - JHIPSTER_SLEEP=30 # gives time for the JHipster Registry to boot before the application
     ecosapps-postgresql:
         extends:

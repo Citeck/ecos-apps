@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
+import ru.citeck.ecos.apps.app.content.EcosContentDao;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -21,16 +22,15 @@ public class AppsAutoUpload {
     private static final String APPS_PATTERN = "**.zip";
     private static final String SKIP_MSG = "Application was skipped: %s";
 
-    @Value("${ecosapps.autoupload.locations:}")
+    @Value("${eapps.autoupload.locations:}")
     private String locations;
 
-    private EcosAppReader reader;
     private EcosAppService appService;
+    private EcosContentDao contentDao;
 
-    public AppsAutoUpload(EcosAppReader reader,
-                          EcosAppService appService) {
-        this.reader = reader;
+    public AppsAutoUpload(EcosAppService appService, EcosContentDao contentDao) {
         this.appService = appService;
+        this.contentDao = contentDao;
     }
 
     @PostConstruct
@@ -72,9 +72,10 @@ public class AppsAutoUpload {
             log.info("Found " + applications.size() + " applications");
 
             for (Path appPath : applications) {
+
                 log.info("Upload app: " + appPath);
                 try {
-                    appService.upload(reader.read(appPath.toFile()), true);
+                    appService.uploadApp(contentDao.upload(appPath.toFile()), true);
                 } catch (ApplicationWithoutModules | DowngrageIsNotSupported e) {
                     log.warn(String.format(SKIP_MSG, e.getMessage()));
                 }

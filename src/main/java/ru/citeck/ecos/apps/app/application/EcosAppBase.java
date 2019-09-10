@@ -15,10 +15,4 @@ public interface EcosAppBase<T extends EcosModule> {
     List<Dependency> getDependencies();
 
     List<T> getModules();
-
-    String getHash();
-
-    long getSize();
-
-    String getSource();
 }

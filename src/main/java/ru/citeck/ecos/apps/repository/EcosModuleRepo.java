@@ -8,7 +8,7 @@ import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 @Repository
 public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
 
-    @Query("SELECT m FROM EcosModuleEntity m WHERE m.extId=?1")
-    EcosModuleEntity getByExtId(String extId);
+    @Query("SELECT m FROM EcosModuleEntity m WHERE m.type = ?1 AND m.extId= ?2")
+    EcosModuleEntity getByExtId(String type, String extId);
 
 }

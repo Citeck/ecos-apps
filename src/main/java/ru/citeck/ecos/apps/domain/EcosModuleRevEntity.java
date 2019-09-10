@@ -20,7 +20,7 @@ public class EcosModuleRevEntity extends AbstractAuditingEntity {
     @Getter @Setter private Integer modelVersion;
 
     @ManyToOne
-    @JoinColumn(name = "module_id", nullable = false)
+    @JoinColumn(name = "module_id")
     @Getter @Setter private EcosModuleEntity module;
 
     @Column(name="ext_id")
@@ -32,11 +32,9 @@ public class EcosModuleRevEntity extends AbstractAuditingEntity {
     @Column(name="data_type")
     @Getter @Setter private DataType dataType;
 
-    @Basic(fetch = FetchType.LAZY)
-    @Getter @Setter private byte[] data;
-
-    @Getter @Setter private Long size;
-    @Getter @Setter private String hash;
+    @ManyToOne
+    @JoinColumn(name = "content_id")
+    @Getter @Setter private EcosContentEntity content;
 
     @Enumerated(EnumType.ORDINAL)
     @Getter @Setter private AppStatus status = AppStatus.DRAFT;

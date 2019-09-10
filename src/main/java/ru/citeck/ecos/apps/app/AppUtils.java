@@ -13,6 +13,10 @@ import java.util.zip.ZipInputStream;
 
 public class AppUtils {
 
+    public static void extractZip(byte[] data, File destination) throws IOException {
+        extractZip(new ByteArrayInputStream(data), destination);
+    }
+
     public static void extractZip(InputStream in, File destination) throws IOException {
 
         byte[] buffer = new byte[8192];
@@ -59,6 +63,10 @@ public class AppUtils {
         }
 
         return targetDir;
+    }
+
+    public static Digest getDigest(byte[] data) {
+        return getDigest(new ByteArrayInputStream(data));
     }
 
     public static Digest getDigest(InputStream in) {

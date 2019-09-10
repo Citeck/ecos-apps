@@ -36,8 +36,5 @@ public class EcosAppDb implements EcosAppRev {
             .stream()
             .map(EcosModuleDb::new)
             .collect(Collectors.toList());
-        hash = entity.getHash();
-        size = entity.getSize();
-        source = entity.getSource();
     }
 }

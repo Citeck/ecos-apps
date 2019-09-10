@@ -44,8 +44,8 @@ spring:
             indent-output: true
     datasource:
         type: com.zaxxer.hikari.HikariDataSource
-        url: jdbc:postgresql://localhost:5437/ecos-apps
-        username: ecos-apps
+        url: jdbc:postgresql://localhost:5437/eapps
+        username: eapps
         password:
         hikari:
             poolName: Hikari
@@ -119,7 +119,7 @@ jhipster:
                 token-validity-in-seconds: 86400
                 token-validity-in-seconds-for-remember-me: 2592000
     mail: # specific JHipster mail property, for standard properties see MailProperties
-        from: ecosapps@localhost
+        from: eapps@localhost
         base-url: http://127.0.0.1:8089
     metrics:
         logs: # Reports metrics in the logs

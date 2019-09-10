@@ -6,6 +6,27 @@
 
     <changeSet id="00000000000003" author="citeck">
 
+        <createTable tableName="ecos_content">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="source" type="VARCHAR(255)" />
+            <column name="data" type="BYTEA" />
+            <column name="hash" type="VARCHAR(64)">
+                <constraints nullable="false" />
+            </column>
+            <column name="size" type="BIGINT">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+        </createTable>
+
         <!-- Applications -->
 
         <createTable tableName="ecos_app">
@@ -15,7 +36,9 @@
             <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" unique="true" />
             </column>
-            <column name="upload_rev_id" type="BIGINT" />
+            <column name="upload_content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_app_upload_content" references="ecos_content(id)"/>
+            </column>
 
             <column name="version" type="VARCHAR(64)">
                 <constraints nullable="false" />
@@ -46,28 +69,13 @@
                 <constraints nullable="false" />
             </column>
 
-            <column name="hash" type="VARCHAR(64)">
-                <constraints nullable="false" />
-            </column>
-            <column name="size" type="BIGINT">
-                <constraints nullable="false" />
-            </column>
-
             <column name="status" type="INT" />
-            <column name="source" type="VARCHAR(255)" />
 
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
             <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
         </createTable>
-
-        <addForeignKeyConstraint baseColumnNames="upload_rev_id"
-                                 baseTableName="ecos_app"
-                                 constraintName="fk_upload_rev_app"
-                                 deferrable="true"
-                                 referencedColumnNames="id"
-                                 referencedTableName="ecos_app_rev"/>
 
         <!-- Modules -->
 
@@ -82,7 +90,6 @@
             <column name="ext_id" type="VARCHAR(36)">
                 <constraints nullable="false" unique="true" />
             </column>
-            <column name="upload_rev_id" type="BIGINT" />
 
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
@@ -103,19 +110,16 @@
             <column name="module_id" type="BIGINT">
                 <constraints nullable="false" foreignKeyName="fk_module_ver_module" references="ecos_module(id)"/>
             </column>
-            <column name="model_version" type="INT"/>
             <column name="name" type="VARCHAR(256)">
                 <constraints nullable="false" />
             </column>
-            <column name="data_type" type="INT" />
             <column name="status" type="INT" />
 
-            <column name="data" type="BYTEA" />
-            <column name="hash" type="VARCHAR(64)">
-                <constraints nullable="false" />
-            </column>
-            <column name="size" type="BIGINT">
-                <constraints nullable="false" />
+            <column name="model_version" type="INT"/>
+            <column name="data_type" type="INT" />
+
+            <column name="content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_module_content" references="ecos_content(id)"/>
             </column>
 
             <column name="publish_msg" type="VARCHAR" />
@@ -125,13 +129,6 @@
             <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
         </createTable>
-
-        <addForeignKeyConstraint baseColumnNames="upload_rev_id"
-                                 baseTableName="ecos_module"
-                                 constraintName="fk_upload_rev_module"
-                                 deferrable="true"
-                                 referencedColumnNames="id"
-                                 referencedTableName="ecos_module_rev"/>
 
         <!-- Application modules -->
 
