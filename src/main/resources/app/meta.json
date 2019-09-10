@@ -1,0 +1,8 @@
+{
+	"id": "idocs-repo",
+	"name": "Idocs repo module",
+	"version": "1.0.0",
+	"dependencies": {
+		"journals-module": "*"
+	}
+}

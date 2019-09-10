@@ -125,8 +125,6 @@ spring:
             enabled: false
     thymeleaf:
         mode: HTML
-
-server:
     servlet:
         session:
             cookie:
@@ -180,3 +178,8 @@ jhipster:
 # ===================================================================
 
 # application:
+
+spring.rabbitmq:
+    host: rabbitmq
+    username: admin
+    password: admin
