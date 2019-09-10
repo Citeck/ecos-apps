@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum AppStatus {
 
     DRAFT(true),
-    PUBLISHING(true),
+    PUBLISHING(false),
     PUBLISHED(false),
     PUBLISH_FAILED(true);
 

@@ -16,28 +16,17 @@ public class AppVersion {
             throw new IllegalArgumentException("Incorrect version: " + value);
         }
         strValue = value;
-        values = Arrays.stream(value.split("."))
+        values = Arrays.stream(value.split("\\."))
                        .mapToInt(Integer::parseInt)
                        .toArray();
     }
 
     public boolean isAfterOrEqual(AppVersion other) {
 
-        int[] first;
-        int[] second;
+        int maxSize = Math.max(other.values.length, values.length);
 
-        if (values.length == other.values.length) {
-            first = values;
-            second = other.values;
-        } else if (values.length > other.values.length) {
-            first = values;
-            second = new int[values.length];
-            System.arraycopy(other.values, 0, second, 0, other.values.length);
-        } else {
-            first = new int[other.values.length];
-            second = other.values;
-            System.arraycopy(values, 0, first, 0, values.length);
-        }
+        int[] first = getIntValue(maxSize);
+        int[] second = other.getIntValue(maxSize);
 
         for (int i = 0; i < first.length; i++) {
             if (first[i] > second[i]) {
@@ -48,6 +37,50 @@ public class AppVersion {
         }
 
         return true;
+    }
+
+    private int[] getIntValue(int size) {
+        if (values.length == size) {
+            return values;
+        }
+        int[] result = new int[size];
+        System.arraycopy(values, 0, result, 0, values.length);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AppVersion version = (AppVersion) o;
+        int maxSize = Math.max(version.values.length, values.length);
+
+        return Arrays.equals(getIntValue(maxSize), version.getIntValue(maxSize));
+    }
+
+    @Override
+    public int hashCode() {
+
+        int result = 0;
+
+        int lastIdx = values.length - 1;
+        while (lastIdx >= 0 && values[lastIdx] == 0) {
+            lastIdx--;
+        }
+
+        if (lastIdx == -1) {
+            return 0;
+        }
+
+        for (int i = 0; i <= lastIdx; i++) {
+            result = 31 * result + Integer.hashCode(values[i]);
+        }
+
+        return result;
     }
 
     @Override

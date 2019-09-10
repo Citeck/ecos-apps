@@ -7,8 +7,8 @@ public class DowngrageIsNotSupported extends RuntimeException {
 
     public DowngrageIsNotSupported(AppVersion before, EcosApp app) {
         super(
-            "Downgrade is not supported. App: " + app.getId() + " " + app.getName() + "\n"
-                + "current: " + before.toString() + " new: " + app.getVersion()
+            "Downgrade is not supported. App: " + app.getId() + " " + app.getName()
+                + " current: " + before.toString() + " new: " + app.getVersion()
         );
     }
 }

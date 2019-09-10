@@ -17,6 +17,10 @@
             </column>
             <column name="upload_rev_id" type="BIGINT" />
 
+            <column name="version" type="VARCHAR(64)">
+                <constraints nullable="false" />
+            </column>
+
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
             <column name="last_modified_date" type="TIMESTAMP" />

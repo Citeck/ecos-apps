@@ -11,8 +11,6 @@ import ru.citeck.ecos.apps.queue.EcosAppQueues;
 @Service
 public class ModulePublishService {
 
-    private static final String DATA_URL = "/ecosapps/app/module/rev/%s";
-
     private AmqpTemplate amqpTemplate;
 
     public ModulePublishService(AmqpTemplate amqpTemplate) {

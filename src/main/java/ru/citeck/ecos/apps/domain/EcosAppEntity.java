@@ -16,6 +16,7 @@ public class EcosAppEntity extends AbstractAuditingEntity {
     @Getter @Setter private Long id;
     @Column(name="ext_id")
     @Getter @Setter private String extId;
+    @Getter @Setter private String version;
 
     @OneToOne
     @JoinColumn(name = "upload_rev_id")

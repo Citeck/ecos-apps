@@ -17,11 +17,9 @@ public class EcosModuleService {
     private static final int PUBLISH_MSG_MAX = 1000;
 
     private EcosModuleDao dao;
-    private ModulePublishService publishService;
 
-    public EcosModuleService(EcosModuleDao dao, ModulePublishService publishService) {
+    public EcosModuleService(EcosModuleDao dao) {
         this.dao = dao;
-        this.publishService = publishService;
     }
 
     public EcosModuleRev getLastModuleRev(String type, String id) {
@@ -30,19 +28,6 @@ public class EcosModuleService {
 
     public EcosModuleRev getModuleRevision(String id) {
         return new EcosModuleDb(dao.getModuleRev(id));
-    }
-
-    public void publish(EcosModuleRev module) {
-
-        EcosModuleRevEntity entity = dao.getModuleRev(module.getRevId());
-        if (!entity.getStatus().isPublishAllowed()) {
-            log.warn("Publish is not allowed for status: " + entity.getStatus());
-            return;
-        }
-        entity.setStatus(AppStatus.PUBLISHING);
-        dao.save(entity);
-
-        publishService.publish(module);
     }
 
     public void updatePublishStatus(ModulePublishResultMsg msg) {

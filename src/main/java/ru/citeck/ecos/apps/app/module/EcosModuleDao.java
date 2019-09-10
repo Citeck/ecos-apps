@@ -14,7 +14,6 @@ import ru.citeck.ecos.apps.repository.EcosModuleRepo;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,57 +44,57 @@ public class EcosModuleDao {
         moduleRevRepo.save(entity);
     }
 
+    public EcosModuleRevEntity uploadModule(EcosModule module) {
+
+        log.info("Try to upload module " + module.getId());
+
+        EcosModuleEntity moduleEntity = modulesRepo.getByExtId(module.getId());
+        if (moduleEntity == null) {
+            moduleEntity = new EcosModuleEntity();
+            moduleEntity.setExtId(module.getId());
+            moduleEntity.setType(module.getType());
+            moduleEntity = modulesRepo.save(moduleEntity);
+        }
+
+        EcosModuleRevEntity uploadRev = moduleEntity.getUploadRev();
+        byte[] data = module.getData();
+        Digest digest = AppUtils.getDigest(new ByteArrayInputStream(data));
+
+        if (uploadRev == null
+            || uploadRev.getSize() != data.length
+            || !digest.getHash().equals(uploadRev.getHash())) {
+
+            uploadRev = new EcosModuleRevEntity();
+            uploadRev.setData(data);
+            uploadRev.setSize(digest.getSize());
+            uploadRev.setHash(digest.getHash());
+            uploadRev.setExtId(UUID.randomUUID().toString());
+            uploadRev.setDataType(module.getDataType());
+            uploadRev.setName(module.getName());
+            uploadRev.setModule(moduleEntity);
+            uploadRev.setModelVersion(module.getModelVersion());
+
+            uploadRev = moduleRevRepo.save(uploadRev);
+            moduleEntity.setUploadRev(uploadRev);
+            modulesRepo.save(moduleEntity);
+
+            log.info("Module uploaded: " + module.getId());
+
+        } else {
+            log.info("Module already uploaded: " + module.getId());
+        }
+
+        return uploadRev;
+    }
+
     public List<EcosModuleRevEntity> uploadModules(List<EcosModule> modules) {
 
         List<EcosModuleRevEntity> result = new ArrayList<>();
 
         for (EcosModule module : modules) {
-
-            log.info("Try to upload module " + module.getId());
-
-            EcosModuleEntity moduleEntity = modulesRepo.getByExtId(module.getId());
-            if (moduleEntity == null) {
-                moduleEntity = new EcosModuleEntity();
-                moduleEntity.setExtId(module.getId());
-                moduleEntity.setType(module.getType());
-                moduleEntity = modulesRepo.save(moduleEntity);
-            }
-
-            EcosModuleRevEntity uploadRev = moduleEntity.getUploadRev();
-            byte[] data = module.getData();
-            Digest digest = AppUtils.getDigest(new ByteArrayInputStream(data));
-
-            if (uploadRev == null
-                || uploadRev.getSize() != data.length
-                || !digest.getHash().equals(uploadRev.getHash())) {
-
-                uploadRev = new EcosModuleRevEntity();
-                uploadRev.setData(data);
-                uploadRev.setSize(digest.getSize());
-                uploadRev.setHash(digest.getHash());
-                uploadRev.setExtId(UUID.randomUUID().toString());
-                uploadRev.setDataType(module.getDataType());
-                uploadRev.setName(module.getName());
-                uploadRev.setModule(moduleEntity);
-                uploadRev.setModelVersion(module.getModelVersion());
-
-                uploadRev = moduleRevRepo.save(uploadRev);
-                moduleEntity.setUploadRev(uploadRev);
-                modulesRepo.save(moduleEntity);
-
-                log.info("Module uploaded: " + module.getId());
-
-            } else {
-                log.info("Module already uploaded: " + module.getId());
-            }
-
-            result.add(uploadRev);
+            result.add(uploadModule(module));
         }
 
         return result;
-    }
-
-    public List<EcosModule> getModulesByAppRev() {
-        return Collections.emptyList();
     }
 }

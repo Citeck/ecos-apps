@@ -2,16 +2,16 @@ package ru.citeck.ecos.apps.app.application;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.AppStatus;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
-import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.apps.app.module.ModulePublishService;
 import ru.citeck.ecos.apps.domain.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.EcosAppRevEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 import ru.citeck.ecos.apps.queue.ModulePublishResultMsg;
 import ru.citeck.ecos.apps.repository.EcosAppRepo;
 import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
@@ -19,6 +19,7 @@ import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,22 +27,22 @@ import java.util.UUID;
 public class EcosAppService {
 
     private EcosAppRepo appRepo;
-    private EcosAppRevRepo appRevRepo;
     private EcosModuleDao moduleDao;
-    private EcosModuleService moduleService;
+    private EcosAppRevRepo appRevRepo;
+    private ModulePublishService publishService;
 
     public EcosAppService(EcosAppRevRepo appRevRepo,
                           EcosAppRepo appRepo,
                           EcosModuleDao moduleDao,
-                          EcosModuleService moduleService) {
+                          ModulePublishService publishService) {
 
         this.appRepo = appRepo;
         this.appRevRepo = appRevRepo;
         this.moduleDao = moduleDao;
-        this.moduleService = moduleService;
+        this.publishService = publishService;
     }
 
-    public void publishApp(EcosAppRev appRev) {
+    public void publish(EcosAppRev appRev) {
 
         EcosAppRevEntity appEntity = appRevRepo.getByExtId(appRev.getRevId());
 
@@ -51,41 +52,109 @@ public class EcosAppService {
             return;
         }
 
-        appEntity.setStatus(AppStatus.PUBLISHING);
-        appRevRepo.save(appEntity);
+        List<AppStatus> statuses = appRev.getModules()
+            .stream()
+            .map(this::publish)
+            .collect(Collectors.toList());
 
-        appRev.getModules().forEach(m -> moduleService.publish(m));
+        appEntity.setStatus(getAppStatus(statuses));
+        appRevRepo.save(appEntity);
     }
+
+    private AppStatus publish(EcosModuleRev module) {
+
+        EcosModuleRevEntity entity = moduleDao.getModuleRev(module.getRevId());
+
+        if (!entity.getStatus().isPublishAllowed()) {
+            log.warn("Publish is not allowed for status: " + entity.getStatus());
+            return entity.getStatus();
+        }
+
+        entity.setStatus(AppStatus.PUBLISHING);
+        moduleDao.save(entity);
+        publishService.publish(module);
+
+        return entity.getStatus();
+    }
+
+    //todo
+    /*public EcosModuleRev upload(EcosModule module) {
+
+        EcosModuleRevEntity entity = moduleDao.uploadModule(module);
+        List<EcosAppEntity> apps = appRepo.getAppsByModuleId(module.getType(), module.getId());
+
+        for (EcosAppEntity app : apps) {
+        }
+
+        new EcosModuleDb(moduleDao.uploadModule(module));
+    }*/
 
     public EcosAppRev upload(EcosApp app, boolean publish) {
 
-        EcosAppRev appRev = upload(app);
-        if (publish) {
-            publishApp(appRev);
+        UploadResult uploadResult = uploadImpl(app);
+        EcosAppRev appRev = new EcosAppDb(uploadResult.getAppRevEntity());
+
+        if (publish && uploadResult.isUploaded()) {
+            publish(appRev);
+        } else {
+            updateStatus(uploadResult.getAppRevEntity());
         }
 
         return appRev;
     }
 
-    public EcosAppRev upload(EcosApp app) {
+    private EcosAppRevEntity updateStatus(EcosAppRevEntity entity) {
+
+        AppStatus status = getAppStatus(
+            entity.getModules()
+                  .stream()
+                  .map(EcosModuleRevEntity::getStatus)
+                  .collect(Collectors.toList())
+        );
+
+        if (!status.equals(entity.getStatus())) {
+            entity.setStatus(status);
+            entity = appRevRepo.save(entity);
+        }
+
+        return entity;
+    }
+
+    private AppStatus getAppStatus(List<AppStatus> statuses) {
+
+        AppStatus status;
+
+        if (statuses.stream().anyMatch(AppStatus.PUBLISHING::equals)) {
+            status = AppStatus.PUBLISHING;
+        } else if (statuses.stream().anyMatch(AppStatus.PUBLISH_FAILED::equals)) {
+            status = AppStatus.PUBLISH_FAILED;
+        } else {
+            status = AppStatus.PUBLISHED;
+        }
+
+        return status;
+    }
+
+    private UploadResult uploadImpl(EcosApp app) {
 
         EcosAppEntity appEntity = appRepo.getByExtId(app.getId());
 
         if (appEntity == null) {
             appEntity = new EcosAppEntity();
             appEntity.setExtId(app.getId());
+            appEntity.setVersion(app.getVersion().toString());
             appEntity = appRepo.save(appEntity);
-        }
-
-        EcosAppRevEntity lastRevision = getLastRevision(appEntity.getExtId());
-        if (lastRevision != null) {
-            AppVersion currentVersion = new AppVersion(lastRevision.getVersion());
+        } else {
+            AppVersion currentVersion = new AppVersion(appEntity.getVersion());
             if (!app.getVersion().isAfterOrEqual(currentVersion)) {
                 throw new DowngrageIsNotSupported(currentVersion, app);
             }
         }
 
+        boolean wasUploaded = false;
+
         EcosAppRevEntity uploadRev = appEntity.getUploadRev();
+
         if (uploadRev == null
             || uploadRev.getSize() != app.getSize()
             || !app.getHash().equals(uploadRev.getHash())) {
@@ -94,17 +163,20 @@ public class EcosAppService {
 
             uploadRev = addAppRevision(appEntity, app);
             appEntity.setUploadRev(uploadRev);
+            appEntity.setVersion(uploadRev.getVersion());
             appRepo.save(appEntity);
 
             List<EcosModuleRevEntity> modules = moduleDao.uploadModules(app.getModules());
             uploadRev.setModules(new HashSet<>(modules));
             uploadRev = appRevRepo.save(uploadRev);
 
+            wasUploaded = true;
+
         } else {
             log.info("Application " + app.getId() + " already uploaded");
         }
 
-        return new EcosAppDb(uploadRev);
+        return new UploadResult(uploadRev, wasUploaded);
     }
 
     public void updatePublishStatus(ModulePublishResultMsg msg) {
@@ -119,22 +191,9 @@ public class EcosAppService {
                 entity.setStatus(AppStatus.PUBLISH_FAILED);
                 appRevRepo.save(entity);
             } else {
-                boolean isAllPublished = entity.getModules()
-                    .stream()
-                    .allMatch(m -> AppStatus.PUBLISHED.equals(m.getStatus()));
-
-                if (isAllPublished) {
-                    entity.setStatus(AppStatus.PUBLISHED);
-                    appRevRepo.save(entity);
-                }
+                updateStatus(entity);
             }
         }
-    }
-
-    private EcosAppRevEntity getLastRevision(String extAppId) {
-        Pageable page = PageRequest.of(0, 1);
-        List<EcosAppRevEntity> lastRevList = appRevRepo.getAppRevisions(extAppId, page);
-        return lastRevList.stream().findFirst().orElse(null);
     }
 
     private EcosAppRevEntity addAppRevision(EcosAppEntity entity, EcosApp app) {

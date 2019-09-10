@@ -1,12 +1,8 @@
 package ru.citeck.ecos.apps.app.application;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.EurekaClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
@@ -17,76 +13,29 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
-public class AppsAutoUpload implements ApplicationListener<ApplicationReadyEvent> {
+public class AppsAutoUpload {
 
     private static final String APPS_PATTERN = "**.zip";
     private static final String SKIP_MSG = "Application was skipped: %s";
-    private static final String APP_NAME = "ecosapps";
 
     @Value("${ecosapps.autoupload.locations:}")
     private String locations;
 
     private EcosAppReader reader;
     private EcosAppService appService;
-    private EurekaClient eurekaClient;
 
     public AppsAutoUpload(EcosAppReader reader,
-                          EcosAppService appService,
-                          EurekaClient eurekaClient) {
+                          EcosAppService appService) {
         this.reader = reader;
         this.appService = appService;
-        this.eurekaClient = eurekaClient;
     }
 
-    @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
-
-        AtomicBoolean isReady = new AtomicBoolean(isReady());
-
-        if (!isReady.get()) {
-
-            long waitLimit = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(2);
-
-            new Thread(() -> {
-
-                while (!isReady.get()) {
-
-                    if (System.currentTimeMillis() > waitLimit) {
-                        break;
-                    }
-
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    isReady.set(isReady());
-                }
-
-                if (isReady.get()) {
-                    upload();
-                } else {
-                    throw new RuntimeException("Ready waiting timeout");
-                }
-
-            }).start();
-        } else {
-            upload();
-        }
-    }
-
-    private boolean isReady() {
-        try {
-            return eurekaClient.getNextServerFromEureka(APP_NAME, false) != null;
-        } catch (RuntimeException e) {
-            //do nothing
-        }
-        return false;
+    @PostConstruct
+    public void init() {
+        upload();
     }
 
     public void upload() {
