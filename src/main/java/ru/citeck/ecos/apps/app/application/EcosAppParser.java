@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import ru.citeck.ecos.apps.app.AppUtils;
+import ru.citeck.ecos.apps.app.AppVersion;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.module.EcosModuleTypesFactory;
 import ru.citeck.ecos.apps.module.type.EcosModule;

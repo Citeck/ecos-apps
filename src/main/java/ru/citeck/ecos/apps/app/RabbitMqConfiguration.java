@@ -18,14 +18,14 @@ import java.util.stream.Collectors;
 @Configuration
 public class RabbitMqConfiguration {
 
- /*   @Bean
-    public Jackson2JsonMessageConverter converter() {
-        return new Jackson2JsonMessageConverter();
-    }*/
-
     @Bean
     public Queue deployStatusQueue() {
         return createQueue(EcosAppQueues.PUBLISH_STATUS).getAmpqQueue();
+    }
+
+    @Bean
+    public Queue uploadAppQueue() {
+        return createQueue(EcosAppQueues.ECOS_APPS_UPLOAD).getAmpqQueue();
     }
 
     @Bean

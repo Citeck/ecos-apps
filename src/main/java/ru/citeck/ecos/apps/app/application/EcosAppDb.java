@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.app.application;
 
 import lombok.Data;
+import ru.citeck.ecos.apps.app.AppVersion;
 import ru.citeck.ecos.apps.app.module.EcosModuleDb;
 import ru.citeck.ecos.apps.domain.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.EcosAppRevEntity;
