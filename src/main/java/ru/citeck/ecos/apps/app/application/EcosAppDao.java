@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.AppStatus;
+import ru.citeck.ecos.apps.app.AppVersion;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
