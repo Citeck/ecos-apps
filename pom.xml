@@ -99,6 +99,8 @@
         <sonar.junit.reportsPath>${project.testresult.directory}</sonar.junit.reportsPath>
         <sonar.tests>${project.basedir}/src/test/</sonar.tests>
 
+        <ecos.lombok.version>1.18.10</ecos.lombok.version>
+
         <!-- jhipster-needle-maven-property -->
     </properties>
 
@@ -368,7 +370,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.22</version>
+            <version>${ecos.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -392,13 +394,17 @@
                             <artifactId>mapstruct-processor</artifactId>
                             <version>${mapstruct.version}</version>
                         </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${ecos.lombok.version}</version>
+                        </path>
                         <!-- For JPA static metamodel generation -->
                         <path>
                             <groupId>org.hibernate</groupId>
                             <artifactId>hibernate-jpamodelgen</artifactId>
                             <version>${hibernate.version}</version>
                         </path>
-
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
