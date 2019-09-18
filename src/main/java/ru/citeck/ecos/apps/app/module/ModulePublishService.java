@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 import ru.citeck.ecos.apps.queue.ModulePublishMsg;
@@ -13,11 +14,15 @@ public class ModulePublishService {
 
     private AmqpTemplate amqpTemplate;
 
-    public ModulePublishService(AmqpTemplate amqpTemplate) {
+    public ModulePublishService(@Autowired(required = false) AmqpTemplate amqpTemplate) {
         this.amqpTemplate = amqpTemplate;
     }
 
     public void publish(EcosModuleRev module) {
+
+        if (amqpTemplate == null) {
+            throw new IllegalStateException("AmqpTemplate is not initialized!");
+        }
 
         ModulePublishMsg msg = new ModulePublishMsg();
 
