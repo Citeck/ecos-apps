@@ -135,7 +135,9 @@ public class EcosAppParser {
             this.modules = modules;
             this.rootDir = rootDir;
             this.dto = dto;
-            dto.getDependencies().forEach((d, v) -> dependencies.add(new DependencyImpl(d, v)));
+            if (dto.getDependencies() != null) {
+                dto.getDependencies().forEach((d, v) -> dependencies.add(new DependencyImpl(d, v)));
+            }
         }
 
         @Override
