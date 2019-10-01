@@ -144,16 +144,6 @@ jhipster:
 # application:
 
 ecosapps:
-    alfresco:
-        #ribbon:
-            #If this class doesn't specified, parameter listOfServers is ignored with eureka
-           # NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
-           # listOfServers: 127.0.0.1:58080
-        #custom properties
-        authentication:
-            username: admin
-            password: admin
-
     application:
         deployUrl:
             #todo: rename model to module
