@@ -100,6 +100,11 @@ public class EcosAppParser {
         }
 
         @Override
+        public ModuleFile getRelative(String path) {
+            return new ModuleFileImpl(this.path.getParent().resolve(path));
+        }
+
+        @Override
         public String getName() {
             return path.getFileName().toString();
         }

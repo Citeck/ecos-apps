@@ -46,7 +46,8 @@ public class EcosAppDao {
         EcosApp app = parser.parseData(content.getData());
 
         if (app.getModules().isEmpty()) {
-            throw new ApplicationWithoutModules(app.getId(), app.getName());
+            log.warn("Application is empty. Skip it. Name: " + app.getId() + " " + app.getName());
+            return null;
         }
 
         EcosAppEntity appEntity = appRepo.getByExtId(app.getId());
@@ -59,7 +60,7 @@ public class EcosAppDao {
 
         } else if (!app.getVersion().isAfterOrEqual(currentVersion)) {
 
-            throw new DowngrageIsNotSupported(currentVersion, app);
+            //throw new DowngrageIsNotSupported(currentVersion, app);
 
         } else if (Objects.equals(appEntity.getUploadContent(), content)) {
 
