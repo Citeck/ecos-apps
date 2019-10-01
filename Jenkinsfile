@@ -1,18 +1,17 @@
-pipeline {
-    agent any
-    stages {
-        stage('Build') {
-          steps {
-            sh "mvn clean package -DskipTests=true -Djib.docker.image.tag=develop jib:dockerBuild"
-          }
-        }
-        stage('Push docker images') {
-          steps {
-            withCredentials([usernamePassword(credentialsId: '3400f5ec-0ef3-4944-b59a-97e67680777a', passwordVariable: 'pass', usernameVariable: 'user')]) {
-              sh "docker login -u $user -p $pass nexus.citeck.ru"
-              sh "docker push nexus.citeck.ru/ecosapps:develop"
-            }
-          }
-        }
+timestamps {
+  node {
+    def project_version = readMavenPom().getVersion().toLowerCase()
+    stage('Build project artifacts') {
+      withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
+        sh "mvn clean package -DskipTests=true -Djib.docker.image.tag=${project_version} jib:dockerBuild"
+      }
     }
+    stage('Psuh docker image') {
+      docker.withRegistry('http://127.0.0.1:8082', '7d800357-2193-4474-b768-5c27b97a1030') {
+        def microserviceImage = "ecos-apps"+":"+"${project_version}"
+        def current_microserviceImage = docker.image("${microserviceImage}")
+        current_microserviceImage.push()
+      }
+    }
+  }
 }
