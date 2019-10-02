@@ -34,6 +34,11 @@ public class EcosModuleService {
 
         EcosModuleRevEntity entity = dao.getModuleRev(msg.getRevId());
 
+        if (entity == null) {
+            log.warn("Module revision doesn't exists. Msg: " + msg);
+            return;
+        }
+
         String publishMsg = msg.getMsg();
         if (StringUtils.isNotBlank(publishMsg)) {
             if (publishMsg.length() > PUBLISH_MSG_MAX) {
