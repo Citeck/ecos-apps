@@ -29,8 +29,7 @@ public class EcosAppsRabbitListener {
     @RabbitListener(queues = {EcosAppQueues.PUBLISH_RESULT_ID})
     void onPublishResultReceived(ModulePublishResultMsg msg) {
         log.info("Publish status: " + msg);
-        moduleService.updatePublishStatus(msg);
-        ecosAppService.updatePublishStatus(msg);
+        moduleService.updatePublishStatus(msg.getRevId(), msg.isSuccess(), msg.getMsg());
     }
 
     @RabbitListener(queues = {EcosAppQueues.ECOS_APPS_UPLOAD_ID})

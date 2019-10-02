@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import ru.citeck.ecos.apps.app.AppStatus;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -12,7 +11,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "ecos_app_rev")
-public class EcosAppRevEntity extends AbstractAuditingEntity {
+public class EcosAppRevEntity extends AbstractImmutableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_rev_id_gen")
@@ -24,9 +23,6 @@ public class EcosAppRevEntity extends AbstractAuditingEntity {
 
     @Getter @Setter private String version;
     @Getter @Setter private String name;
-
-    @Enumerated(EnumType.ORDINAL)
-    @Getter @Setter private AppStatus status = AppStatus.DRAFT;
 
     @ManyToOne
     @JoinColumn(name = "app_id")

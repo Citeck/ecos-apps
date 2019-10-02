@@ -1,10 +1,11 @@
 package ru.citeck.ecos.apps.app.application;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.AppStatus;
+import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.AppVersion;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
@@ -16,6 +17,7 @@ import ru.citeck.ecos.apps.repository.EcosAppRepo;
 import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -41,119 +43,118 @@ public class EcosAppDao {
         this.moduleDao = moduleDao;
     }
 
-    public EcosAppRevEntity uploadApp(EcosContentEntity content) {
+    public EcosAppRevEntity uploadApp(String source, byte[] data) {
 
-        EcosApp app = parser.parseData(content.getData());
+        EcosApp app = parser.parseData(data);
 
-        if (app.getModules().isEmpty()) {
-            log.warn("Application is empty. Skip it. Name: " + app.getId() + " " + app.getName());
-            return null;
-        }
+        log.info("Start application uploading: " + app.getName() + " (" + app.getId() + "). Source: " + source);
 
         EcosAppEntity appEntity = appRepo.getByExtId(app.getId());
-        AppVersion currentVersion = new AppVersion(appEntity != null ? appEntity.getVersion() : "0");
+        EcosAppRevEntity appLastRev = null;
 
         if (appEntity == null) {
 
             appEntity = new EcosAppEntity();
             appEntity.setExtId(app.getId());
 
-        } else if (!app.getVersion().isAfterOrEqual(currentVersion)) {
+        } else {
 
-            //throw new DowngrageIsNotSupported(currentVersion, app);
-
-        } else if (Objects.equals(appEntity.getUploadContent(), content)) {
-
-            log.info("Application " + app.getId() + " (" + app.getName() + ") doesn't changed");
-            return null;
+            appLastRev = getLastRevisionByAppId(appEntity.getId());
         }
 
-        appEntity.setVersion(app.getVersion().toString());
-        appEntity.setUploadContent(content);
-        appEntity = appRepo.save(appEntity);
+        Set<EcosModuleRevEntity> uploadedModules = app.getModules()
+            .stream()
+            .map(m -> moduleDao.uploadModule(source, m))
+            .collect(Collectors.toSet());
 
-        List<EcosModuleRevEntity> modulesUploadResult = uploadModules(content.getSource(), app.getModules());
+        if (appLastRev == null || !appLastRev.getModules().equals(uploadedModules)) {
 
-        EcosAppRevEntity appRev = new EcosAppRevEntity();
-        appRev.setApplication(appEntity);
-        appRev.setModules(new HashSet<>(modulesUploadResult));
-        appRev.setName(app.getName());
-        appRev.setExtId(UUID.randomUUID().toString());
-        appRev.setVersion(app.getVersion().toString());
+            String currVersionStr = appEntity.getVersion();
+            AppVersion currentVersion = new AppVersion(StringUtils.isNotBlank(currVersionStr) ? currVersionStr : "0");
 
-        appRev = appRevRepo.save(appRev);
+            appEntity.setVersion(app.getVersion().toString());
+            appRepo.save(appEntity);
 
-        return appRev;
+            appLastRev = new EcosAppRevEntity();
+            appLastRev.setApplication(appEntity);
+            appLastRev.setModules(new HashSet<>(uploadedModules));
+            appLastRev.setName(app.getName());
+            appLastRev.setExtId(UUID.randomUUID().toString());
+            appLastRev.setVersion(app.getVersion().toString());
+
+            appLastRev = appRevRepo.save(appLastRev);
+
+        } else {
+
+            log.info("Application doesn't changed: " + app.getName() + " (" + app.getId() + ")");
+        }
+
+        return appLastRev;
     }
 
-    public EcosAppRevEntity save(EcosAppRevEntity appRev) {
-        return appRevRepo.save(appRev);
+    public EcosAppEntity save(EcosAppEntity appEntity) {
+        return appRepo.save(appEntity);
     }
 
     public EcosAppRevEntity getRevByExtId(String extId) {
         return appRevRepo.getByExtId(extId);
     }
 
-    public EcosAppRevEntity getLastRevision(String appExtId) {
+    public EcosAppRevEntity getLastRevisionByExtId(String appExtId) {
         List<EcosAppRevEntity> revisions = appRevRepo.getAppRevisions(appExtId, PageRequest.of(0, 1));
         return revisions.stream().findFirst().orElse(null);
     }
 
-    public List<EcosAppRevEntity> getAppsRevByModuleRev(AppStatus status, String revId, Pageable page) {
+    public EcosAppRevEntity getLastRevisionByAppId(long appId) {
+        List<EcosAppRevEntity> revisions = appRevRepo.getAppRevisions(appId, PageRequest.of(0, 1));
+        return revisions.stream().findFirst().orElse(null);
+    }
+
+    public List<EcosAppRevEntity> getAppsRevByModuleRev(PublishStatus status, String revId, Pageable page) {
         return appRevRepo.getAppsByModuleRev(status, revId, page);
     }
 
-    private List<EcosModuleRevEntity> uploadModules(String source, List<EcosModule> modules) {
+    public void updatePublishStatus(EcosModuleEntity entity) {
 
-        List<EcosModuleRevEntity> resultModules = new ArrayList<>();
+        EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(entity.getType(), entity.getExtId());
 
-        modules.forEach(m -> {
+        lastModuleRev.getApplications()
+            .stream()
+            .map(EcosAppRevEntity::getApplication)
+            .forEach(this::updatePublishStatus);
+    }
 
-            EcosModuleEntity module = moduleDao.getModuleByExtId(m.getType(), m.getId());
-            EcosModuleRevEntity lastModuleRev = null;
+    public EcosAppEntity updatePublishStatus(EcosAppEntity entity) {
 
-            if (module == null) {
+        EcosAppRevEntity lastRevision = getLastRevisionByAppId(entity.getId());
 
-                module = new EcosModuleEntity();
-                module.setExtId(m.getId());
-                module.setType(m.getType());
-                module = moduleDao.save(module);
+        PublishStatus status = getAppStatus(
+            lastRevision.getModules()
+                .stream()
+                .map(me -> me.getModule().getPublishStatus())
+                .collect(Collectors.toList())
+        );
 
-            } else {
+        if (!status.equals(entity.getPublishStatus())) {
+            entity.setPublishStatus(status);
+            entity = appRepo.save(entity);
+        }
 
-                lastModuleRev = moduleDao.getLastModuleRev(m.getType(), m.getId());
-            }
+        return entity;
+    }
 
-            EcosContentEntity content = contentDao.upload(source, m.getData());
+    private PublishStatus getAppStatus(List<PublishStatus> statuses) {
 
-            if (lastModuleRev == null) {
+        PublishStatus status;
 
-                lastModuleRev = new EcosModuleRevEntity();
-                lastModuleRev.setDataType(m.getDataType());
-                lastModuleRev.setExtId(UUID.randomUUID().toString());
-                lastModuleRev.setModelVersion(m.getModelVersion());
-                lastModuleRev.setName(m.getName());
-                lastModuleRev.setContent(content);
-                lastModuleRev.setModule(module);
+        if (statuses.stream().anyMatch(PublishStatus.PUBLISHING::equals)) {
+            status = PublishStatus.PUBLISHING;
+        } else if (statuses.stream().anyMatch(PublishStatus.PUBLISH_FAILED::equals)) {
+            status = PublishStatus.PUBLISH_FAILED;
+        } else {
+            status = PublishStatus.PUBLISHED;
+        }
 
-                lastModuleRev = moduleDao.save(lastModuleRev);
-
-            } else if (!Objects.equals(lastModuleRev.getContent(), content)) {
-
-                lastModuleRev.setDataType(m.getDataType());
-                lastModuleRev.setModelVersion(m.getModelVersion());
-                lastModuleRev.setName(m.getName());
-                lastModuleRev.setContent(content);
-
-                lastModuleRev = moduleDao.save(lastModuleRev);
-
-            } else {
-                log.info("Module " + m.getId() + " (" + m.getName() + ") doesn't changed");
-            }
-
-            resultModules.add(lastModuleRev);
-        });
-
-        return resultModules;
+        return status;
     }
 }

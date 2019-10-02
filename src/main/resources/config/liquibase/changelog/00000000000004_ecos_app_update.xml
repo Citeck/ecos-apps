@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="00000000000004" author="citeck">
+
+        <dropColumn schemaName="public" tableName="ecos_content" columnName="source" />
+        <dropColumn schemaName="public" tableName="ecos_content" columnName="last_modified_date" />
+        <dropColumn schemaName="public" tableName="ecos_content" columnName="last_modified_by" />
+
+        <dropColumn schemaName="public" tableName="ecos_app_rev" columnName="last_modified_date" />
+        <dropColumn schemaName="public" tableName="ecos_app_rev" columnName="last_modified_by" />
+        <dropColumn schemaName="public" tableName="ecos_app_rev" columnName="status" />
+
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="last_modified_date" />
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="last_modified_by" />
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="publish_msg" />
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="status" />
+
+        <dropForeignKeyConstraint baseTableName="ecos_app" constraintName="fk_app_upload_content"/>
+        <dropColumn schemaName="public" tableName="ecos_app" columnName="upload_content_id" />
+
+        <addColumn schemaName="public" tableName="ecos_app">
+            <column name="publish_status" type="INT" />
+        </addColumn>
+
+        <addColumn schemaName="public" tableName="ecos_app_rev">
+            <column name="source" type="varchar(255)" />
+        </addColumn>
+
+        <addColumn schemaName="public" tableName="ecos_module">
+            <column name="publish_status" type="INT" />
+            <column name="publish_msg" type="VARCHAR" />
+        </addColumn>
+
+        <addColumn schemaName="public" tableName="ecos_module_rev">
+            <column name="source" type="varchar(255)" />
+        </addColumn>
+
+    </changeSet>
+
+</databaseChangeLog>
