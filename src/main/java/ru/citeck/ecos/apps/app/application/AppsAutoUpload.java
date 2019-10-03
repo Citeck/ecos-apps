@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
-import ru.citeck.ecos.apps.app.content.EcosContentDao;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -26,11 +25,9 @@ public class AppsAutoUpload {
     private String locations;
 
     private EcosAppService appService;
-    private EcosContentDao contentDao;
 
-    public AppsAutoUpload(EcosAppService appService, EcosContentDao contentDao) {
+    public AppsAutoUpload(EcosAppService appService) {
         this.appService = appService;
-        this.contentDao = contentDao;
     }
 
     @PostConstruct
@@ -75,7 +72,7 @@ public class AppsAutoUpload {
 
                 log.info("Upload app: " + appPath);
                 try {
-                    appService.uploadApp(contentDao.upload(appPath.toFile()), true);
+                    appService.uploadApp(appPath.toFile());
                 } catch (ApplicationWithoutModules | DowngrageIsNotSupported e) {
                     log.warn(String.format(SKIP_MSG, e.getMessage()));
                 }

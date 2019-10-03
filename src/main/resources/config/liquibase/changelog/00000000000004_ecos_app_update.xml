@@ -24,10 +24,11 @@
 
         <addColumn schemaName="public" tableName="ecos_app">
             <column name="publish_status" type="INT" />
+            <column name="is_system" type="BOOLEAN" />
         </addColumn>
 
         <addColumn schemaName="public" tableName="ecos_app_rev">
-            <column name="source" type="varchar(255)" />
+            <column name="source" type="VARCHAR(255)" />
         </addColumn>
 
         <addColumn schemaName="public" tableName="ecos_module">
@@ -36,7 +37,7 @@
         </addColumn>
 
         <addColumn schemaName="public" tableName="ecos_module_rev">
-            <column name="source" type="varchar(255)" />
+            <column name="source" type="VARCHAR(255)" />
         </addColumn>
 
     </changeSet>

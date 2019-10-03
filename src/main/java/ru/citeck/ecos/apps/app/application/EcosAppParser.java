@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.AppVersion;
-import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.module.EcosModuleTypesFactory;
 import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.module.type.ModuleFile;
@@ -65,10 +64,6 @@ public class EcosAppParser {
                     modules.addAll(reader.read(pattern, moduleFiles));
                 }
             }
-        }
-
-        if (modules.isEmpty()) {
-            throw new ApplicationWithoutModules(dto.getId(), dto.getName());
         }
 
         return new EcosAppImpl(rootDir, dto, modules);

@@ -1,29 +1,21 @@
 package ru.citeck.ecos.apps.web.rest;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.citeck.ecos.apps.app.application.AppsAutoUpload;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.apps.module.type.DataType;
-import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.module.type.EcosModuleRev;
-import ru.citeck.ecos.records2.utils.MandatoryParam;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-
-/**
- * Controller for EcosApplication
- */
-@Slf4j
+@Component
 @RestController
-@RequestMapping("/app")
+@RequestMapping("/aapi")
 public class EcosAppController {
 
     private EcosModuleService moduleService;
@@ -33,30 +25,10 @@ public class EcosAppController {
     public EcosAppController(EcosModuleService moduleService,
                              AppsAutoUpload appsAutoUpload,
                              EcosAppService appService) {
-        this.appService = appService;
         this.moduleService = moduleService;
         this.appsAutoUpload = appsAutoUpload;
+        this.appService = appService;
     }
-
-    @RequestMapping(method = RequestMethod.POST, value = "/module/upload")
-    public void acceptData(HttpServletRequest request) throws IOException {
-
-        String id = request.getParameter("id");
-        String type = request.getParameter("type");
-
-
-        MandatoryParam.check("id", id);
-        MandatoryParam.check("type", type);
-
-        byte[] data = IOUtils.toByteArray(request.getInputStream());
-
-        throw new UnsupportedOperationException();
-
-        //todo
-        //appService.upload(module);
-    }
-
-    //public void post
 
     @GetMapping("/module/rev/{moduleRevId}")
     public HttpEntity<byte[]> downloadModule(@PathVariable String moduleRevId) {
@@ -66,7 +38,23 @@ public class EcosAppController {
     @GetMapping("/module/type/{type}/{moduleId}")
     public HttpEntity<byte[]> downloadModule(@PathVariable String type,
                                              @PathVariable String moduleId) {
+
         return toDownloadHttpEntity(moduleService.getLastModuleRev(type, moduleId));
+    }
+
+    @GetMapping("/module/type/{type}/{moduleId}/publish")
+    public String publishModule(@PathVariable String type,
+                                @PathVariable String moduleId) {
+
+        moduleService.publishModule(type, moduleId);
+        return "OK";
+    }
+
+    @GetMapping("/app/{appId}/publish")
+    public String publishApp(@PathVariable String appId) {
+
+        appService.publishApp(appId);
+        return "OK";
     }
 
     @GetMapping("/autoupload/update")
@@ -87,14 +75,5 @@ public class EcosAppController {
 
         return new HttpEntity<>(rev.getData(), headers);
     }
-
-    @Data
-    private static class UploadModule implements EcosModule {
-        private String id;
-        private String type;
-        private String name;
-        private int modelVersion;
-        private DataType dataType;
-        private byte[] data;
-    }
 }
+

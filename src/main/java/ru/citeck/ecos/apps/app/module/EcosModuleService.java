@@ -63,7 +63,7 @@ public class EcosModuleService {
         EcosModuleEntity module = entity.getModule();
         EcosModuleRevEntity lastRev = dao.getLastModuleRev(module.getType(), module.getExtId());
 
-        if (Objects.equals(entity.getId(), lastRev.getId())) {
+        if (!Objects.equals(entity.getId(), lastRev.getId())) {
             log.info("Module revision is out of date. Current: "
                 + lastRev.getId()
                 + " Received: " + entity.getId()

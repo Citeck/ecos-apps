@@ -15,9 +15,13 @@ public class EcosAppEntity extends AbstractAuditingEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_id_gen")
     @SequenceGenerator(name = "ecos_app_id_gen")
     @Getter @Setter private Long id;
-    @Column(name="ext_id")
+
+    @Column(name = "ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String version;
+
+    @Column(name = "is_system")
+    @Getter @Setter private Boolean isSystem;
 
     @OneToMany(mappedBy = "application", fetch = FetchType.LAZY)
     @Getter @Setter private Set<EcosAppRevEntity> revisions;

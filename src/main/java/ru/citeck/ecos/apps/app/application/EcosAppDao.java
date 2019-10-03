@@ -7,12 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.AppVersion;
-import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
-import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
-import ru.citeck.ecos.apps.app.content.EcosContentDao;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.domain.*;
-import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.repository.EcosAppRepo;
 import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
 
@@ -27,19 +23,16 @@ public class EcosAppDao {
 
     private EcosAppRepo appRepo;
     private EcosAppRevRepo appRevRepo;
-    private EcosContentDao contentDao;
     private EcosModuleDao moduleDao;
 
     public EcosAppDao(EcosAppParser parser,
                       EcosAppRepo appRepo,
                       EcosAppRevRepo appRevRepo,
-                      EcosContentDao contentDao,
                       EcosModuleDao moduleDao) {
 
         this.parser = parser;
         this.appRepo = appRepo;
         this.appRevRepo = appRevRepo;
-        this.contentDao = contentDao;
         this.moduleDao = moduleDao;
     }
 
@@ -62,18 +55,19 @@ public class EcosAppDao {
             appLastRev = getLastRevisionByAppId(appEntity.getId());
         }
 
+        String currVersionStr = appEntity.getVersion();
+        AppVersion currentVersion = new AppVersion(StringUtils.isNotBlank(currVersionStr) ? currVersionStr : "0");
+        if (appEntity.getId() == null || !currentVersion.equals(app.getVersion())) {
+            appEntity.setVersion(app.getVersion().toString());
+            appEntity = appRepo.save(appEntity);
+        }
+
         Set<EcosModuleRevEntity> uploadedModules = app.getModules()
             .stream()
             .map(m -> moduleDao.uploadModule(source, m))
             .collect(Collectors.toSet());
 
         if (appLastRev == null || !appLastRev.getModules().equals(uploadedModules)) {
-
-            String currVersionStr = appEntity.getVersion();
-            AppVersion currentVersion = new AppVersion(StringUtils.isNotBlank(currVersionStr) ? currVersionStr : "0");
-
-            appEntity.setVersion(app.getVersion().toString());
-            appRepo.save(appEntity);
 
             appLastRev = new EcosAppRevEntity();
             appLastRev.setApplication(appEntity);
@@ -84,10 +78,14 @@ public class EcosAppDao {
 
             appLastRev = appRevRepo.save(appLastRev);
 
+            log.info("Create new application revision: " + app.getName() + " (" + app.getId() + ")");
+
         } else {
 
             log.info("Application doesn't changed: " + app.getName() + " (" + app.getId() + ")");
         }
+
+        log.info("Application uploading finished: " + app.getName() + " (" + app.getId() + ")");
 
         return appLastRev;
     }
