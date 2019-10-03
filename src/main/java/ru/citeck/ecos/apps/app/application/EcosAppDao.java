@@ -62,12 +62,17 @@ public class EcosAppDao {
             appEntity = appRepo.save(appEntity);
         }
 
+        Set<EcosModuleRevEntity> currentModules = Collections.emptySet();
+        if (appLastRev != null) {
+            currentModules = new HashSet<>(appLastRev.getModules());
+        }
+
         Set<EcosModuleRevEntity> uploadedModules = app.getModules()
             .stream()
             .map(m -> moduleDao.uploadModule(source, m))
             .collect(Collectors.toSet());
 
-        if (appLastRev == null || !appLastRev.getModules().equals(uploadedModules)) {
+        if (!currentModules.equals(uploadedModules)) {
 
             appLastRev = new EcosAppRevEntity();
             appLastRev.setApplication(appEntity);

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import ru.citeck.ecos.apps.app.AppUtils;
 import ru.citeck.ecos.apps.app.AppVersion;
-import ru.citeck.ecos.apps.app.module.EcosModuleTypesFactory;
+import ru.citeck.ecos.apps.app.module.EcosAppsFactoryConfig;
 import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.module.type.ModuleFile;
 import ru.citeck.ecos.apps.module.type.ModuleReader;
@@ -29,8 +29,8 @@ public class EcosAppParser {
     private ObjectMapper mapper = new ObjectMapper();
     private List<ModuleReader> moduleReaders;
 
-    public EcosAppParser(EcosModuleTypesFactory typesFactory) {
-        this.moduleReaders = typesFactory.getModuleReaders();
+    public EcosAppParser(EcosAppsFactoryConfig factory) {
+        this.moduleReaders = factory.getModuleReaders();
     }
 
     public EcosApp parseData(byte[] data) {
