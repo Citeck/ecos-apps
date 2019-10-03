@@ -52,7 +52,7 @@ public class RabbitMqConfiguration {
 
     @Bean
     public DirectExchange moduleTypePublishExchange() {
-        return new DirectExchange(EcosAppQueues.EXCHANGE_ID);
+        return new DirectExchange(EcosAppQueues.MODULES_EXCHANGE_ID);
     }
 
     @Bean

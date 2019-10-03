@@ -18,18 +18,6 @@ public class EcosContentDao {
     public EcosContentDao(EcosContentRepo repo) {
         this.repo = repo;
     }
-/*
-    public EcosContentEntity upload(long id, byte[] data) {
-
-        Digest digest = AppUtils.getDigest(data);
-
-        EcosContentEntity content = repo.getOne(id);
-        content.setSize(digest.getSize());
-        content.setHash(digest.getHash());
-        content.setData(data);
-
-        return repo.save(content);
-    }*/
 
     public EcosContentEntity upload(Path path) {
         return upload(path.toFile());
@@ -37,13 +25,13 @@ public class EcosContentDao {
 
     public EcosContentEntity upload(File file) {
         try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-            return upload(file.toURI().toString(), IOUtils.toByteArray(in));
+            return upload(IOUtils.toByteArray(in));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public EcosContentEntity upload(String source, byte[] data) {
+    public EcosContentEntity upload(byte[] data) {
 
         Digest digest = AppUtils.getDigest(data);
 
@@ -51,7 +39,6 @@ public class EcosContentDao {
 
         if (content == null) {
             content = new EcosContentEntity();
-            content.setSource(source);
             content.setData(data);
             content.setHash(digest.getHash());
             content.setSize(digest.getSize());

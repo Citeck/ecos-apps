@@ -1,20 +1,16 @@
 package ru.citeck.ecos.apps.app.application;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
+import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.AppStatus;
-import ru.citeck.ecos.apps.app.module.EcosModuleDao;
-import ru.citeck.ecos.apps.app.module.ModulePublishService;
+import ru.citeck.ecos.apps.app.module.EcosModuleService;
 import ru.citeck.ecos.apps.domain.EcosAppRevEntity;
-import ru.citeck.ecos.apps.domain.EcosContentEntity;
-import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
-import ru.citeck.ecos.apps.module.type.EcosModuleRev;
-import ru.citeck.ecos.apps.queue.ModulePublishResultMsg;
+import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 @Slf4j
 @Service
@@ -22,124 +18,43 @@ import java.util.stream.Collectors;
 public class EcosAppService {
 
     private EcosAppDao appDao;
-    private EcosModuleDao moduleDao;
-    private ModulePublishService publishService;
+    private EcosModuleService moduleService;
 
-    public EcosAppService(EcosAppDao appDao,
-                          EcosModuleDao moduleDao,
-                          ModulePublishService publishService) {
-
+    public EcosAppService(EcosAppDao appDao, EcosModuleService moduleService) {
         this.appDao = appDao;
-        this.moduleDao = moduleDao;
-        this.publishService = publishService;
+        this.moduleService = moduleService;
     }
 
-    private void publish(EcosAppRev appRev) {
+    public void publishApp(String appId) {
 
-        EcosAppRevEntity appEntity = appDao.getRevByExtId(appRev.getRevId());
-
-        AppStatus status = appEntity.getStatus();
-        if (!status.isPublishAllowed()) {
-            log.warn("Publish is not allowed for status: " + status);
-            return;
-        }
-
-        List<AppStatus> statuses = appRev.getModules()
-            .stream()
-            .map(this::publish)
-            .collect(Collectors.toList());
-
-        appEntity.setStatus(getAppStatus(statuses));
-        appDao.save(appEntity);
+        EcosAppRevEntity revision = appDao.getLastRevisionByExtId(appId);
+        revision.getModules().forEach(m -> {
+            EcosModuleEntity module = m.getModule();
+            moduleService.publishModule(module.getType(), module.getExtId());
+        });
     }
 
-    private AppStatus publish(EcosModuleRev module) {
-
-        EcosModuleRevEntity entity = moduleDao.getModuleRev(module.getRevId());
-
-        if (!entity.getStatus().isPublishAllowed()) {
-            log.warn("Publish is not allowed for status: " + entity.getStatus());
-            return entity.getStatus();
-        }
-
-        entity.setStatus(AppStatus.PUBLISHING);
-        moduleDao.save(entity);
-        publishService.publish(module);
-
-        return entity.getStatus();
+    public EcosAppRev uploadApp(String source, byte[] data) {
+        return new EcosAppDb(appDao.uploadApp(source, data));
     }
 
-    //todo
-    /*public EcosModuleRev upload(EcosModule module) {
-
-        EcosModuleRevEntity entity = moduleDao.uploadModule(module);
-        List<EcosAppEntity> apps = appRepo.getAppsByModuleId(module.getType(), module.getId());
-
-        for (EcosAppEntity app : apps) {
-        }
-
-        new EcosModuleDb(moduleDao.uploadModule(module));
-    }*/
-
-    public EcosAppRev uploadApp(EcosContentEntity content, boolean publish) {
-
-        EcosAppRevEntity entity = appDao.uploadApp(content);
-
-        EcosAppRev rev = null;
-        if (entity != null && publish) {
-            rev = new EcosAppDb(entity);
-            publish(rev);
-        }
-
-        return rev;
+    public EcosAppRev uploadApp(File file) {
+        return uploadApp(null, file);
     }
 
-    private EcosAppRevEntity updateStatus(EcosAppRevEntity entity) {
+    public EcosAppRev uploadApp(String source, File file) {
 
-        AppStatus status = getAppStatus(
-            entity.getModules()
-                  .stream()
-                  .map(EcosModuleRevEntity::getStatus)
-                  .collect(Collectors.toList())
-        );
-
-        if (!status.equals(entity.getStatus())) {
-            entity.setStatus(status);
-            entity = appDao.save(entity);
+        if (source == null) {
+            source = file.getPath();
         }
 
-        return entity;
-    }
-
-    private AppStatus getAppStatus(List<AppStatus> statuses) {
-
-        AppStatus status;
-
-        if (statuses.stream().anyMatch(AppStatus.PUBLISHING::equals)) {
-            status = AppStatus.PUBLISHING;
-        } else if (statuses.stream().anyMatch(AppStatus.PUBLISH_FAILED::equals)) {
-            status = AppStatus.PUBLISH_FAILED;
-        } else {
-            status = AppStatus.PUBLISHED;
+        byte[] data;
+        try (FileInputStream in = new FileInputStream(file)) {
+            data = IOUtils.toByteArray(in);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
-        return status;
-    }
-
-    public void updatePublishStatus(ModulePublishResultMsg msg) {
-
-        PageRequest page = PageRequest.of(0, 1000);
-
-        List<EcosAppRevEntity> entities = appDao.getAppsRevByModuleRev(AppStatus.PUBLISHING, msg.getRevId(), page);
-
-        for (EcosAppRevEntity entity : entities) {
-
-            if (!msg.isSuccess()) {
-                entity.setStatus(AppStatus.PUBLISH_FAILED);
-                appDao.save(entity);
-            } else {
-                updateStatus(entity);
-            }
-        }
+        return uploadApp(source, data);
     }
 }
