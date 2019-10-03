@@ -15,7 +15,7 @@ import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 @Component
 @RestController
-@RequestMapping("/aapi")
+@RequestMapping("/api")
 public class EcosAppController {
 
     private EcosModuleService moduleService;
