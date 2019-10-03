@@ -38,6 +38,6 @@ public class ModulePublishService {
         msg.setData(module.getData());
 
         log.debug("Convert and send module: " + msg);
-        amqpTemplate.convertAndSend(EcosAppQueues.EXCHANGE_ID, module.getType(), msg);
+        amqpTemplate.convertAndSend(EcosAppQueues.MODULES_EXCHANGE_ID, module.getType(), msg);
     }
 }
