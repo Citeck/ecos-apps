@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.citeck.ecos.apps.app.application.AppsAutoUpload;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
+import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 @Component
 @RestController

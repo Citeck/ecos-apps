@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
+import ru.citeck.ecos.apps.utils.EappFileUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -64,7 +65,7 @@ public class AppsAutoUpload {
                 continue;
             }
 
-            List<Path> applications = FileUtils.findFiles(locationFile, APPS_PATTERN);
+            List<Path> applications = EappFileUtils.findFiles(locationFile.toPath(), APPS_PATTERN);
 
             log.info("Found " + applications.size() + " applications");
 

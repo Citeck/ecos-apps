@@ -32,7 +32,7 @@ public class RabbitMqConfiguration {
     public List<EcosAppQueue> ecosAppsQueues(ModuleTypesRegistry registry) {
         return registry.getAll()
             .stream()
-            .map(t -> EcosAppQueues.getQueueForType(t.getId()))
+            .map(t -> EcosAppQueues.getQueueForType(t.getTypeId()))
             .collect(Collectors.toList());
     }
 

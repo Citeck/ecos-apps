@@ -5,7 +5,6 @@ import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.module.type.DataType;
-import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 public class EcosModuleDb implements EcosModuleRev {
 

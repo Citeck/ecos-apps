@@ -5,8 +5,10 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.apps.app.EcosApp;
+import ru.citeck.ecos.apps.app.EcosAppVersion;
 import ru.citeck.ecos.apps.app.PublishStatus;
-import ru.citeck.ecos.apps.app.AppVersion;
+import ru.citeck.ecos.apps.app.io.EcosAppIO;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.domain.*;
 import ru.citeck.ecos.apps.repository.EcosAppRepo;
@@ -19,18 +21,18 @@ import java.util.stream.Collectors;
 @Component
 public class EcosAppDao {
 
-    private EcosAppParser parser;
+    private EcosAppIO ecosAppIO;
 
     private EcosAppRepo appRepo;
     private EcosAppRevRepo appRevRepo;
     private EcosModuleDao moduleDao;
 
-    public EcosAppDao(EcosAppParser parser,
+    public EcosAppDao(EcosAppIO ecosAppIO,
                       EcosAppRepo appRepo,
                       EcosAppRevRepo appRevRepo,
                       EcosModuleDao moduleDao) {
 
-        this.parser = parser;
+        this.ecosAppIO = ecosAppIO;
         this.appRepo = appRepo;
         this.appRevRepo = appRevRepo;
         this.moduleDao = moduleDao;
@@ -38,7 +40,7 @@ public class EcosAppDao {
 
     public EcosAppRevEntity uploadApp(String source, byte[] data) {
 
-        EcosApp app = parser.parseData(data);
+        EcosApp app = ecosAppIO.read(data);
 
         log.info("Start application uploading: " + app.getName() + " (" + app.getId() + "). Source: " + source);
 
@@ -56,7 +58,9 @@ public class EcosAppDao {
         }
 
         String currVersionStr = appEntity.getVersion();
-        AppVersion currentVersion = new AppVersion(StringUtils.isNotBlank(currVersionStr) ? currVersionStr : "0");
+        String currentVersionStr = StringUtils.isNotBlank(currVersionStr) ? currVersionStr : "0";
+        EcosAppVersion currentVersion = new EcosAppVersion(currentVersionStr);
+
         if (appEntity.getId() == null || !currentVersion.equals(app.getVersion())) {
             appEntity.setVersion(app.getVersion().toString());
             appEntity = appRepo.save(appEntity);
