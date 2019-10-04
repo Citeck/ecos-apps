@@ -9,7 +9,6 @@ import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.event.ModuleStatusChanged;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
-import ru.citeck.ecos.apps.module.type.EcosModuleRev;
 
 import java.util.Objects;
 
