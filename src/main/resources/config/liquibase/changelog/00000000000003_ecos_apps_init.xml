@@ -6,166 +6,142 @@
 
     <changeSet id="00000000000003" author="citeck">
 
-        <!-- Application table -->
+        <createTable tableName="ecos_content">
 
-        <createTable tableName="ecos_application">
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
-            <column name="key" type="VARCHAR(255)">
+
+            <column name="source" type="VARCHAR(255)" />
+            <column name="data" type="BYTEA" />
+            <column name="hash" type="VARCHAR(64)">
                 <constraints nullable="false" />
             </column>
-            <column name="name" type="VARCHAR(255)">
+            <column name="size" type="BIGINT">
                 <constraints nullable="false" />
             </column>
-            <column name="version" type="BIGINT">
-                <constraints nullable="false" />
-            </column>
-            <column name="deployed" type="BOOLEAN" />
+
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
             <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
         </createTable>
 
-        <addDefaultValue columnDataType="INTEGER"
-                         columnName="version"
-                         defaultValueNumeric="0"
-                         tableName="ecos_application" />
+        <!-- Applications -->
 
-        <createIndex indexName="idx_application_key"
-                     tableName="ecos_application">
-            <column name="key" type="VARCHAR(255)" />
-        </createIndex>
+        <createTable tableName="ecos_app">
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="ext_id" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="upload_content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_app_upload_content" references="ecos_content(id)"/>
+            </column>
 
-        <createIndex indexName="idx_application_key_version"
-                     tableName="ecos_application">
-            <column name="key" type="VARCHAR(255)" />
-            <column name="version" type="BIGINT" />
-        </createIndex>
+            <column name="version" type="VARCHAR(64)">
+                <constraints nullable="false" />
+            </column>
 
-        <createIndex indexName="idx_application_name"
-                     tableName="ecos_application">
-            <column name="name" type="VARCHAR(255)" />
-        </createIndex>
-
-        <createIndex indexName="idx_application_created_date"
-                     tableName="ecos_application">
             <column name="created_date" type="TIMESTAMP" />
-        </createIndex>
-
-        <createIndex indexName="idx_application_last_modified_date"
-                     tableName="ecos_application">
-            <column name="last_modified_date" type="TIMESTAMP" />
-        </createIndex>
-
-        <createIndex indexName="idx_application_created_by"
-                     tableName="ecos_application">
             <column name="created_by" type="VARCHAR(50)" />
-        </createIndex>
-
-        <createIndex indexName="idx_application_last_modified_by"
-                     tableName="ecos_application">
+            <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
-        </createIndex>
+        </createTable>
 
-        <addUniqueConstraint tableName="ecos_application" columnNames="key,version" />
+        <createTable tableName="ecos_app_rev">
 
-        <!-- Model data table -->
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="ext_id" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="app_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_ver_app" references="ecos_app(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(256)">
+                <constraints nullable="false" />
+            </column>
 
-        <createTable tableName="ecos_app_module">
+            <column name="version" type="VARCHAR(64)">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="status" type="INT" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+        </createTable>
+
+        <!-- Modules -->
+
+        <createTable tableName="ecos_module">
+
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
             </column>
             <column name="type" type="VARCHAR(100)">
                 <constraints nullable="false" />
             </column>
-            <column name="key" type="VARCHAR(255)">
-                <constraints nullable="false" />
+            <column name="ext_id" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" />
             </column>
-            <column name="version" type="BIGINT">
-                <constraints nullable="false" />
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false" />
-            </column>
-            <column name="mimetype" type="VARCHAR(100)" />
-            <column name="data" type="BLOB" />
+
             <column name="created_date" type="TIMESTAMP" />
             <column name="created_by" type="VARCHAR(50)" />
             <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
         </createTable>
 
-        <addDefaultValue columnDataType="INTEGER"
-                         columnName="version"
-                         defaultValueNumeric="0"
-                         tableName="ecos_app_module" />
+        <addUniqueConstraint tableName="ecos_module" columnNames="type,ext_id" />
 
-        <createIndex indexName="idx_module_type_key"
-                     tableName="ecos_app_module">
-            <column name="type" type="VARCHAR(100)" />
-            <column name="key" type="VARCHAR(255)" />
-        </createIndex>
+        <createTable tableName="ecos_module_rev">
 
-        <createIndex indexName="idx_module_type_key_version"
-                     tableName="ecos_app_module">
-            <column name="type" type="VARCHAR(100)" />
-            <column name="key" type="VARCHAR(255)" />
-            <column name="version" type="BIGINT" />
-        </createIndex>
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="ext_id" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="module_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_module_ver_module" references="ecos_module(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(256)">
+                <constraints nullable="false" />
+            </column>
+            <column name="status" type="INT" />
 
-        <createIndex indexName="idx_module_name"
-                     tableName="ecos_app_module">
-            <column name="name" type="VARCHAR(255)" />
-        </createIndex>
+            <column name="model_version" type="INT"/>
+            <column name="data_type" type="INT" />
 
-        <createIndex indexName="idx_module_created_date"
-                     tableName="ecos_app_module">
+            <column name="content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_module_content" references="ecos_content(id)"/>
+            </column>
+
+            <column name="publish_msg" type="VARCHAR" />
+
             <column name="created_date" type="TIMESTAMP" />
-        </createIndex>
-
-        <createIndex indexName="idx_module_last_modified_date"
-                     tableName="ecos_app_module">
-            <column name="last_modified_date" type="TIMESTAMP" />
-        </createIndex>
-
-        <createIndex indexName="idx_module_created_by"
-                     tableName="ecos_app_module">
             <column name="created_by" type="VARCHAR(50)" />
-        </createIndex>
-
-        <createIndex indexName="idx_module_last_modified_by"
-                     tableName="ecos_app_module">
+            <column name="last_modified_date" type="TIMESTAMP" />
             <column name="last_modified_by" type="VARCHAR(50)" />
-        </createIndex>
-
-        <addUniqueConstraint tableName="ecos_app_module" columnNames="type,key,version" />
+        </createTable>
 
         <!-- Application modules -->
 
-        <createTable tableName="ecos_application_modules">
-            <column name="app_id" type="BIGINT">
-                <constraints nullable="false" />
+        <createTable tableName="ecos_app_modules">
+            <column name="app_rev_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_modules_app_ver" references="ecos_app_rev(id)" />
             </column>
-            <column name="module_id" type="BIGINT">
-                <constraints nullable="false" />
+            <column name="module_rev_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_modules_module_ver" references="ecos_module_rev(id)" />
             </column>
         </createTable>
 
-        <addUniqueConstraint tableName="ecos_application_modules" columnNames="app_id,module_id" />
-
-        <addForeignKeyConstraint baseColumnNames="app_id"
-                                 baseTableName="ecos_application_modules"
-                                 constraintName="fk_application_modules_app_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="ecos_application" />
-
-        <addForeignKeyConstraint baseColumnNames="module_id"
-                                 baseTableName="ecos_application_modules"
-                                 constraintName="fk_application_modules_module_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="ecos_app_module" />
+        <addUniqueConstraint tableName="ecos_app_modules" columnNames="app_rev_id,module_rev_id" />
 
     </changeSet>
 

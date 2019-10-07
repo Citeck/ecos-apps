@@ -4,7 +4,7 @@
 
     <groupId>ru.citeck.ecos.apps</groupId>
     <artifactId>ecos-apps</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.2.0</version>
     <packaging>war</packaging>
     <name>EcosApps</name>
 
@@ -98,6 +98,8 @@
         <sonar.sources>${project.basedir}/src/main/</sonar.sources>
         <sonar.junit.reportsPath>${project.testresult.directory}</sonar.junit.reportsPath>
         <sonar.tests>${project.basedir}/src/test/</sonar.tests>
+
+        <ecos.lombok.version>1.18.10</ecos.lombok.version>
 
         <!-- jhipster-needle-maven-property -->
     </properties>
@@ -356,7 +358,25 @@
         <dependency>
             <groupId>ru.citeck.ecos.community</groupId>
             <artifactId>ecos-records</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
+            <version>1.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ru.citeck.ecos.community</groupId>
+            <artifactId>ecos-apps-lib</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${ecos.lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.amqp</groupId>
+            <artifactId>spring-rabbit</artifactId>
         </dependency>
 
     </dependencies>
@@ -374,13 +394,17 @@
                             <artifactId>mapstruct-processor</artifactId>
                             <version>${mapstruct.version}</version>
                         </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${ecos.lombok.version}</version>
+                        </path>
                         <!-- For JPA static metamodel generation -->
                         <path>
                             <groupId>org.hibernate</groupId>
                             <artifactId>hibernate-jpamodelgen</artifactId>
                             <version>${hibernate.version}</version>
                         </path>
-
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
@@ -536,9 +560,9 @@
                         <changeLogFile>${project.basedir}/src/main/resources/config/liquibase/master.xml</changeLogFile>
                         <diffChangeLogFile>${project.basedir}/src/main/resources/config/liquibase/changelog/${maven.build.timestamp}_changelog.xml</diffChangeLogFile>
                         <driver>org.h2.Driver</driver>
-                        <url>jdbc:h2:file:${project.build.directory}/h2db/db/ecosapps</url>
+                        <url>jdbc:h2:file:${project.build.directory}/h2db/db/eapps</url>
                         <defaultSchemaName></defaultSchemaName>
-                        <username>ecosapps</username>
+                        <username>eapps</username>
                         <password></password>
                         <referenceUrl>hibernate:spring:ru.citeck.ecos.apps.domain?dialect=org.hibernate.dialect.H2Dialect&amp;hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
                         <verbose>true</verbose>
@@ -755,15 +779,6 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-undertow</artifactId>
                 </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-devtools</artifactId>
-                    <optional>true</optional>
-                </dependency>
-                <dependency>
-                    <groupId>com.h2database</groupId>
-                    <artifactId>h2</artifactId>
-                </dependency>
             </dependencies>
             <build>
                 <plugins>
@@ -849,11 +864,6 @@
                 <dependency>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-undertow</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-devtools</artifactId>
-                    <optional>true</optional>
                 </dependency>
             </dependencies>
             <build>

@@ -44,29 +44,22 @@ spring:
             indent-output: true
     datasource:
         type: com.zaxxer.hikari.HikariDataSource
-        url: jdbc:h2:file:./target/h2db/db/ecosapps;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE
-        username: ecosapps
+        url: jdbc:postgresql://localhost:5437/eapps
+        username: eapps
         password:
         hikari:
             poolName: Hikari
             auto-commit: false
-    h2:
-        console:
-            enabled: false
     jpa:
-        database-platform: io.github.jhipster.domain.util.FixedH2Dialect
-        database: H2
+        database-platform: io.github.jhipster.domain.util.FixedPostgreSQL82Dialect
+        database: POSTGRESQL
         show-sql: true
         properties:
             hibernate.id.new_generator_mappings: true
             hibernate.connection.provider_disables_autocommit: true
-            hibernate.cache.use_second_level_cache: true
+            hibernate.cache.use_second_level_cache: false
             hibernate.cache.use_query_cache: false
             hibernate.generate_statistics: true
-            hibernate.cache.region.factory_class: com.hazelcast.hibernate.HazelcastCacheRegionFactory
-            hibernate.cache.hazelcast.instance_name: ecosapps
-            hibernate.cache.use_minimal_puts: true
-            hibernate.cache.hazelcast.use_lite_member: true
     liquibase:
         contexts: dev
     mail:
@@ -126,7 +119,7 @@ jhipster:
                 token-validity-in-seconds: 86400
                 token-validity-in-seconds-for-remember-me: 2592000
     mail: # specific JHipster mail property, for standard properties see MailProperties
-        from: ecosapps@localhost
+        from: eapps@localhost
         base-url: http://127.0.0.1:8089
     metrics:
         logs: # Reports metrics in the logs
@@ -151,17 +144,10 @@ jhipster:
 # application:
 
 ecosapps:
-    alfresco:
-        #ribbon:
-            #If this class doesn't specified, parameter listOfServers is ignored with eureka
-           # NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
-           # listOfServers: 127.0.0.1:58080
-        #custom properties
-        authentication:
-            username: admin
-            password: admin
-
     application:
         deployUrl:
             #todo: rename model to module
             bpm_process: http://localhost:8080/alfresco/service/citeck/ecos/bpm/process/model/deploy
+
+spring.rabbitmq:
+    host: localhost

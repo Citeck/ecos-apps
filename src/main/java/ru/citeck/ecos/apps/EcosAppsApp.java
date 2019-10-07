@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @SpringBootApplication
-@EnableConfigurationProperties({LiquibaseProperties.class, ApplicationProperties.class})
+@EnableConfigurationProperties({
+    LiquibaseProperties.class,
+    ApplicationProperties.class
+})
 @EnableDiscoveryClient
 public class EcosAppsApp {
 
