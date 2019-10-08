@@ -100,7 +100,7 @@
         <sonar.tests>${project.basedir}/src/test/</sonar.tests>
 
         <ecos.lombok.version>1.18.10</ecos.lombok.version>
-
+        <ecos.apps-lib.version>1.1.0-SNAPSHOT</ecos.apps-lib.version>
         <!-- jhipster-needle-maven-property -->
     </properties>
 
@@ -360,11 +360,17 @@
             <artifactId>ecos-records</artifactId>
             <version>1.6.0-SNAPSHOT</version>
         </dependency>
-
+<!--
         <dependency>
             <groupId>ru.citeck.ecos.community</groupId>
             <artifactId>ecos-apps-lib</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${ecos.apps-lib.version}</version>
+        </dependency>-->
+
+        <dependency>
+            <groupId>ru.citeck.ecos.community</groupId>
+            <artifactId>ecos-apps-lib-spring</artifactId>
+            <version>${ecos.apps-lib.version}</version>
         </dependency>
 
         <dependency>

@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.app.module;
 
-import ru.citeck.ecos.apps.module.type.EcosModule;
+import ru.citeck.ecos.apps.app.module.type.EcosModule;
 
 public interface EcosModuleRev extends EcosModule {
 

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import ru.citeck.ecos.apps.module.type.DataType;
+import ru.citeck.ecos.apps.app.module.type.DataType;
 
 import javax.persistence.*;
 import java.util.HashSet;

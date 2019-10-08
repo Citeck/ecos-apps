@@ -7,10 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
 import ru.citeck.ecos.apps.app.module.event.ModuleRevisionCreated;
+import ru.citeck.ecos.apps.app.module.type.EcosModule;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
-import ru.citeck.ecos.apps.module.type.EcosModule;
 import ru.citeck.ecos.apps.repository.EcosModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRepo;
 

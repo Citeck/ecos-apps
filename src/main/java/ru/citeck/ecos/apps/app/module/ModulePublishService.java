@@ -1,27 +1,21 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.citeck.ecos.apps.queue.ModulePublishMsg;
-import ru.citeck.ecos.apps.queue.EcosAppQueues;
+import ru.citeck.ecos.apps.EcosAppsApiFactory;
+import ru.citeck.ecos.apps.app.module.api.ModulePublishMsg;
 
 @Slf4j
 @Service
 public class ModulePublishService {
 
-    private AmqpTemplate amqpTemplate;
+    private EcosAppsApiFactory appsApi;
 
-    public ModulePublishService(@Autowired(required = false) AmqpTemplate amqpTemplate) {
-        this.amqpTemplate = amqpTemplate;
+    public ModulePublishService(EcosAppsApiFactory appsApi) {
+        this.appsApi = appsApi;
     }
 
     public void publish(EcosModuleRev module) {
-
-        if (amqpTemplate == null) {
-            throw new IllegalStateException("AmqpTemplate is not initialized!");
-        }
 
         ModulePublishMsg msg = new ModulePublishMsg();
 
@@ -37,6 +31,6 @@ public class ModulePublishService {
         msg.setData(module.getData());
 
         log.debug("Convert and send module: " + msg);
-        amqpTemplate.convertAndSend(EcosAppQueues.MODULES_EXCHANGE_ID, module.getType(), msg);
+        appsApi.getModuleApi().publishModule(msg);
     }
 }
