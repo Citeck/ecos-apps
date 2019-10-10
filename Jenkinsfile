@@ -18,16 +18,11 @@ timestamps {
         currentBuild.result = 'SUCCESS'
         return
       }
-      stage('Running JUnit Test') {
-        withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
-          sh "mvn clean test -Dskip.npm"
-        }
-        junit '**/target/surefire-reports/*.xml'
-      }
       stage('Build project artifacts') {
         withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
-          sh "mvn clean package -DskipTests=true -Djib.docker.image.tag=${project_version} jib:dockerBuild"
+          sh "mvn clean package -Dskip.npm -Djib.docker.image.tag=${project_version} jib:dockerBuild"
         }
+        junit '**/target/surefire-reports/*.xml'
       }
       stage('Push docker image') {
         docker.withRegistry('http://127.0.0.1:8082', '7d800357-2193-4474-b768-5c27b97a1030') {
