@@ -1,6 +1,7 @@
 timestamps {
   node {
     try {
+      mattermostSend endpoint: 'https://mm.citeck.ru/hooks/9ytch3uox3retkfypuq7xi3yyr', channel: "build_notifications", color: 'good', message: " :arrow_forward: Build info - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
       stage('Checkout SCM') {
         checkout([
           $class: 'GitSCM',
@@ -12,13 +13,23 @@ timestamps {
         ])
       }
       def project_version = readMavenPom().getVersion().toLowerCase()
-      mattermostSend endpoint: 'https://mm.citeck.ru/hooks/9ytch3uox3retkfypuq7xi3yyr', channel: "build_notifications", color: 'good', message: " :arrow_forward: Build info - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+      if ((env.BRANCH_NAME != "master") && (!project_version.contains('snapshot')))  {
+        echo "Assembly of release artifacts is allowed only from the master branch!"
+        currentBuild.result = 'SUCCESS'
+        return
+      }
+      stage('Running JUnit Test') {
+        withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
+          sh "mvn clean test -Dskip.npm"
+        }
+        junit '**/target/surefire-reports/*.xml'
+      }
       stage('Build project artifacts') {
         withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
           sh "mvn clean package -DskipTests=true -Djib.docker.image.tag=${project_version} jib:dockerBuild"
         }
       }
-      stage('Psuh docker image') {
+      stage('Push docker image') {
         docker.withRegistry('http://127.0.0.1:8082', '7d800357-2193-4474-b768-5c27b97a1030') {
           def microserviceImage = "ecos-apps"+":"+"${project_version}"
           def current_microserviceImage = docker.image("${microserviceImage}")
