@@ -1,12 +1,14 @@
 package ru.citeck.ecos.apps.app.module;
 
-import ru.citeck.ecos.apps.app.module.type.EcosModule;
+public interface EcosModuleRev {
 
-public interface EcosModuleRev extends EcosModule {
+    String getId();
 
     String getRevId();
 
     String getHash();
 
     long getSize();
+
+    byte[] getData();
 }

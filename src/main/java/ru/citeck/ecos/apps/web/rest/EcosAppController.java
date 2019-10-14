@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.web.rest;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,12 @@ import ru.citeck.ecos.apps.app.application.AppsAutoUpload;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.apps.utils.EappZipUtils;
+import ru.citeck.ecos.apps.utils.io.EappFile;
+import ru.citeck.ecos.apps.utils.io.EappFileBase;
+import ru.citeck.ecos.apps.utils.io.mem.EappMemDir;
+
+import java.util.List;
 
 @Component
 @RestController
@@ -65,7 +72,24 @@ public class EcosAppController {
 
     private HttpEntity<byte[]> toDownloadHttpEntity(EcosModuleRev rev) {
 
-        String filename = rev.getId() + "." + rev.getDataType().getExt();
+        EappMemDir eappMemDir = EappZipUtils.extractZip(rev.getData());
+        List<EappFileBase> files = eappMemDir.getChildren();
+
+        byte[] data;
+        String filename;
+
+        if (files.size() == 1 && files.get(0) instanceof EappFile) {
+
+            EappFile file = (EappFile) files.get(0);
+
+            filename = file.getName();
+            data = file.read(IOUtils::toByteArray);
+
+        } else {
+
+            filename = rev.getId() + ".zip";
+            data = rev.getData();
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(
@@ -73,7 +97,7 @@ public class EcosAppController {
                 .filename(filename)
                 .build());
 
-        return new HttpEntity<>(rev.getData(), headers);
+        return new HttpEntity<>(data, headers);
     }
 }
 

@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
 import ru.citeck.ecos.apps.app.module.event.ModuleRevisionCreated;
-import ru.citeck.ecos.apps.app.module.type.EcosModule;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
@@ -17,6 +16,7 @@ import ru.citeck.ecos.apps.repository.EcosModuleRepo;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -26,20 +26,36 @@ public class EcosModuleDao {
     private final EcosContentDao contentDao;
     private final EcosModuleRevRepo moduleRevRepo;
     private final ApplicationEventPublisher eventPublisher;
+    private final EappsModuleService eappsModuleService;
 
     public EcosModuleDao(EcosModuleRepo moduleRepo,
                          EcosModuleRevRepo moduleRevRepo,
                          EcosContentDao contentDao,
-                         ApplicationEventPublisher eventPublisher) {
+                         ApplicationEventPublisher eventPublisher,
+                         EappsModuleService eappsModuleService) {
         this.moduleRepo = moduleRepo;
         this.contentDao = contentDao;
         this.moduleRevRepo = moduleRevRepo;
         this.eventPublisher = eventPublisher;
+        this.eappsModuleService = eappsModuleService;
+    }
+
+    public List<EcosModuleRevEntity> getAllLastRevisions() {
+        return moduleRepo.findAll()
+            .stream()
+            .map(EcosModuleEntity::getLastRev)
+            .collect(Collectors.toList());
     }
 
     public EcosModuleRevEntity uploadModule(String source, EcosModule module) {
 
-        EcosModuleEntity moduleEntity = getModuleByExtId(module.getType(), module.getId());
+        String typeId = eappsModuleService.getTypeId(module.getClass());
+        if (typeId == null) {
+            throw new IllegalArgumentException("Unknown module type: "
+                                                + module.getClass() + " (" + module.getId() + ")");
+        }
+
+        EcosModuleEntity moduleEntity = getModuleByExtId(typeId, module.getId());
 
         EcosModuleRevEntity lastModuleRev = null;
 
@@ -47,35 +63,34 @@ public class EcosModuleDao {
 
             moduleEntity = new EcosModuleEntity();
             moduleEntity.setExtId(module.getId());
-            moduleEntity.setType(module.getType());
+            moduleEntity.setType(typeId);
             moduleEntity = moduleRepo.save(moduleEntity);
 
         } else {
 
-            lastModuleRev = getLastModuleRev(module.getType(), module.getId());
+            lastModuleRev = getLastModuleRev(typeId, module.getId());
         }
 
-        EcosContentEntity content = contentDao.upload(module.getData());
+        byte[] data = eappsModuleService.writeAsBytes(module);
+        EcosContentEntity content = contentDao.upload(data);
 
         if (lastModuleRev != null) {
-
-            if (Objects.equals(lastModuleRev.getContent(), content)
-                && Objects.equals(lastModuleRev.getName(), module.getName())) {
+            if (Objects.equals(lastModuleRev.getContent(), content)) {
                 return lastModuleRev;
             }
         }
 
         lastModuleRev = new EcosModuleRevEntity();
         lastModuleRev.setSource(source);
-        lastModuleRev.setDataType(module.getDataType());
         lastModuleRev.setExtId(UUID.randomUUID().toString());
-        lastModuleRev.setModelVersion(module.getModelVersion());
-        lastModuleRev.setName(module.getName());
         lastModuleRev.setContent(content);
         lastModuleRev.setModule(moduleEntity);
         lastModuleRev = moduleRevRepo.save(lastModuleRev);
 
-        eventPublisher.publishEvent(new ModuleRevisionCreated(module.getType(), module.getId()));
+        moduleEntity.setLastRev(lastModuleRev);
+        moduleRepo.save(moduleEntity);
+
+        eventPublisher.publishEvent(new ModuleRevisionCreated(typeId, module.getId()));
 
         return lastModuleRev;
     }

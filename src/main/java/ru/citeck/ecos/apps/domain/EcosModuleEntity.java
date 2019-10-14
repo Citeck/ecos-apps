@@ -23,6 +23,10 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @Getter @Setter private Set<EcosModuleRevEntity> revisions;
 
+    @OneToOne
+    @JoinColumn(name = "last_rev_id")
+    @Getter @Setter private EcosModuleRevEntity lastRev;
+
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "publish_status")
     @Getter @Setter private PublishStatus publishStatus = PublishStatus.DRAFT;

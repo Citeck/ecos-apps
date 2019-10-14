@@ -20,24 +20,22 @@ public class EcosAppsListener {
     private EcosAppsApiFactory apiFactory;
 
     public EcosAppsListener(EcosModuleService moduleService,
-                            EcosAppService ecosAppService) {
+                            EcosAppService ecosAppService,
+                            EcosAppsApiFactory apiFactory) {
         this.moduleService = moduleService;
         this.ecosAppService = ecosAppService;
+        this.apiFactory = apiFactory;
     }
 
     @PostConstruct
     void init() {
-        if (apiFactory == null) {
-            log.warn("Api Factory is null");
-            return;
-        }
         apiFactory.getModuleApi().onModulePublishResult(this::onPublishResultReceived);
         apiFactory.getAppApi().onAppDeploy(this::onAppUploadReceived);
     }
 
     private void onPublishResultReceived(ModulePublishResultMsg msg) {
         log.info("Publish status: " + msg);
-        moduleService.updatePublishStatus(msg.getRevId(), msg.isSuccess(), msg.getMsg());
+        moduleService.updatePublishStatus(msg.getMsgId(), msg.isSuccess(), msg.getMsg());
     }
 
     private void onAppUploadReceived(EcosAppDeployMsg msg) {
