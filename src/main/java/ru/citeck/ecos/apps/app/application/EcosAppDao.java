@@ -44,6 +44,10 @@ public class EcosAppDao {
 
         log.info("Start application uploading: " + app.getName() + " (" + app.getId() + "). Source: " + source);
 
+        if (app.getModules().isEmpty() && app.getPatches().isEmpty()) {
+            throw new IllegalArgumentException("Empty application");
+        }
+
         EcosAppEntity appEntity = appRepo.getByExtId(app.getId());
         EcosAppRevEntity appLastRev = null;
 

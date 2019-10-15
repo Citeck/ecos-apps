@@ -2,13 +2,13 @@ package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.app.api.EcosAppDeployMsg;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.api.ModulePublishResultMsg;
-
-import javax.annotation.PostConstruct;
 
 @Slf4j
 @Component
@@ -19,6 +19,8 @@ public class EcosAppsListener {
 
     private EcosAppsApiFactory apiFactory;
 
+    private boolean initialized = false;
+
     public EcosAppsListener(EcosModuleService moduleService,
                             EcosAppService ecosAppService,
                             EcosAppsApiFactory apiFactory) {
@@ -27,10 +29,18 @@ public class EcosAppsListener {
         this.apiFactory = apiFactory;
     }
 
-    @PostConstruct
-    void init() {
-        apiFactory.getModuleApi().onModulePublishResult(this::onPublishResultReceived);
-        apiFactory.getAppApi().onAppDeploy(this::onAppUploadReceived);
+    @EventListener
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+
+        if (!initialized) {
+
+            log.info("Init MQ listeners");
+
+            apiFactory.getModuleApi().onModulePublishResult(this::onPublishResultReceived);
+            apiFactory.getAppApi().onAppDeploy(this::onAppUploadReceived);
+
+            initialized = true;
+        }
     }
 
     private void onPublishResultReceived(ModulePublishResultMsg msg) {
