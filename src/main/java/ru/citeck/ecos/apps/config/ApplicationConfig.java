@@ -1,20 +1,18 @@
 package ru.citeck.ecos.apps.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import ru.citeck.ecos.apps.spring.EcosAppsFactoryConfig;
-import ru.citeck.ecos.records2.RecordsServiceFactory;
+import ru.citeck.ecos.records2.spring.RecordsProperties;
 
 @Configuration
-@Import(EcosAppsFactoryConfig.class)
-public class ApplicationConfig extends RecordsServiceFactory {
+public class ApplicationConfig {
 
-    /*@Bean
-    RecordsService initRecordsService(List<RecordsDAO> recordsDAO) {
-
-        RecordsService recordsService = createRecordsService();
-        recordsDAO.forEach(recordsService::register);
-
-        return recordsService;
-    }*/
+    @Bean
+    public RecordsProperties recordsProperties(ApplicationProperties appProps) {
+        RecordsProperties props = appProps.getRecords();
+        if (props == null) {
+            props = new RecordsProperties();
+        }
+        return props;
+    }
 }
