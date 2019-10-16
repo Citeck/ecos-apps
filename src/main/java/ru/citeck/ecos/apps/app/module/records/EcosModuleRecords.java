@@ -1,10 +1,14 @@
 package ru.citeck.ecos.apps.app.module.records;
 
+import lombok.Data;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.module.EappsModuleService;
 import ru.citeck.ecos.apps.app.module.EcosModule;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.predicate.PredicateService;
+import ru.citeck.ecos.predicate.PredicateUtils;
+import ru.citeck.ecos.predicate.model.Predicate;
 import ru.citeck.ecos.records2.RecordRef;
 import ru.citeck.ecos.records2.graphql.meta.value.*;
 import ru.citeck.ecos.records2.request.query.RecordsQuery;
@@ -23,21 +27,34 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
     public static final String ID = "module";
 
+    private final PredicateService predicateService;
     private final EcosModuleService ecosModuleService;
-    private final EappsModuleService eappsModuleService;
     private final MetaValuesConverter valuesConverter;
+    private final EappsModuleService eappsModuleService;
 
     public EcosModuleRecords(EcosModuleService ecosModuleService,
                              EappsModuleService eappsModuleService,
-                             MetaValuesConverter valuesConverter) {
+                             MetaValuesConverter valuesConverter,
+                             PredicateService predicateService) {
         setId(ID);
         this.valuesConverter = valuesConverter;
+        this.predicateService = predicateService;
         this.ecosModuleService = ecosModuleService;
         this.eappsModuleService = eappsModuleService;
     }
 
     @Override
-    public RecordsQueryResult<RecordRef> getLocalRecords(RecordsQuery query) {
+    public RecordsQueryResult<RecordRef> getLocalRecords(RecordsQuery recordsQuery) {
+
+        Query query;
+        if (recordsQuery.getLanguage().equals(PredicateService.LANGUAGE_PREDICATE)) {
+            Predicate predicate = predicateService.readJson(recordsQuery.getQuery());
+            query = PredicateUtils.convertToDto(predicate, Query.class);
+        } else {
+            query = recordsQuery.getQuery(Query.class);
+        }
+
+        //todo
 
         List<RecordRef> resultRefs = ecosModuleService.getAllModules().stream().map(m -> {
             String typeId = eappsModuleService.getTypeId(m.getClass());
@@ -82,5 +99,12 @@ public class EcosModuleRecords extends LocalRecordsDAO
         public String getId() {
             return type + "$" + super.getId();
         }
+    }
+
+    @Data
+    public static class Query {
+
+        private String type;
+        private Predicate predicate;
     }
 }
