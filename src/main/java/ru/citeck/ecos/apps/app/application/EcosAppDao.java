@@ -88,6 +88,7 @@ public class EcosAppDao {
             appLastRev.setName(app.getName());
             appLastRev.setExtId(UUID.randomUUID().toString());
             appLastRev.setVersion(app.getVersion().toString());
+            appLastRev.setSource(source);
 
             appLastRev = appRevRepo.save(appLastRev);
 

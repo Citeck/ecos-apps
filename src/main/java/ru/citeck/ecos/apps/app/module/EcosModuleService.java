@@ -37,19 +37,53 @@ public class EcosModuleService {
         this.eappsModuleService = eappsModuleService;
     }
 
-    public List<EcosModule> getAllModules() {
-        return dao.getAllLastRevisions().stream().map(rev -> {
-
-            String type = rev.getModule().getType();
-            byte[] content = rev.getContent().getData();
-
-            return (EcosModule) eappsModuleService.read(content, type);
-
-        }).collect(Collectors.toList());
+    public void delete(ModuleRef ref) {
+        dao.delete(ref);
     }
 
-    public EcosModuleRev getLastModuleRev(String type, String id) {
-        return new EcosModuleDb(dao.getLastModuleRev(type, id));
+    public String uploadModule(String source, EcosModule module) {
+        EcosModuleRevEntity entity = dao.uploadModule(source, module);
+        return entity.getModule().getExtId();
+    }
+
+    public int getCount(String type) {
+        return dao.getModulesCount(type);
+    }
+
+    public int getCount() {
+        return dao.getModulesCount();
+    }
+
+    public List<EcosModule> getModules(String type, int skipCount, int maxItems) {
+
+        return dao.getModulesLastRev(type, skipCount, maxItems)
+            .stream()
+            .map(this::toModule)
+            .collect(Collectors.toList());
+    }
+
+    public List<EcosModule> getAllModules(int skipCount, int maxItems) {
+        return dao.getAllLastRevisions(skipCount, maxItems)
+            .stream()
+            .map(this::toModule)
+            .collect(Collectors.toList());
+    }
+
+    public List<EcosModule> getAllModules() {
+        return getAllModules(0, 1000);
+    }
+
+    public EcosModuleRev getLastModuleRev(ModuleRef moduleRef) {
+        return new EcosModuleDb(dao.getLastModuleRev(moduleRef));
+    }
+
+    public EcosModuleRev getLastModuleRev(ModuleRef moduleRef, String source) {
+        return new EcosModuleDb(dao.getLastModuleRev(moduleRef, source));
+    }
+
+    public PublishStatus getPublishStatus(ModuleRef moduleRef) {
+        EcosModuleEntity module = dao.getModule(moduleRef);
+        return module.getPublishStatus();
     }
 
     public EcosModuleRev getModuleRevision(String id) {
@@ -113,5 +147,13 @@ public class EcosModuleService {
         module.setPublishMsg(message);
         dao.save(entity);
         eventPublisher.publishEvent(new ModuleStatusChanged(module));
+    }
+
+    private EcosModule toModule(EcosModuleRevEntity entity) {
+
+        String type = entity.getModule().getType();
+        byte[] content = entity.getContent().getData();
+
+        return eappsModuleService.read(content, type);
     }
 }

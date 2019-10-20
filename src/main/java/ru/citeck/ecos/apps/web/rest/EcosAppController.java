@@ -13,6 +13,7 @@ import ru.citeck.ecos.apps.app.application.AppsAutoUpload;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.apps.app.module.ModuleRef;
 import ru.citeck.ecos.apps.utils.EappZipUtils;
 import ru.citeck.ecos.apps.utils.io.EappFile;
 import ru.citeck.ecos.apps.utils.io.EappFileBase;
@@ -46,7 +47,7 @@ public class EcosAppController {
     public HttpEntity<byte[]> downloadModule(@PathVariable String type,
                                              @PathVariable String moduleId) {
 
-        return toDownloadHttpEntity(moduleService.getLastModuleRev(type, moduleId));
+        return toDownloadHttpEntity(moduleService.getLastModuleRev(ModuleRef.create(type, moduleId)));
     }
 
     @GetMapping("/module/type/{type}/{moduleId}/publish")

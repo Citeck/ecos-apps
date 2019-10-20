@@ -20,6 +20,8 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private String extId;
     @Getter @Setter private String type;
 
+    @Getter @Setter private boolean deleted;
+
     @OneToMany(mappedBy = "module", fetch = FetchType.LAZY)
     @Getter @Setter private Set<EcosModuleRevEntity> revisions;
 
