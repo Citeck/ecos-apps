@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import ru.citeck.ecos.records2.spring.RecordsProperties;
 
+import java.util.Map;
+
 /**
  * Properties specific to ecos-apps.
  * <p>
@@ -15,4 +17,14 @@ import ru.citeck.ecos.records2.spring.RecordsProperties;
 public class ApplicationProperties {
 
     private RecordsProperties records;
+    private EappConfig ecosApp;
+
+    @Data
+    public static class EappConfig {
+        private String id;
+        private String name;
+        private String folder;
+        private String version;
+        private Map<String, String> dependencies;
+    }
 }

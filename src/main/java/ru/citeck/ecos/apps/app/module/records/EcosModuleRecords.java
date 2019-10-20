@@ -11,8 +11,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.apps.config.Constants;
-import ru.citeck.ecos.apps.security.SecurityUtils;
 import ru.citeck.ecos.predicate.PredicateService;
 import ru.citeck.ecos.predicate.PredicateUtils;
 import ru.citeck.ecos.predicate.model.AndPredicate;
@@ -215,7 +213,17 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
         for (RecordMeta record : records) {
 
+            ModuleRef ref = ModuleRef.valueOf(record.getId().getId());
+
             Map<String, Object> data = new HashMap<>();
+
+            if (record.has(RecordConstants.ATT_CONTENT)) {
+
+                String base64Content = record.get(RecordConstants.ATT_CONTENT).asText();
+                EcosModule module = eappsModuleService.read(Base64.getDecoder().decode(base64Content), ref.getType());
+
+                record.setAttributes(objectMapper.valueToTree(module));
+            }
 
             record.forEach((att, value) -> {
                 if (ATT_MODULE_ID.equals(att)) {
@@ -224,8 +232,6 @@ public class EcosModuleRecords extends LocalRecordsDAO
                     data.put(att, convertMutAtt(value));
                 }
             });
-
-            ModuleRef ref = ModuleRef.valueOf(record.getId().getId());
 
             String moduleIdAfterUpload;
 
