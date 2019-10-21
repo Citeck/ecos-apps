@@ -25,4 +25,8 @@ public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
     @Query("SELECT COUNT(module) FROM EcosModuleEntity module " +
            "WHERE module.type = ?1 AND module.deleted = false")
     long getCount(String type);
+
+    @Query("SELECT COUNT(module) FROM EcosModuleEntity module " +
+           "WHERE module.deleted = false")
+    long getCount();
 }

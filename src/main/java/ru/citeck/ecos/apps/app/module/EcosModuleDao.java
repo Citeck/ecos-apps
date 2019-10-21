@@ -43,7 +43,7 @@ public class EcosModuleDao {
     }
 
     public int getModulesCount() {
-        return (int) moduleRepo.count();
+        return (int) moduleRepo.getCount();
     }
 
     public int getModulesCount(String type) {
@@ -79,6 +79,8 @@ public class EcosModuleDao {
 
         if (moduleEntity == null) {
 
+            log.debug("Create new module entity " + moduleRef);
+
             moduleEntity = new EcosModuleEntity();
             moduleEntity.setExtId(module.getId());
             moduleEntity.setType(typeId);
@@ -108,6 +110,8 @@ public class EcosModuleDao {
                 }
             }
         }
+
+        log.debug("Create new module revision entity " + moduleRef);
 
         lastModuleRev = new EcosModuleRevEntity();
         lastModuleRev.setSource(source);

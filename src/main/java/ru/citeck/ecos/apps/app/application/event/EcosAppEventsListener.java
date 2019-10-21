@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.app.application.event;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -9,6 +10,7 @@ import ru.citeck.ecos.apps.app.module.EcosModuleService;
 import ru.citeck.ecos.apps.app.module.event.ModuleRevisionCreated;
 import ru.citeck.ecos.apps.app.module.event.ModuleStatusChanged;
 
+@Slf4j
 @Component
 public class EcosAppEventsListener {
 
@@ -22,11 +24,13 @@ public class EcosAppEventsListener {
 
     @EventListener
     public void onModuleStatusChanged(ModuleStatusChanged event) {
+        log.info("onModuleStatusChanged " + event.getModule().getExtId());
         ecosAppDao.updatePublishStatus(event.getModule());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onModuleRevisionCreated(ModuleRevisionCreated event) {
+        log.info("onModuleRevisionCreated " + event.getId());
         moduleService.publishModule(event.getType(), event.getId());
     }
 }

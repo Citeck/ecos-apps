@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
+import ru.citeck.ecos.apps.utils.EappZipUtils;
+import ru.citeck.ecos.apps.utils.io.mem.EappMemDir;
 import ru.citeck.ecos.predicate.PredicateService;
 import ru.citeck.ecos.predicate.PredicateUtils;
 import ru.citeck.ecos.predicate.model.AndPredicate;
@@ -219,8 +221,16 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             if (record.has(RecordConstants.ATT_CONTENT)) {
 
-                String base64Content = record.get(RecordConstants.ATT_CONTENT).asText();
-                EcosModule module = eappsModuleService.read(Base64.getDecoder().decode(base64Content), ref.getType());
+                String base64Content = record.get("/" + RecordConstants.ATT_CONTENT + "/0/url", "");
+                base64Content = base64Content.replaceAll("^data:application/json;base64,", "");
+
+                EappMemDir dir = new EappMemDir("upload");
+                //todo: for all modules
+                dir.createFile("form.json", Base64.getDecoder().decode(base64Content));
+
+                byte[] moduleData = EappZipUtils.writeZipAsBytes(dir);
+
+                EcosModule module = eappsModuleService.read(moduleData, ref.getType());
 
                 record.setAttributes(objectMapper.valueToTree(module));
             }

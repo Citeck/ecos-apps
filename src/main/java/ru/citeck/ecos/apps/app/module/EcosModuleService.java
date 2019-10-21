@@ -92,6 +92,8 @@ public class EcosModuleService {
 
     public void publishModule(String type, String id) {
 
+        log.info("Start module publishing: " + ModuleRef.create(type, id));
+
         EcosModuleRevEntity lastModuleRev = dao.getLastModuleRev(type, id);
         EcosModuleEntity module = lastModuleRev.getModule();
 
