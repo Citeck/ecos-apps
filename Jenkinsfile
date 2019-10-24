@@ -1,3 +1,6 @@
+properties([
+    buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '7')),
+])
 timestamps {
   node {
     try {
