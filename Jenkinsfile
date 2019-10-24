@@ -1,3 +1,8 @@
+properties([
+  disableConcurrentBuilds(), 
+  [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false], 
+  [$class: 'ThrottleJobProperty', categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: false, throttleOption: 'project'], 
+  buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '7')), 
 timestamps {
   node {
     try {
