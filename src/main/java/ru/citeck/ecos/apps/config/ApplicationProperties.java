@@ -2,7 +2,6 @@ package ru.citeck.ecos.apps.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import ru.citeck.ecos.records2.spring.RecordsProperties;
 
 import java.util.Map;
 
@@ -16,7 +15,6 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "ecos-apps")
 public class ApplicationProperties {
 
-    private RecordsProperties records;
     private EappConfig ecosApp;
 
     @Data

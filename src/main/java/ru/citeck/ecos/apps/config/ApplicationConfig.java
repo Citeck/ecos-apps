@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -13,7 +14,7 @@ import ru.citeck.ecos.apps.app.EcosAppVersion;
 import ru.citeck.ecos.apps.app.provider.DirectoryAppProvider;
 import ru.citeck.ecos.apps.app.provider.EcosAppsProvider;
 import ru.citeck.ecos.apps.spring.EcosAppsDeployer;
-import ru.citeck.ecos.records2.spring.RecordsProperties;
+import ru.citeck.ecos.records2.RecordsProperties;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -24,12 +25,9 @@ public class ApplicationConfig {
     private ApplicationProperties appProps;
 
     @Bean
+    @ConfigurationProperties(prefix = "ecos-apps.ecos-records")
     public RecordsProperties recordsProperties() {
-        RecordsProperties props = appProps.getRecords();
-        if (props == null) {
-            props = new RecordsProperties();
-        }
-        return props;
+        return new RecordsProperties();
     }
 
     @Bean

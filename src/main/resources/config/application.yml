@@ -180,6 +180,7 @@ jhipster:
 # application:
 
 ecos-apps:
+    ecos-records: {}
     ecos-app:
         folder: ecos-app
         id: ecos-apps
