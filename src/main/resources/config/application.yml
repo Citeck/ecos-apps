@@ -179,13 +179,10 @@ jhipster:
 
 # application:
 
-ecos-apps:
-    ecos-app:
-        folder: ecos-app
-        id: ecos-apps
-        name: ECOS Applications
-        version: 1.3.0
-        dependencies: {}
+ecos-app:
+    id: ecos-apps
+    name: ECOS Applications
+    version: 1.3.0
 
 spring.rabbitmq:
     host: rabbitmq
