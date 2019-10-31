@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.app.api.EcosAppDeployMsg;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
-import ru.citeck.ecos.apps.app.module.api.ModulePublishResultMsg;
+import ru.citeck.ecos.apps.app.module.api.msg.v2.EcosModuleResultMsg;
 
 @Slf4j
 @Component
@@ -37,13 +37,21 @@ public class EcosAppsListener {
             log.info("Init MQ listeners");
 
             apiFactory.getModuleApi().onModulePublishResult(this::onPublishResultReceived);
+            apiFactory.getModuleApi().onModuleDeleteResult(this::onDeleteResultReceived);
             apiFactory.getAppApi().onAppDeploy(this::onAppUploadReceived);
 
             initialized = true;
         }
     }
 
-    private void onPublishResultReceived(ModulePublishResultMsg msg) {
+    private void onDeleteResultReceived(EcosModuleResultMsg msg) {
+        log.info("Delete status: " + msg);
+        if (msg.isSuccess() && msg.getModuleRef() != null) {
+            moduleService.delete(msg.getModuleRef());
+        }
+    }
+
+    private void onPublishResultReceived(EcosModuleResultMsg msg) {
         log.info("Publish status: " + msg);
         moduleService.updatePublishStatus(msg.getMsgId(), msg.isSuccess(), msg.getMsg());
     }
