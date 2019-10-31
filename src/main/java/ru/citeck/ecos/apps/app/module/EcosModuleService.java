@@ -37,6 +37,11 @@ public class EcosModuleService {
         this.eappsModuleService = eappsModuleService;
     }
 
+    public boolean isExists(ModuleRef ref) {
+        EcosModuleEntity module = dao.getModule(ref);
+        return module != null;
+    }
+
     public void delete(ModuleRef ref) {
         dao.delete(ref);
     }

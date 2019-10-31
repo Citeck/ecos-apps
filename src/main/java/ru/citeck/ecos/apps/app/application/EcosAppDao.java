@@ -42,7 +42,10 @@ public class EcosAppDao {
 
         EcosApp app = ecosAppIO.read(data);
 
-        log.info("Start application uploading: " + app.getName() + " (" + app.getId() + "). Source: " + source);
+        log.info("Start application uploading: " + app.getName()
+            + " (" + app.getId() + "). Source: " + source
+            + " Modules: " + app.getModules().size()
+            + " Patches: " + app.getPatches().size());
 
         if (app.getModules().isEmpty() && app.getPatches().isEmpty()) {
             throw new IllegalArgumentException("Empty application");

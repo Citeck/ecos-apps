@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
 import ru.citeck.ecos.apps.utils.EappZipUtils;
@@ -55,12 +56,15 @@ public class EcosModuleRecords extends LocalRecordsDAO
     private final EcosModuleService ecosModuleService;
     private final MetaValuesConverter valuesConverter;
     private final EappsModuleService eappsModuleService;
+    private final EcosAppsApiFactory apiFactory;
 
     public EcosModuleRecords(EcosModuleService ecosModuleService,
                              EappsModuleService eappsModuleService,
                              MetaValuesConverter valuesConverter,
-                             PredicateService predicateService) {
+                             PredicateService predicateService,
+                             EcosAppsApiFactory apiFactory) {
         setId(ID);
+        this.apiFactory = apiFactory;
         this.valuesConverter = valuesConverter;
         this.predicateService = predicateService;
         this.ecosModuleService = ecosModuleService;
@@ -288,15 +292,36 @@ public class EcosModuleRecords extends LocalRecordsDAO
     }
 
     @Override
-    @Transactional
     public RecordsDelResult delete(RecordsDeletion deletion) {
 
         List<RecordMeta> resultRefs = new ArrayList<>();
 
+        List<ModuleRef> moduleRefs = new ArrayList<>();
+
         deletion.getRecords().forEach(r -> {
-            ecosModuleService.delete(ModuleRef.valueOf(r.getId()));
+            ModuleRef ref = ModuleRef.valueOf(r.getId());
+            moduleRefs.add(ref);
+            apiFactory.getModuleApi().deleteModule(UUID.randomUUID().toString(), ref);
             resultRefs.add(new RecordMeta(r));
         });
+
+        long timeToWait = System.currentTimeMillis() + 5_000;
+
+        int deletedIdx = 0;
+        boolean isDeleted;
+        do {
+            ModuleRef ref = moduleRefs.get(deletedIdx);
+            isDeleted = !ecosModuleService.isExists(ref);
+            if (isDeleted) {
+                deletedIdx++;
+            } else {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } while (deletedIdx < moduleRefs.size() && System.currentTimeMillis() < timeToWait);
 
         RecordsDelResult result = new RecordsDelResult();
         result.setRecords(resultRefs);
