@@ -91,6 +91,11 @@ public class EcosModuleService {
         return module.getPublishStatus();
     }
 
+    public ModulePublishState getPublishState(ModuleRef moduleRef) {
+        EcosModuleEntity module = dao.getModule(moduleRef);
+        return new ModulePublishState(module.getPublishStatus(), module.getPublishMsg());
+    }
+
     public EcosModuleRev getModuleRevision(String id) {
         return new EcosModuleDb(dao.getModuleRev(id));
     }
@@ -103,7 +108,7 @@ public class EcosModuleService {
         EcosModuleEntity module = lastModuleRev.getModule();
 
         module.setPublishStatus(PublishStatus.PUBLISHING);
-        dao.save(module);
+        module = dao.save(module);
 
         EcosModule moduleInstance = eappsModuleService.read(lastModuleRev.getContent().getData(), type);
         appsApi.getModuleApi().publishModule(lastModuleRev.getExtId(), moduleInstance);
@@ -152,7 +157,10 @@ public class EcosModuleService {
         }
 
         module.setPublishMsg(message);
+
+        module = dao.save(module);
         dao.save(entity);
+
         eventPublisher.publishEvent(new ModuleStatusChanged(module));
     }
 
