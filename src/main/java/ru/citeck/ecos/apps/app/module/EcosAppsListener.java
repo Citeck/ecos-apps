@@ -6,6 +6,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.EcosAppsApiFactory;
+import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.api.EcosAppDeployMsg;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.api.msg.v2.EcosModuleResultMsg;
@@ -54,11 +55,12 @@ public class EcosAppsListener {
     private void onPublishResultReceived(EcosModuleResultMsg msg) {
         log.info("Publish status: " + msg);
         moduleService.updatePublishStatus(msg.getMsgId(), msg.isSuccess(), msg.getMsg());
+        ecosAppService.updateAppsPublishStatus(msg.getModuleRef());
     }
 
     private void onAppUploadReceived(EcosAppDeployMsg msg) {
         try {
-            ecosAppService.uploadApp(msg.getSource(), msg.getAppData());
+            ecosAppService.uploadApp(msg.getSource(), msg.getAppData(), PublishPolicy.PUBLISH_IF_NOT_PUBLISHED);
         } catch (Exception e) {
             log.error("Application can't be uploaded", e);
         }

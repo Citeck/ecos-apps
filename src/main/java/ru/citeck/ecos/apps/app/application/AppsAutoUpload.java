@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
 import ru.citeck.ecos.apps.utils.EappFileUtils;
@@ -74,7 +75,7 @@ public class AppsAutoUpload {
 
                 log.info("Upload app: " + appPath);
                 try {
-                    appService.uploadApp(appPath.toFile());
+                    appService.uploadApp(appPath.toFile(), PublishPolicy.PUBLISH_IF_NOT_PUBLISHED);
                 } catch (ApplicationWithoutModules | DowngrageIsNotSupported e) {
                     log.warn(String.format(SKIP_MSG, e.getMessage()));
                 }

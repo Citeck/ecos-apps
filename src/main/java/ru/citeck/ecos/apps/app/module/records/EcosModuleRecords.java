@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.EcosAppsApiFactory;
+import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
 import ru.citeck.ecos.apps.utils.EappZipUtils;
@@ -229,8 +230,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 base64Content = base64Content.replaceAll("^data:application/json;base64,", "");
 
                 EappMemDir dir = new EappMemDir("upload");
-                //todo: for all modules
-                dir.createFile("form.json", Base64.getDecoder().decode(base64Content));
+                dir.createFile("module.json", Base64.getDecoder().decode(base64Content));
 
                 byte[] moduleData = EappZipUtils.writeZipAsBytes(dir);
 
@@ -254,7 +254,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 Class<EcosModule> typeClass = eappsModuleService.getTypeClass(ref.getType());
                 EcosModule module = objectMapper.convertValue(data, typeClass);
 
-                moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module);
+                moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
 
             } else {
 
@@ -272,7 +272,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
                     throw new RuntimeException(e);
                 }
 
-                moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module);
+                moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
             }
 
             resultRefs.add(ModuleRef.create(ref.getType(), moduleIdAfterUpload));
