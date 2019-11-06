@@ -1,13 +1,12 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
-import ru.citeck.ecos.apps.app.module.event.ModuleRevisionCreated;
 import ru.citeck.ecos.apps.app.module.records.EcosModuleRecords;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
@@ -27,18 +26,15 @@ public class EcosModuleDao {
     private final EcosModuleRepo moduleRepo;
     private final EcosContentDao contentDao;
     private final EcosModuleRevRepo moduleRevRepo;
-    private final ApplicationEventPublisher eventPublisher;
     private final EappsModuleService eappsModuleService;
 
     public EcosModuleDao(EcosModuleRepo moduleRepo,
                          EcosModuleRevRepo moduleRevRepo,
                          EcosContentDao contentDao,
-                         ApplicationEventPublisher eventPublisher,
                          EappsModuleService eappsModuleService) {
         this.moduleRepo = moduleRepo;
         this.contentDao = contentDao;
         this.moduleRevRepo = moduleRevRepo;
-        this.eventPublisher = eventPublisher;
         this.eappsModuleService = eappsModuleService;
     }
 
@@ -63,7 +59,7 @@ public class EcosModuleDao {
             .collect(Collectors.toList());
     }
 
-    public EcosModuleRevEntity uploadModule(String source, EcosModule module) {
+    public UploadStatus<EcosModuleRevEntity> uploadModule(String source, EcosModule module) {
 
         String typeId = eappsModuleService.getTypeId(module.getClass());
         if (typeId == null) {
@@ -99,14 +95,15 @@ public class EcosModuleDao {
 
             if (Objects.equals(lastModuleRev.getContent(), content)) {
 
-                return lastModuleRev;
+                return new UploadStatus<>(lastModuleRev, false);
 
             } else if (source != null && !EcosModuleRecords.MODULES_SOURCE.equals(source)) {
 
                 EcosModuleRevEntity lastBySource = getLastModuleRev(moduleRef, source);
 
                 if (lastBySource != null && Objects.equals(lastBySource.getContent(), content)) {
-                    return lastModuleRev;
+
+                    return new UploadStatus<>(lastModuleRev, false);
                 }
             }
         }
@@ -124,9 +121,7 @@ public class EcosModuleDao {
         moduleEntity.setPublishStatus(PublishStatus.DRAFT);
         moduleRepo.save(moduleEntity);
 
-        eventPublisher.publishEvent(new ModuleRevisionCreated(typeId, module.getId()));
-
-        return lastModuleRev;
+        return new UploadStatus<>(lastModuleRev, true);
     }
 
     public EcosModuleRevEntity getLastModuleRev(String type, String id) {
