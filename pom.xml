@@ -101,7 +101,7 @@
 
         <ecos.lombok.version>1.18.10</ecos.lombok.version>
         <ecos.apps-lib.version>1.2.0-SNAPSHOT</ecos.apps-lib.version>
-        <ecos.records.version>1.10.0-SNAPSHOT</ecos.records.version>
+        <ecos.records.version>1.10.0</ecos.records.version>
         <!-- jhipster-needle-maven-property -->
     </properties>
 
