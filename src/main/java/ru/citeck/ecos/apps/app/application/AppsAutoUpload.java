@@ -3,12 +3,14 @@ package ru.citeck.ecos.apps.app.application;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.application.exceptions.ApplicationWithoutModules;
 import ru.citeck.ecos.apps.app.application.exceptions.DowngrageIsNotSupported;
 import ru.citeck.ecos.apps.utils.EappFileUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,8 +33,8 @@ public class AppsAutoUpload {
         this.appService = appService;
     }
 
-    @PostConstruct
-    public void init() {
+    @EventListener
+    public void onApplicationEvent(ContextRefreshedEvent event) {
         upload();
     }
 
@@ -73,7 +75,7 @@ public class AppsAutoUpload {
 
                 log.info("Upload app: " + appPath);
                 try {
-                    appService.uploadApp(appPath.toFile());
+                    appService.uploadApp(appPath.toFile(), PublishPolicy.PUBLISH_IF_NOT_PUBLISHED);
                 } catch (ApplicationWithoutModules | DowngrageIsNotSupported e) {
                     log.warn(String.format(SKIP_MSG, e.getMessage()));
                 }

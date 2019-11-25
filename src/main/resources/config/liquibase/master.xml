@@ -4,9 +4,12 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
-    <include file="config/liquibase/changelog/00000000000000_initial_schema.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/00000000000003_ecos_apps_init.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/00000000000004_ecos_app_update.xml" relativeToChangelogFile="false"/>
+    <include file="changelog/00000000000000_initial_schema.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/00000000000003_ecos_apps_init.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/00000000000004_ecos_app_update.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/00000000000005_add_last_module_rev.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/00000000000006_add_deleted_flag.xml" relativeToChangelogFile="true"/>
+
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
 </databaseChangeLog>

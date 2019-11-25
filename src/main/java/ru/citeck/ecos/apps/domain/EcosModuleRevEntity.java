@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import ru.citeck.ecos.apps.module.type.DataType;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -28,12 +27,7 @@ public class EcosModuleRevEntity extends AbstractImmutableEntity {
 
     @Column(name="ext_id")
     @Getter @Setter private String extId;
-    @Getter @Setter private String name;
     @Getter @Setter private String source;
-
-    @Enumerated(EnumType.ORDINAL)
-    @Column(name="data_type")
-    @Getter @Setter private DataType dataType;
 
     @ManyToOne
     @JoinColumn(name = "content_id")

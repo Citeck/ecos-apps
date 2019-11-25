@@ -179,6 +179,11 @@ jhipster:
 
 # application:
 
+ecos-app:
+    id: ecos-apps
+    name: ECOS Applications
+    version: 1.3.0
+
 spring.rabbitmq:
     host: rabbitmq
     username: admin

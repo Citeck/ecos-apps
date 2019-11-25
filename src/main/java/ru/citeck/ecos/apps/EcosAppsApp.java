@@ -14,6 +14,8 @@ import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.core.env.Environment;
+import ru.citeck.ecos.apps.spring.EcosAppsFactoryConfig;
+import ru.citeck.ecos.records2.spring.RecordsServiceFactoryConfig;
 
 import javax.annotation.PostConstruct;
 import java.net.InetAddress;
@@ -21,7 +23,13 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 
-@SpringBootApplication
+@SpringBootApplication(
+    scanBasePackageClasses = {
+        EcosAppsApp.class,
+        EcosAppsFactoryConfig.class,
+        RecordsServiceFactoryConfig.class
+    }
+)
 @EnableConfigurationProperties({
     LiquibaseProperties.class,
     ApplicationProperties.class

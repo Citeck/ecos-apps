@@ -1,9 +1,23 @@
 package ru.citeck.ecos.apps.app.application;
 
-import ru.citeck.ecos.apps.app.EcosAppBase;
+import ru.citeck.ecos.apps.app.EcosAppVersion;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
+import ru.citeck.ecos.apps.app.patch.EcosPatch;
 
-public interface EcosAppRev extends EcosAppBase<EcosModuleRev> {
+import java.util.List;
+import java.util.Map;
 
-    String getRevId();
+public interface EcosAppRev {
+
+    String getId();
+
+    String getName();
+
+    EcosAppVersion getVersion();
+
+    Map<String, String> getDependencies();
+
+    List<EcosModuleRev> getModules();
+
+    List<EcosPatch> getPatches();
 }

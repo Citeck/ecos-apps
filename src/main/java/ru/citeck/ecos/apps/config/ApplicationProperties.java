@@ -1,25 +1,30 @@
 package ru.citeck.ecos.apps.config;
 
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import ru.citeck.ecos.records2.spring.RecordsProperties;
 
 import java.util.Map;
 
 /**
- * Properties specific to Ecosapps.
+ * Properties specific to ecos-apps.
  * <p>
  * Properties are configured in the application.yml file.
  * See {@link io.github.jhipster.config.JHipsterProperties} for a good example.
  */
-@ConfigurationProperties(prefix = "ecosapps.application", ignoreUnknownFields = false)
+@Data
+@ConfigurationProperties(prefix = "ecos-apps")
 public class ApplicationProperties {
 
-    private Map<String, String> deployUrl;
+    private RecordsProperties records;
+    private EappConfig ecosApp;
 
-    public Map<String, String> getDeployUrl() {
-        return deployUrl;
-    }
-
-    public void setDeployUrl(Map<String, String> deployUrl) {
-        this.deployUrl = deployUrl;
+    @Data
+    public static class EappConfig {
+        private String id;
+        private String name;
+        private String folder;
+        private String version;
+        private Map<String, String> dependencies;
     }
 }

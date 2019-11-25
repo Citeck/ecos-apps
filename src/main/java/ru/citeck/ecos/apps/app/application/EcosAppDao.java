@@ -8,8 +8,10 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.EcosApp;
 import ru.citeck.ecos.apps.app.EcosAppVersion;
 import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.io.EcosAppIO;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
+import ru.citeck.ecos.apps.app.module.ModuleRef;
 import ru.citeck.ecos.apps.domain.*;
 import ru.citeck.ecos.apps.repository.EcosAppRepo;
 import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
@@ -38,11 +40,18 @@ public class EcosAppDao {
         this.moduleDao = moduleDao;
     }
 
-    public EcosAppRevEntity uploadApp(String source, byte[] data) {
+    public UploadStatus<EcosAppRevEntity> uploadApp(String source, byte[] data) {
 
         EcosApp app = ecosAppIO.read(data);
 
-        log.info("Start application uploading: " + app.getName() + " (" + app.getId() + "). Source: " + source);
+        log.info("Start application uploading: " + app.getName()
+            + " (" + app.getId() + "). Source: " + source
+            + " Modules: " + app.getModules().size()
+            + " Patches: " + app.getPatches().size());
+
+        if (app.getModules().isEmpty() && app.getPatches().isEmpty()) {
+            throw new IllegalArgumentException("Empty application");
+        }
 
         EcosAppEntity appEntity = appRepo.getByExtId(app.getId());
         EcosAppRevEntity appLastRev = null;
@@ -73,10 +82,12 @@ public class EcosAppDao {
 
         Set<EcosModuleRevEntity> uploadedModules = app.getModules()
             .stream()
-            .map(m -> moduleDao.uploadModule(source, m))
+            .map(m -> moduleDao.uploadModule(source, m).getEntity())
             .collect(Collectors.toSet());
 
-        if (!currentModules.equals(uploadedModules)) {
+        boolean isAppChanged = !currentModules.equals(uploadedModules);
+
+        if (isAppChanged) {
 
             appLastRev = new EcosAppRevEntity();
             appLastRev.setApplication(appEntity);
@@ -84,6 +95,7 @@ public class EcosAppDao {
             appLastRev.setName(app.getName());
             appLastRev.setExtId(UUID.randomUUID().toString());
             appLastRev.setVersion(app.getVersion().toString());
+            appLastRev.setSource(source);
 
             appLastRev = appRevRepo.save(appLastRev);
 
@@ -96,11 +108,15 @@ public class EcosAppDao {
 
         log.info("Application uploading finished: " + app.getName() + " (" + app.getId() + ")");
 
-        return appLastRev;
+        return new UploadStatus<>(appLastRev, isAppChanged);
     }
 
     public EcosAppEntity save(EcosAppEntity appEntity) {
         return appRepo.save(appEntity);
+    }
+
+    public EcosAppEntity getEcosApp(String extId) {
+        return appRepo.getByExtId(extId);
     }
 
     public EcosAppRevEntity getRevByExtId(String extId) {
@@ -121,17 +137,22 @@ public class EcosAppDao {
         return appRevRepo.getAppsByModuleRev(status, revId, page);
     }
 
-    public void updatePublishStatus(EcosModuleEntity entity) {
+    public void updateAppsPublishStatus(ModuleRef moduleRef) {
 
-        EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(entity.getType(), entity.getExtId());
+        EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(moduleRef);
 
         lastModuleRev.getApplications()
             .stream()
             .map(EcosAppRevEntity::getApplication)
-            .forEach(this::updatePublishStatus);
+            .forEach(this::updateAppPublishStatus);
     }
 
-    public EcosAppEntity updatePublishStatus(EcosAppEntity entity) {
+    public void updateAppPublishStatus(String id) {
+        EcosAppEntity entity = appRepo.getByExtId(id);
+        updateAppPublishStatus(entity);
+    }
+
+    private void updateAppPublishStatus(EcosAppEntity entity) {
 
         EcosAppRevEntity lastRevision = getLastRevisionByAppId(entity.getId());
 
@@ -146,8 +167,6 @@ public class EcosAppDao {
             entity.setPublishStatus(status);
             entity = appRepo.save(entity);
         }
-
-        return entity;
     }
 
     private PublishStatus getAppStatus(List<PublishStatus> statuses) {

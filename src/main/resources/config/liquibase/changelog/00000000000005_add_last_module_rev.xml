@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="00000000000005" author="citeck">
+
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="data_type" />
+
+        <addColumn schemaName="public" tableName="ecos_module">
+            <column name="last_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_module_last_rev" references="ecos_module_rev(id)"/>
+            </column>
+        </addColumn>
+
+        <dropColumn schemaName="public" tableName="ecos_module_rev" columnName="name" />
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -4,16 +4,13 @@ import lombok.Getter;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
-import ru.citeck.ecos.apps.module.type.DataType;
 
 public class EcosModuleDb implements EcosModuleRev {
 
     @Getter String id;
     @Getter String revId;
     @Getter String type;
-    @Getter String name;
     @Getter int modelVersion;
-    @Getter DataType dataType;
     @Getter String hash;
     @Getter byte[] data;
     @Getter long size;
@@ -26,9 +23,9 @@ public class EcosModuleDb implements EcosModuleRev {
         this.id = module.getExtId();
         this.revId = entity.getExtId();
         this.type = module.getType();
-        this.name = entity.getName();
-        this.modelVersion = entity.getModelVersion();
-        this.dataType = entity.getDataType();
+
+        Integer version = entity.getModelVersion();
+        this.modelVersion = version != null ? version : 0;
 
         this.data = content.getData();
         this.hash = content.getHash();

@@ -5,12 +5,18 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.citeck.ecos.apps.EcosAppsApiFactory;
+import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.module.event.ModuleStatusChanged;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -20,19 +26,92 @@ public class EcosModuleService {
     private static final int PUBLISH_MSG_MAX = 1000;
 
     private final EcosModuleDao dao;
-    private final ModulePublishService publishService;
     private final ApplicationEventPublisher eventPublisher;
+    private final EcosAppsApiFactory appsApi;
+    private final EappsModuleService eappsModuleService;
 
     public EcosModuleService(ApplicationEventPublisher eventPublisher,
-                             ModulePublishService publishService,
+                             EcosAppsApiFactory appsApi,
+                             EappsModuleService eappsModuleService,
                              EcosModuleDao dao) {
         this.dao = dao;
-        this.publishService = publishService;
+        this.appsApi = appsApi;
         this.eventPublisher = eventPublisher;
+        this.eappsModuleService = eappsModuleService;
     }
 
-    public EcosModuleRev getLastModuleRev(String type, String id) {
-        return new EcosModuleDb(dao.getLastModuleRev(type, id));
+    public boolean isExists(ModuleRef ref) {
+        EcosModuleEntity module = dao.getModule(ref);
+        return module != null;
+    }
+
+    public void delete(ModuleRef ref) {
+        dao.delete(ref);
+    }
+
+    public String uploadModule(String source, EcosModule module, PublishPolicy publishPolicy) {
+
+        if (publishPolicy == null) {
+            publishPolicy = PublishPolicy.NONE;
+        }
+
+        UploadStatus<EcosModuleRevEntity> uploadStatus = dao.uploadModule(source, module);
+
+        EcosModuleRevEntity moduleRevEntity = uploadStatus.getEntity();
+        EcosModuleEntity moduleEntity = moduleRevEntity.getModule();
+
+        Supplier<PublishStatus> statusSupplier = () -> moduleRevEntity.getModule().getPublishStatus();
+
+        if (publishPolicy.shouldPublish(uploadStatus.isChanged(), statusSupplier)) {
+            publishModule(moduleEntity.getType(), moduleEntity.getExtId());
+        }
+
+        return moduleEntity.getExtId();
+    }
+
+    public int getCount(String type) {
+        return dao.getModulesCount(type);
+    }
+
+    public int getCount() {
+        return dao.getModulesCount();
+    }
+
+    public List<EcosModule> getModules(String type, int skipCount, int maxItems) {
+
+        return dao.getModulesLastRev(type, skipCount, maxItems)
+            .stream()
+            .map(this::toModule)
+            .collect(Collectors.toList());
+    }
+
+    public List<EcosModule> getAllModules(int skipCount, int maxItems) {
+        return dao.getAllLastRevisions(skipCount, maxItems)
+            .stream()
+            .map(this::toModule)
+            .collect(Collectors.toList());
+    }
+
+    public List<EcosModule> getAllModules() {
+        return getAllModules(0, 1000);
+    }
+
+    public EcosModuleRev getLastModuleRev(ModuleRef moduleRef) {
+        return new EcosModuleDb(dao.getLastModuleRev(moduleRef));
+    }
+
+    public EcosModuleRev getLastModuleRev(ModuleRef moduleRef, String source) {
+        return new EcosModuleDb(dao.getLastModuleRev(moduleRef, source));
+    }
+
+    public PublishStatus getPublishStatus(ModuleRef moduleRef) {
+        EcosModuleEntity module = dao.getModule(moduleRef);
+        return module.getPublishStatus();
+    }
+
+    public ModulePublishState getPublishState(ModuleRef moduleRef) {
+        EcosModuleEntity module = dao.getModule(moduleRef);
+        return new ModulePublishState(module.getPublishStatus(), module.getPublishMsg());
     }
 
     public EcosModuleRev getModuleRevision(String id) {
@@ -41,14 +120,16 @@ public class EcosModuleService {
 
     public void publishModule(String type, String id) {
 
+        log.info("Start module publishing: " + ModuleRef.create(type, id));
+
         EcosModuleRevEntity lastModuleRev = dao.getLastModuleRev(type, id);
         EcosModuleEntity module = lastModuleRev.getModule();
 
         module.setPublishStatus(PublishStatus.PUBLISHING);
         dao.save(module);
 
-        publishService.publish(new EcosModuleDb(lastModuleRev));
-        eventPublisher.publishEvent(new ModuleStatusChanged(module));
+        EcosModule moduleInstance = eappsModuleService.read(lastModuleRev.getContent().getData(), type);
+        appsApi.getModuleApi().publishModule(lastModuleRev.getExtId(), moduleInstance);
     }
 
     public void updatePublishStatus(String revExtId, boolean isSuccess, String message) {
@@ -92,7 +173,18 @@ public class EcosModuleService {
         }
 
         module.setPublishMsg(message);
+
+        module = dao.save(module);
         dao.save(entity);
+
         eventPublisher.publishEvent(new ModuleStatusChanged(module));
+    }
+
+    private EcosModule toModule(EcosModuleRevEntity entity) {
+
+        String type = entity.getModule().getType();
+        byte[] content = entity.getContent().getData();
+
+        return eappsModuleService.read(content, type);
     }
 }

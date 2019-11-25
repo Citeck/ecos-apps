@@ -23,6 +23,7 @@ public class EcosAppRevEntity extends AbstractImmutableEntity {
 
     @Getter @Setter private String version;
     @Getter @Setter private String name;
+    @Getter @Setter private String source;
 
     @ManyToOne
     @JoinColumn(name = "app_id")

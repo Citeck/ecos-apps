@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.citeck.ecos.apps.app.EcosAppVersion;
 import ru.citeck.ecos.apps.app.module.EcosModuleDb;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
+import ru.citeck.ecos.apps.app.patch.EcosPatch;
 import ru.citeck.ecos.apps.domain.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.EcosAppRevEntity;
 
@@ -22,6 +23,7 @@ public class EcosAppDb implements EcosAppRev {
     private EcosAppVersion version;
     private Map<String, String> dependencies;
     private List<EcosModuleRev> modules;
+    private List<EcosPatch> patches;
     private String hash;
     private long size;
     private String source;
