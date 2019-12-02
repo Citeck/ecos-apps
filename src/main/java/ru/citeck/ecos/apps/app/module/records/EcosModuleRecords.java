@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.app.module.records;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -70,6 +71,8 @@ public class EcosModuleRecords extends LocalRecordsDAO
         this.predicateService = predicateService;
         this.ecosModuleService = ecosModuleService;
         this.eappsModuleService = eappsModuleService;
+
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     private Predicate convertCriteria(String criteria) {
