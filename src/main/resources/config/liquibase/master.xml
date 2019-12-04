@@ -9,6 +9,7 @@
     <include file="changelog/00000000000004_ecos_app_update.xml" relativeToChangelogFile="true"/>
     <include file="changelog/00000000000005_add_last_module_rev.xml" relativeToChangelogFile="true"/>
     <include file="changelog/00000000000006_add_deleted_flag.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/00000000000007_dependencies.xml" relativeToChangelogFile="true"/>
 
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->

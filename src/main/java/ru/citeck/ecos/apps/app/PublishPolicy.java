@@ -24,7 +24,12 @@ public enum PublishPolicy {
                 if (isChanged) {
                     shouldPublish = true;
                 } else {
-                    shouldPublish = !PublishStatus.PUBLISHED.equals(statusSupplier.get());
+                    PublishStatus status = statusSupplier.get();
+                    if (PublishStatus.DEPS_WAITING.equals(status)) {
+                        shouldPublish = false;
+                    } else {
+                        shouldPublish = !PublishStatus.PUBLISHED.equals(status);
+                    }
                 }
                 break;
 

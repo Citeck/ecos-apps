@@ -96,6 +96,7 @@ public class EcosAppDao {
             appLastRev.setExtId(UUID.randomUUID().toString());
             appLastRev.setVersion(app.getVersion().toString());
             appLastRev.setSource(source);
+            appLastRev.setDependencies(getDependencies(appLastRev, app.getDependencies()));
 
             appLastRev = appRevRepo.save(appLastRev);
 
@@ -109,6 +110,35 @@ public class EcosAppDao {
         log.info("Application uploading finished: " + app.getName() + " (" + app.getId() + ")");
 
         return new UploadStatus<>(appLastRev, isAppChanged);
+    }
+
+    private Set<AppRevDepEntity> getDependencies(EcosAppRevEntity source, Map<String, String> dependencies) {
+
+        if (dependencies == null || dependencies.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<AppRevDepEntity> entityDeps = new HashSet<>();
+
+        dependencies.forEach((id, version) -> {
+
+            EcosAppEntity dependencyAppEntity = appRepo.getByExtId(id);
+
+            if (dependencyAppEntity == null) {
+                dependencyAppEntity = new EcosAppEntity();
+                dependencyAppEntity.setExtId(id);
+                appRepo.save(dependencyAppEntity);
+            }
+
+            AppRevDepEntity depEntity = new AppRevDepEntity();
+            depEntity.setSource(source);
+            depEntity.setVersion(version);
+            depEntity.setTarget(dependencyAppEntity);
+
+            entityDeps.add(depEntity);
+        });
+
+        return entityDeps;
     }
 
     public EcosAppEntity save(EcosAppEntity appEntity) {

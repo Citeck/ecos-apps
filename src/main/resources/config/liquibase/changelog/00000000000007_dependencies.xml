@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="00000000000007" author="citeck">
+
+        <createTable tableName="ecos_app_rev_deps">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="app_rev_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_deps_app_rev_id" references="ecos_app_rev(id)"/>
+            </column>
+            <column name="dep_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_deps_dep_id" references="ecos_app(id)"/>
+            </column>
+            <column name="version" type="VARCHAR(20)" />
+
+        </createTable>
+
+        <addUniqueConstraint constraintName="u_const_ecos_app_rev_deps" tableName="ecos_app_rev_deps" columnNames="app_rev_id,dep_id" />
+
+        <createTable tableName="ecos_module_deps">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="module_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_module_deps_module_id" references="ecos_module(id)"/>
+            </column>
+            <column name="dep_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_module_deps_dep_id" references="ecos_module(id)"/>
+            </column>
+
+        </createTable>
+
+        <addUniqueConstraint constraintName="u_const_ecos_module_deps" tableName="ecos_module_deps" columnNames="module_id,dep_id" />
+
+    </changeSet>
+
+</databaseChangeLog>

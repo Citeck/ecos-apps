@@ -19,10 +19,7 @@ import ru.citeck.ecos.apps.app.module.type.dashboard.DashboardModule;
 import ru.citeck.ecos.apps.app.module.type.form.FormModule;
 import ru.citeck.ecos.apps.app.patch.EcosPatch;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.hamcrest.Matchers.is;
@@ -160,10 +157,16 @@ public class EcosAppPublishTest {
     }
 
     private EcosAppMetaDto createMeta() {
+
         EcosAppMetaDto meta = new EcosAppMetaDto();
         meta.setId("test-app");
         meta.setVersion(new EcosAppVersion("1.0.0"));
         meta.setName("Test app name");
+
+        Map<String, String> dependencies = new HashMap<>();
+        dependencies.put("idocs-repo", "*");
+        meta.setDependencies(dependencies);
+
         return meta;
     }
 }

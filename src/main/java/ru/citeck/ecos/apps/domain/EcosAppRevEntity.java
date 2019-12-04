@@ -37,4 +37,9 @@ public class EcosAppRevEntity extends AbstractImmutableEntity {
         inverseJoinColumns = {@JoinColumn(name = "module_rev_id", referencedColumnName = "id")})
     @BatchSize(size = 20)
     @Getter @Setter private Set<EcosModuleRevEntity> modules = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany
+    @JoinColumn(name = "app_rev_id")
+    @Getter @Setter private Set<AppRevDepEntity> dependencies = new HashSet<>();
 }

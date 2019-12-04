@@ -1,10 +1,13 @@
 package ru.citeck.ecos.apps.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import ru.citeck.ecos.apps.app.PublishStatus;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -34,4 +37,13 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private PublishStatus publishStatus = PublishStatus.DRAFT;
     @Column(name = "publish_msg")
     @Getter @Setter private String publishMsg;
+
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "ecos_module_deps",
+        joinColumns = {@JoinColumn(name = "module_id", referencedColumnName = "id")},
+        inverseJoinColumns = {@JoinColumn(name = "dep_id", referencedColumnName = "id")})
+    @BatchSize(size = 20)
+    @Getter @Setter private Set<EcosModuleEntity> dependencies = new HashSet<>();
 }
