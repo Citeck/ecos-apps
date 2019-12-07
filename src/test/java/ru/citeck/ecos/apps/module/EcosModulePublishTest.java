@@ -78,11 +78,11 @@ public class EcosModulePublishTest {
 
             moduleService.uploadModule(source, module, PublishPolicy.PUBLISH_IF_NOT_PUBLISHED);
 
-            TestUtils.waitUntil(() ->
+            TestUtils.waitWhile(() ->
                 !PublishStatus.PUBLISHING.equals(moduleService.getPublishStatus(moduleRef)), 5);
         }
 
-        TestUtils.waitUntil(() ->
+        TestUtils.waitWhile(() ->
             PublishStatus.PUBLISHING.equals(moduleService.getPublishStatus(moduleRef)), 5);
 
         ModulePublishState state = moduleService.getPublishState(moduleRef);
@@ -106,7 +106,7 @@ public class EcosModulePublishTest {
             assertThat(status, is(PublishStatus.PUBLISHING));
         }
 
-        TestUtils.waitUntil(() ->
+        TestUtils.waitWhile(() ->
             PublishStatus.PUBLISHING.equals(moduleService.getPublishStatus(moduleRef)), 5);
 
         state = moduleService.getPublishState(moduleRef);

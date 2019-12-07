@@ -1,7 +1,6 @@
 package ru.citeck.ecos.apps;
 
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.module.EcosModuleService;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -10,7 +9,28 @@ import java.util.function.Supplier;
 @Component
 public class TestUtils {
 
-    public static void waitUntil(Supplier<Boolean> condition, int timeoutSec) {
+    public static void assertTrueWhile(Supplier<Boolean> condition, int seconds) {
+
+        long time = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(seconds);
+        boolean conditionResult = condition.get();
+
+        while (conditionResult && System.currentTimeMillis() < time) {
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            conditionResult = condition.get();
+        }
+
+        if (!conditionResult) {
+            throw new RuntimeException("Assertion failed. Condition: " + condition);
+        }
+    }
+
+    public static void waitWhile(Supplier<Boolean> condition, int timeoutSec) {
 
         long time = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeoutSec);
         boolean conditionResult = condition.get();
@@ -32,7 +52,7 @@ public class TestUtils {
     }
 
     public static void waitElements(List<?> collection, int count, int seconds) {
-        waitUntil(() -> {
+        waitWhile(() -> {
             synchronized (collection) {
                 return collection.size() != count;
             }

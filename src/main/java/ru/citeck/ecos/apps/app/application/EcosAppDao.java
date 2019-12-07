@@ -11,7 +11,6 @@ import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.io.EcosAppIO;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
-import ru.citeck.ecos.apps.app.module.ModuleRef;
 import ru.citeck.ecos.apps.domain.*;
 import ru.citeck.ecos.apps.repository.EcosAppRepo;
 import ru.citeck.ecos.apps.repository.EcosAppRevRepo;
@@ -112,13 +111,13 @@ public class EcosAppDao {
         return new UploadStatus<>(appLastRev, isAppChanged);
     }
 
-    private Set<AppRevDepEntity> getDependencies(EcosAppRevEntity source, Map<String, String> dependencies) {
+    private Set<EcosAppRevDepEntity> getDependencies(EcosAppRevEntity source, Map<String, String> dependencies) {
 
         if (dependencies == null || dependencies.isEmpty()) {
             return Collections.emptySet();
         }
 
-        Set<AppRevDepEntity> entityDeps = new HashSet<>();
+        Set<EcosAppRevDepEntity> entityDeps = new HashSet<>();
 
         dependencies.forEach((id, version) -> {
 
@@ -127,10 +126,11 @@ public class EcosAppDao {
             if (dependencyAppEntity == null) {
                 dependencyAppEntity = new EcosAppEntity();
                 dependencyAppEntity.setExtId(id);
+                dependencyAppEntity.setVersion("0");
                 appRepo.save(dependencyAppEntity);
             }
 
-            AppRevDepEntity depEntity = new AppRevDepEntity();
+            EcosAppRevDepEntity depEntity = new EcosAppRevDepEntity();
             depEntity.setSource(source);
             depEntity.setVersion(version);
             depEntity.setTarget(dependencyAppEntity);
@@ -165,52 +165,5 @@ public class EcosAppDao {
 
     public List<EcosAppRevEntity> getAppsRevByModuleRev(PublishStatus status, String revId, Pageable page) {
         return appRevRepo.getAppsByModuleRev(status, revId, page);
-    }
-
-    public void updateAppsPublishStatus(ModuleRef moduleRef) {
-
-        EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(moduleRef);
-
-        lastModuleRev.getApplications()
-            .stream()
-            .map(EcosAppRevEntity::getApplication)
-            .forEach(this::updateAppPublishStatus);
-    }
-
-    public void updateAppPublishStatus(String id) {
-        EcosAppEntity entity = appRepo.getByExtId(id);
-        updateAppPublishStatus(entity);
-    }
-
-    private void updateAppPublishStatus(EcosAppEntity entity) {
-
-        EcosAppRevEntity lastRevision = getLastRevisionByAppId(entity.getId());
-
-        PublishStatus status = getAppStatus(
-            lastRevision.getModules()
-                .stream()
-                .map(me -> me.getModule().getPublishStatus())
-                .collect(Collectors.toList())
-        );
-
-        if (!status.equals(entity.getPublishStatus())) {
-            entity.setPublishStatus(status);
-            entity = appRepo.save(entity);
-        }
-    }
-
-    private PublishStatus getAppStatus(List<PublishStatus> statuses) {
-
-        PublishStatus status;
-
-        if (statuses.stream().anyMatch(PublishStatus.PUBLISHING::equals)) {
-            status = PublishStatus.PUBLISHING;
-        } else if (statuses.stream().anyMatch(PublishStatus.PUBLISH_FAILED::equals)) {
-            status = PublishStatus.PUBLISH_FAILED;
-        } else {
-            status = PublishStatus.PUBLISHED;
-        }
-
-        return status;
     }
 }

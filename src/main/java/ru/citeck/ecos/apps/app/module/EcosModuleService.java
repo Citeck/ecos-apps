@@ -63,7 +63,7 @@ public class EcosModuleService {
         Supplier<PublishStatus> statusSupplier = () -> moduleRevEntity.getModule().getPublishStatus();
 
         if (publishPolicy.shouldPublish(uploadStatus.isChanged(), statusSupplier)) {
-            publishModule(moduleEntity.getType(), moduleEntity.getExtId());
+            publishModule(ModuleRef.create(moduleEntity.getType(), moduleEntity.getExtId()), true);
         }
 
         return moduleEntity.getExtId();
@@ -118,18 +118,31 @@ public class EcosModuleService {
         return new EcosModuleDb(dao.getModuleRev(id));
     }
 
-    public void publishModule(String type, String id) {
+    public void publishModule(ModuleRef moduleRef, boolean force) {
 
-        log.info("Start module publishing: " + ModuleRef.create(type, id));
+        log.info("Start module publishing: " + moduleRef);
 
-        EcosModuleRevEntity lastModuleRev = dao.getLastModuleRev(type, id);
+        EcosModuleRevEntity lastModuleRev = dao.getLastModuleRev(moduleRef);
         EcosModuleEntity module = lastModuleRev.getModule();
 
-        module.setPublishStatus(PublishStatus.PUBLISHING);
-        dao.save(module);
+        PublishStatus currentStatus = module.getPublishStatus();
 
-        EcosModule moduleInstance = eappsModuleService.read(lastModuleRev.getContent().getData(), type);
-        appsApi.getModuleApi().publishModule(lastModuleRev.getExtId(), moduleInstance);
+        if (force || !PublishStatus.PUBLISHED.equals(currentStatus)) {
+
+            log.info("Send module to publish API. ref: " + moduleRef);
+
+            module.setPublishStatus(PublishStatus.PUBLISHING);
+            dao.save(module);
+
+            byte[] data = lastModuleRev.getContent().getData();
+            EcosModule moduleInstance = eappsModuleService.read(data, moduleRef.getType());
+
+            appsApi.getModuleApi().publishModule(lastModuleRev.getExtId(), moduleInstance);
+
+        } else {
+
+            log.info("Module doesn't changed. Do nothing. ref: " + moduleRef);
+        }
     }
 
     public void updatePublishStatus(String revExtId, boolean isSuccess, String message) {

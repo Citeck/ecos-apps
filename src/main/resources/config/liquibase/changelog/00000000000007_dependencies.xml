@@ -6,7 +6,7 @@
 
     <changeSet id="00000000000007" author="citeck">
 
-        <createTable tableName="ecos_app_rev_deps">
+        <createTable tableName="ecos_app_rev_dep">
 
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
@@ -22,9 +22,9 @@
 
         </createTable>
 
-        <addUniqueConstraint constraintName="u_const_ecos_app_rev_deps" tableName="ecos_app_rev_deps" columnNames="app_rev_id,dep_id" />
+        <addUniqueConstraint constraintName="u_const_ecos_app_rev_dep" tableName="ecos_app_rev_dep" columnNames="app_rev_id,dep_id" />
 
-        <createTable tableName="ecos_module_deps">
+        <createTable tableName="ecos_module_dep">
 
             <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
                 <constraints primaryKey="true" nullable="false" />
@@ -39,7 +39,7 @@
 
         </createTable>
 
-        <addUniqueConstraint constraintName="u_const_ecos_module_deps" tableName="ecos_module_deps" columnNames="module_id,dep_id" />
+        <addUniqueConstraint constraintName="u_const_ecos_module_dep" tableName="ecos_module_dep" columnNames="module_id,dep_id" />
 
     </changeSet>
 

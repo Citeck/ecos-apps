@@ -54,7 +54,7 @@ public class EcosAppController {
     public String publishModule(@PathVariable String type,
                                 @PathVariable String moduleId) {
 
-        moduleService.publishModule(type, moduleId);
+        moduleService.publishModule(ModuleRef.create(type, moduleId), true);
         return "OK";
     }
 

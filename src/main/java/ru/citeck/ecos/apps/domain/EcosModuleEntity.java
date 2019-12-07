@@ -41,7 +41,7 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "ecos_module_deps",
+        name = "ecos_module_dep",
         joinColumns = {@JoinColumn(name = "module_id", referencedColumnName = "id")},
         inverseJoinColumns = {@JoinColumn(name = "dep_id", referencedColumnName = "id")})
     @BatchSize(size = 20)

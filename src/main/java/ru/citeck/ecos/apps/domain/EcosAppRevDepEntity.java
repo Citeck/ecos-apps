@@ -8,12 +8,12 @@ import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "ecos_app_rev_deps")
-public class AppRevDepEntity {
+@Table(name = "ecos_app_rev_dep")
+public class EcosAppRevDepEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_rev_deps_id_gen")
-    @SequenceGenerator(name = "ecos_app_rev_deps_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_rev_dep_id_gen")
+    @SequenceGenerator(name = "ecos_app_rev_dep_id_gen")
     @Getter @Setter private Long id;
 
     @Getter @Setter private String version;
@@ -36,7 +36,7 @@ public class AppRevDepEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AppRevDepEntity that = (AppRevDepEntity) o;
+        EcosAppRevDepEntity that = (EcosAppRevDepEntity) o;
         return id.equals(that.id);
     }
 

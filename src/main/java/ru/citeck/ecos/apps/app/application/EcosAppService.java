@@ -10,16 +10,19 @@ import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.io.EcosAppIO;
+import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
 import ru.citeck.ecos.apps.app.module.ModuleRef;
-import ru.citeck.ecos.apps.domain.EcosAppEntity;
-import ru.citeck.ecos.apps.domain.EcosAppRevEntity;
-import ru.citeck.ecos.apps.domain.EcosModuleEntity;
+import ru.citeck.ecos.apps.domain.*;
+import ru.citeck.ecos.apps.repository.EcosAppRevDepRepo;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,28 +31,17 @@ import java.util.function.Supplier;
 public class EcosAppService {
 
     private final EcosAppDao appDao;
+    private final EcosModuleDao moduleDao;
     private final EcosModuleService moduleService;
     private final EcosAppIO appIO;
-
-    public PublishStatus getPublishStatus(String appId) {
-        EcosAppEntity ecosApp = appDao.getEcosApp(appId);
-        return ecosApp.getPublishStatus();
-    }
-
-    public void updateAppPublishStatus(String id) {
-        appDao.updateAppPublishStatus(id);
-    }
-
-    public void updateAppsPublishStatus(ModuleRef moduleRef) {
-        appDao.updateAppsPublishStatus(moduleRef);
-    }
+    private final EcosAppRevDepRepo appDepsRepo;
 
     public void publishApp(String appId) {
 
         EcosAppRevEntity revision = appDao.getLastRevisionByExtId(appId);
         revision.getModules().forEach(m -> {
             EcosModuleEntity module = m.getModule();
-            moduleService.publishModule(module.getType(), module.getExtId());
+            moduleService.publishModule(ModuleRef.create(module.getType(), module.getExtId()), false);
         });
     }
 
@@ -69,13 +61,33 @@ public class EcosAppService {
         Supplier<PublishStatus> statusSupplier = () -> appRev.getApplication().getPublishStatus();
 
         if (publishPolicy.shouldPublish(uploadStatus.isChanged(), statusSupplier)) {
-
-            String appId = appRev.getApplication().getExtId();
-            publishApp(appId);
-            updateAppPublishStatus(appId);
+            tryToPublish(appRev.getApplication());
         }
 
         return new EcosAppDb(appRev);
+    }
+
+    private void tryToPublish(EcosAppEntity application) {
+
+        EcosAppRevEntity lastRevision = appDao.getLastRevisionByAppId(application.getId());
+
+        Set<PublishStatus> depsStatuses = lastRevision.getDependencies()
+            .stream()
+            .map(EcosAppRevDepEntity::getTarget)
+            .map(EcosAppEntity::getPublishStatus)
+            .collect(Collectors.toSet());
+
+        if (depsStatuses.stream().allMatch(PublishStatus.PUBLISHED::equals)) {
+            String appId = application.getExtId();
+            publishApp(appId);
+            updateAppPublishStatus(appId);
+        } else {
+            PublishStatus publishStatus = application.getPublishStatus();
+            if (!PublishStatus.DEPS_WAITING.equals(publishStatus)) {
+                application.setPublishStatus(PublishStatus.DEPS_WAITING);
+                appDao.save(application);
+            }
+        }
     }
 
     public EcosAppRev uploadApp(File file, PublishPolicy publishPolicy) {
@@ -96,5 +108,70 @@ public class EcosAppService {
         }
 
         return uploadApp(source, data, publishPolicy);
+    }
+
+    public PublishStatus getPublishStatus(String appId) {
+        EcosAppEntity ecosApp = appDao.getEcosApp(appId);
+        return ecosApp.getPublishStatus();
+    }
+
+    public void updateAppsPublishStatus(ModuleRef moduleRef) {
+
+        EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(moduleRef);
+
+        lastModuleRev.getApplications()
+            .stream()
+            .map(EcosAppRevEntity::getApplication)
+            .forEach(this::updateAppPublishStatus);
+    }
+
+    public void updateAppPublishStatus(String id) {
+        EcosAppEntity entity = appDao.getEcosApp(id);
+        updateAppPublishStatus(entity);
+    }
+
+    private void updateAppPublishStatus(EcosAppEntity entity) {
+
+        EcosAppRevEntity lastRevision = appDao.getLastRevisionByAppId(entity.getId());
+
+        PublishStatus newStatus = getAppStatus(
+            lastRevision.getModules()
+                .stream()
+                .map(me -> me.getModule().getPublishStatus())
+                .collect(Collectors.toList())
+        );
+
+        PublishStatus statusBefore = entity.getPublishStatus();
+
+        if (!newStatus.equals(statusBefore)) {
+
+            entity.setPublishStatus(newStatus);
+            appDao.save(entity);
+
+            if (newStatus.equals(PublishStatus.PUBLISHED) && statusBefore.equals(PublishStatus.PUBLISHING)) {
+
+                List<EcosAppRevDepEntity> deps = appDepsRepo.getDepsByTarget(entity.getId());
+                deps.stream()
+                    .map(EcosAppRevDepEntity::getSource)
+                    .map(EcosAppRevEntity::getApplication)
+                    .filter(a -> PublishStatus.DEPS_WAITING.equals(a.getPublishStatus()))
+                    .forEach(this::tryToPublish);
+            }
+        }
+    }
+
+    private PublishStatus getAppStatus(List<PublishStatus> statuses) {
+
+        PublishStatus status;
+
+        if (statuses.stream().anyMatch(PublishStatus.PUBLISHING::equals)) {
+            status = PublishStatus.PUBLISHING;
+        } else if (statuses.stream().anyMatch(PublishStatus.PUBLISH_FAILED::equals)) {
+            status = PublishStatus.PUBLISH_FAILED;
+        } else {
+            status = PublishStatus.PUBLISHED;
+        }
+
+        return status;
     }
 }
