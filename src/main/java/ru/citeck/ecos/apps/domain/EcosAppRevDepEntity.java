@@ -20,12 +20,12 @@ public class EcosAppRevDepEntity {
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "app_rev_id")
+    @JoinColumn(name = "source_app_rev_id")
     @Getter @Setter private EcosAppRevEntity source;
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "dep_id")
+    @JoinColumn(name = "target_app_id")
     @Getter @Setter private EcosAppEntity target;
 
     @Override

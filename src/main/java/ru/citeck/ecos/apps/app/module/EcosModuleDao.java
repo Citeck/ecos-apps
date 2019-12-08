@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.app.module;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,34 +10,26 @@ import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
 import ru.citeck.ecos.apps.app.module.records.EcosModuleRecords;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
+import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.repository.EcosModuleDepRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRepo;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class EcosModuleDao {
 
     private final EcosModuleRepo moduleRepo;
     private final EcosContentDao contentDao;
     private final EcosModuleRevRepo moduleRevRepo;
     private final EappsModuleService eappsModuleService;
-
-    public EcosModuleDao(EcosModuleRepo moduleRepo,
-                         EcosModuleRevRepo moduleRevRepo,
-                         EcosContentDao contentDao,
-                         EappsModuleService eappsModuleService) {
-        this.moduleRepo = moduleRepo;
-        this.contentDao = contentDao;
-        this.moduleRevRepo = moduleRevRepo;
-        this.eappsModuleService = eappsModuleService;
-    }
+    private final EcosModuleDepRepo moduleDepRepo;
 
     public int getModulesCount() {
         return (int) moduleRepo.getCount();
@@ -67,10 +60,10 @@ public class EcosModuleDao {
                                                 + module.getClass() + " (" + module.getId() + ")");
         }
 
+        Set<ModuleRef> dependencies = eappsModuleService.getDependencies(module);
         ModuleRef moduleRef = ModuleRef.create(typeId, module.getId());
 
         EcosModuleEntity moduleEntity = getModule(moduleRef);
-
         EcosModuleRevEntity lastModuleRev = null;
 
         if (moduleEntity == null) {
@@ -119,9 +112,44 @@ public class EcosModuleDao {
 
         moduleEntity.setLastRev(lastModuleRev);
         moduleEntity.setPublishStatus(PublishStatus.DRAFT);
+        moduleEntity.setDependencies(getDependenciesModules(moduleEntity, dependencies));
+
         moduleRepo.save(moduleEntity);
 
         return new UploadStatus<>(lastModuleRev, true);
+    }
+
+    private Set<EcosModuleDepEntity> getDependenciesModules(EcosModuleEntity baseEntity, Set<ModuleRef> modules) {
+
+        Set<EcosModuleDepEntity> dependencies = new HashSet<>();
+
+        for (ModuleRef ref : modules) {
+
+            EcosModuleEntity moduleEntity = moduleRepo.getByExtId(ref.getType(), ref.getId());
+            if (moduleEntity == null) {
+                moduleEntity = new EcosModuleEntity();
+                moduleEntity.setExtId(ref.getId());
+                moduleEntity.setType(ref.getType());
+                moduleEntity = moduleRepo.save(moduleEntity);
+            }
+
+            EcosModuleDepEntity depEntity = new EcosModuleDepEntity();
+            depEntity.setSource(baseEntity);
+            depEntity.setTarget(moduleEntity);
+            dependencies.add(depEntity);
+        }
+
+        return new HashSet<>(moduleDepRepo.saveAll(dependencies));
+    }
+
+    public List<EcosModuleEntity> getDependentModules(ModuleRef targetRef) {
+
+        EcosModuleEntity moduleEntity = moduleRepo.getByExtId(targetRef.getType(), targetRef.getId());
+        List<EcosModuleDepEntity> depsByTarget = moduleDepRepo.getDepsByTarget(moduleEntity.getId());
+
+        return depsByTarget.stream()
+            .map(EcosModuleDepEntity::getSource)
+            .collect(Collectors.toList());
     }
 
     public EcosModuleRevEntity getLastModuleRev(String type, String id) {

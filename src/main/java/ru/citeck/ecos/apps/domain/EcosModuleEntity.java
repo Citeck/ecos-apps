@@ -38,12 +38,7 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Column(name = "publish_msg")
     @Getter @Setter private String publishMsg;
 
-    @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "ecos_module_dep",
-        joinColumns = {@JoinColumn(name = "module_id", referencedColumnName = "id")},
-        inverseJoinColumns = {@JoinColumn(name = "dep_id", referencedColumnName = "id")})
-    @BatchSize(size = 20)
-    @Getter @Setter private Set<EcosModuleEntity> dependencies = new HashSet<>();
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_id")
+    @Getter @Setter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
 }

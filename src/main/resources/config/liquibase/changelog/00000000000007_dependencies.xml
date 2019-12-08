@@ -12,17 +12,17 @@
                 <constraints primaryKey="true" nullable="false" />
             </column>
 
-            <column name="app_rev_id" type="BIGINT">
-                <constraints nullable="false" foreignKeyName="fk_app_deps_app_rev_id" references="ecos_app_rev(id)"/>
+            <column name="source_app_rev_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_deps_source_app_rev_id" references="ecos_app_rev(id)"/>
             </column>
-            <column name="dep_id" type="BIGINT">
-                <constraints nullable="false" foreignKeyName="fk_app_deps_dep_id" references="ecos_app(id)"/>
+            <column name="target_app_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_app_deps_target_id" references="ecos_app(id)"/>
             </column>
             <column name="version" type="VARCHAR(20)" />
 
         </createTable>
 
-        <addUniqueConstraint constraintName="u_const_ecos_app_rev_dep" tableName="ecos_app_rev_dep" columnNames="app_rev_id,dep_id" />
+        <addUniqueConstraint constraintName="u_const_ecos_app_rev_dep" tableName="ecos_app_rev_dep" columnNames="source_app_rev_id,target_app_id" />
 
         <createTable tableName="ecos_module_dep">
 
@@ -30,16 +30,16 @@
                 <constraints primaryKey="true" nullable="false" />
             </column>
 
-            <column name="module_id" type="BIGINT">
-                <constraints nullable="false" foreignKeyName="fk_module_deps_module_id" references="ecos_module(id)"/>
+            <column name="source_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_module_deps_source_id" references="ecos_module(id)"/>
             </column>
-            <column name="dep_id" type="BIGINT">
-                <constraints nullable="false" foreignKeyName="fk_module_deps_dep_id" references="ecos_module(id)"/>
+            <column name="target_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_module_deps_target_id" references="ecos_module(id)"/>
             </column>
 
         </createTable>
 
-        <addUniqueConstraint constraintName="u_const_ecos_module_dep" tableName="ecos_module_dep" columnNames="module_id,dep_id" />
+        <addUniqueConstraint constraintName="u_const_ecos_module_dep" tableName="ecos_module_dep" columnNames="source_id,target_id" />
 
     </changeSet>
 

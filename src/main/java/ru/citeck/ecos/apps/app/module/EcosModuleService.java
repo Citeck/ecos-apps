@@ -10,6 +10,7 @@ import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.module.event.ModuleStatusChanged;
+import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 
@@ -49,6 +50,10 @@ public class EcosModuleService {
         dao.delete(ref);
     }
 
+    public String uploadModule(String source, EcosModule module) {
+        return uploadModule(source, module, PublishPolicy.PUBLISH_IF_NOT_PUBLISHED);
+    }
+
     public String uploadModule(String source, EcosModule module, PublishPolicy publishPolicy) {
 
         if (publishPolicy == null) {
@@ -63,10 +68,24 @@ public class EcosModuleService {
         Supplier<PublishStatus> statusSupplier = () -> moduleRevEntity.getModule().getPublishStatus();
 
         if (publishPolicy.shouldPublish(uploadStatus.isChanged(), statusSupplier)) {
-            publishModule(ModuleRef.create(moduleEntity.getType(), moduleEntity.getExtId()), true);
+            tryToPublish(moduleEntity);
         }
 
         return moduleEntity.getExtId();
+    }
+
+    private void tryToPublish(EcosModuleEntity moduleEntity) {
+
+        if (moduleEntity.getDependencies()
+                        .stream()
+                        .map(EcosModuleDepEntity::getTarget)
+                        .anyMatch(d -> !PublishStatus.PUBLISHED.equals(d.getPublishStatus()))) {
+
+            moduleEntity.setPublishStatus(PublishStatus.DEPS_WAITING);
+            dao.save(moduleEntity);
+        } else {
+            publishModule(ModuleRef.create(moduleEntity.getType(), moduleEntity.getExtId()), true);
+        }
     }
 
     public int getCount(String type) {
@@ -141,7 +160,7 @@ public class EcosModuleService {
 
         } else {
 
-            log.info("Module doesn't changed. Do nothing. ref: " + moduleRef);
+            log.info("Module already published. Do nothing. ref: " + moduleRef);
         }
     }
 
@@ -189,6 +208,16 @@ public class EcosModuleService {
 
         module = dao.save(module);
         dao.save(entity);
+
+        if (PublishStatus.PUBLISHED.equals(newStatus)) {
+
+            ModuleRef moduleRef = ModuleRef.create(module.getType(), module.getExtId());
+            List<EcosModuleEntity> modules = dao.getDependentModules(moduleRef);
+
+            for (EcosModuleEntity moduleFromDep : modules) {
+                tryToPublish(moduleFromDep);
+            }
+        }
 
         eventPublisher.publishEvent(new ModuleStatusChanged(module));
     }
