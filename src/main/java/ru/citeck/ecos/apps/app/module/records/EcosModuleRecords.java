@@ -33,8 +33,8 @@ import ru.citeck.ecos.records2.request.query.RecordsQuery;
 import ru.citeck.ecos.records2.request.query.RecordsQueryResult;
 import ru.citeck.ecos.records2.source.dao.MutableRecordsDAO;
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDAO;
-import ru.citeck.ecos.records2.source.dao.local.RecordsMetaLocalDAO;
-import ru.citeck.ecos.records2.source.dao.local.RecordsQueryLocalDAO;
+import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDAO;
+import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryDAO;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class EcosModuleRecords extends LocalRecordsDAO
-                               implements RecordsQueryLocalDAO,
+                               implements LocalRecordsQueryDAO,
                                           MutableRecordsDAO,
-                                          RecordsMetaLocalDAO<MetaValue> {
+                                          LocalRecordsMetaDAO<MetaValue> {
 
     public static final String MODULES_SOURCE = "mutation";
 
@@ -102,7 +102,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
     }
 
     @Override
-    public RecordsQueryResult<RecordRef> getLocalRecords(RecordsQuery recordsQuery) {
+    public RecordsQueryResult<RecordRef> queryLocalRecords(RecordsQuery recordsQuery) {
 
         String language = recordsQuery.getLanguage();
 
@@ -156,7 +156,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
     }
 
     @Override
-    public List<MetaValue> getMetaValues(List<RecordRef> records) {
+    public List<MetaValue> getLocalRecordsMeta(List<RecordRef> records, MetaField metaField) {
 
         return records.stream().map(r -> {
 
@@ -173,7 +173,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             EcosModule module = eappsModuleService.read(lastModuleRev.getData(), moduleRef.getType());
 
-            return new Value(valuesConverter.toMetaValue(module), moduleRef.getType());
+            return new Value(valuesConverter.toMetaValue(module), moduleRef, module);
 
         }).collect(Collectors.toList());
     }
@@ -361,11 +361,13 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
     class Value extends MetaValueDelegate {
 
-        String type;
+        EcosModule module;
+        ModuleRef ref;
 
-        Value(MetaValue impl, String type) {
+        Value(MetaValue impl, ModuleRef ref, EcosModule module) {
             super(impl);
-            this.type = type;
+            this.ref = ref;
+            this.module = module;
         }
 
         @Override
@@ -375,9 +377,9 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 case ATT_MODULE_ID:
                     return super.getId();
                 case RecordConstants.ATT_FORM_KEY:
-                    return "module_" + type;
+                    return eappsModuleService.getFormKey(module);
                 case RecordConstants.ATT_TYPE:
-                    return type;
+                    return ref.getType();
                 case RecordConstants.ATT_FORM_MODE:
                     return RecordConstants.FORM_MODE_EDIT;
                 case "_state":
@@ -419,7 +421,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
         @Override
         public String getId() {
-            return type + "$" + super.getId();
+            return ref.toString();
         }
     }
 
