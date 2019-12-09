@@ -37,7 +37,7 @@ public class EcosAppRevDepEntity {
             return false;
         }
         EcosAppRevDepEntity that = (EcosAppRevDepEntity) o;
-        return id.equals(that.id);
+        return Objects.equals(id, that.id);
     }
 
     @Override
