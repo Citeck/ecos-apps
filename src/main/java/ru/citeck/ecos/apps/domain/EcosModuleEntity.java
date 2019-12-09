@@ -1,9 +1,7 @@
 package ru.citeck.ecos.apps.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.BatchSize;
 import ru.citeck.ecos.apps.app.PublishStatus;
 
 import javax.persistence.*;
@@ -38,7 +36,6 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Column(name = "publish_msg")
     @Getter @Setter private String publishMsg;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id")
+    @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @Getter @Setter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
 }
