@@ -39,7 +39,6 @@ public class EcosAppRevEntity extends AbstractImmutableEntity {
     @Getter @Setter private Set<EcosModuleRevEntity> modules = new HashSet<>();
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "source_app_rev_id")
+    @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @Getter @Setter private Set<EcosAppRevDepEntity> dependencies = new HashSet<>();
 }

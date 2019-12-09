@@ -139,7 +139,7 @@ public class EcosModuleDao {
             dependencies.add(depEntity);
         }
 
-        return new HashSet<>(moduleDepRepo.saveAll(dependencies));
+        return new HashSet<>(dependencies);
     }
 
     public List<EcosModuleEntity> getDependentModules(ModuleRef targetRef) {
