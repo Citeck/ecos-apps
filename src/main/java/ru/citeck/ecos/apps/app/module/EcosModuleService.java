@@ -137,6 +137,13 @@ public class EcosModuleService {
         return new EcosModuleDb(dao.getModuleRev(id));
     }
 
+    public void publishAllModules(boolean force) {
+        dao.getAllLastRevisions(0, 10000)
+            .stream()
+            .map(EcosModuleRevEntity::getModule)
+            .forEach(m -> publishModule(ModuleRef.create(m.getType(), m.getExtId()), force));
+    }
+
     public void publishModule(ModuleRef moduleRef, boolean force) {
 
         log.info("Start module publishing: " + moduleRef);

@@ -50,6 +50,12 @@ public class EcosAppController {
         return toDownloadHttpEntity(moduleService.getLastModuleRev(ModuleRef.create(type, moduleId)));
     }
 
+    @GetMapping("/module/all/publish")
+    public String publishAllModules() {
+        moduleService.publishAllModules(true);
+        return "OK";
+    }
+
     @GetMapping("/module/type/{type}/{moduleId}/publish")
     public String publishModule(@PathVariable String type,
                                 @PathVariable String moduleId) {
