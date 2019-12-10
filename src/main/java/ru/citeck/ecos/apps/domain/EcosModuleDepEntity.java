@@ -15,11 +15,11 @@ public class EcosModuleDepEntity {
     @SequenceGenerator(name = "ecos_module_dep_id_gen")
     @Getter @Setter private Long id;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "source_id")
     @Getter @Setter private EcosModuleEntity source;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "target_id")
     @Getter @Setter private EcosModuleEntity target;
 

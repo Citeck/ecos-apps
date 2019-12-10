@@ -5,7 +5,9 @@ import lombok.Setter;
 import ru.citeck.ecos.apps.app.PublishStatus;
 
 import javax.persistence.*;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Entity
@@ -37,5 +39,9 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private String publishMsg;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @Getter @Setter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
+    @Getter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
+
+    public void setDependencies(Set<EcosModuleDepEntity> dependencies) {
+        EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosModuleDepEntity::getTarget);
+    }
 }

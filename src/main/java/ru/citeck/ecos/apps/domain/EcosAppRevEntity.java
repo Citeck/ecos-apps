@@ -40,5 +40,9 @@ public class EcosAppRevEntity extends AbstractImmutableEntity {
 
     @JsonIgnore
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @Getter @Setter private Set<EcosAppRevDepEntity> dependencies = new HashSet<>();
+    @Getter private Set<EcosAppRevDepEntity> dependencies = new HashSet<>();
+
+    public void setDependencies(Set<EcosAppRevDepEntity> dependencies) {
+        EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosAppRevDepEntity::getTarget);
+    }
 }
