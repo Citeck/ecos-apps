@@ -173,7 +173,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             EcosModule module = eappsModuleService.read(lastModuleRev.getData(), moduleRef.getType());
 
-            return new Value(valuesConverter.toMetaValue(module), moduleRef, module);
+            return new ModuleValue(valuesConverter.toMetaValue(module), moduleRef, module);
 
         }).collect(Collectors.toList());
     }
@@ -299,6 +299,14 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 result.add(convertMutAtt(node));
             }
             return result;
+        } else if (value.isObject()) {
+            Map<String, Object> result = new HashMap<>();
+            Iterator<String> fieldNames = value.fieldNames();
+            while (fieldNames.hasNext()) {
+                String fieldName = fieldNames.next();
+                result.put(fieldName, convertMutAtt(value.get(fieldName)));
+            }
+            return result;
         }
         return value;
     }
@@ -368,12 +376,46 @@ public class EcosModuleRecords extends LocalRecordsDAO
         }
     }
 
-    class Value extends MetaValueDelegate {
+    private Object convertAttValue(Object value) {
+        if (value == null) {
+            return null;
+        } else if (value instanceof ModuleRef) {
+            return RecordRef.create("eapps", EcosModuleRecords.ID, value.toString());
+        } else if (value instanceof Collection) {
+            List<Object> converted = new ArrayList<>();
+            for (Object elem : (Collection) value) {
+                converted.add(convertAttValue(elem));
+            }
+            return converted;
+        }
+        return new InnerValue(value);
+    }
+
+    class InnerValue extends MetaValueDelegate {
+
+        public InnerValue(Object value) {
+            super(valuesConverter.toMetaValue(value));
+        }
+
+        @Override
+        public Object getAttribute(String name, MetaField field) throws Exception {
+            switch (name) {
+                case "_state":
+                case "_alias":
+                case "submit":
+                case "permissions":
+                    return null;
+            }
+            return convertAttValue(super.getAttribute(name, field));
+        }
+    }
+
+    class ModuleValue extends MetaValueDelegate {
 
         EcosModule module;
         ModuleRef ref;
 
-        Value(MetaValue impl, ModuleRef ref, EcosModule module) {
+        ModuleValue(MetaValue impl, ModuleRef ref, EcosModule module) {
             super(impl);
             this.ref = ref;
             this.module = module;
@@ -399,21 +441,6 @@ public class EcosModuleRecords extends LocalRecordsDAO
             }
 
             return convertAttValue(super.getAttribute(name, field));
-        }
-
-        private Object convertAttValue(Object value) {
-            if (value == null) {
-                return null;
-            } else if (value instanceof ModuleRef) {
-                return RecordRef.create("eapps", EcosModuleRecords.ID, value.toString());
-            } else if (value instanceof Collection) {
-                List<Object> converted = new ArrayList<>();
-                for (Object elem : (Collection) value) {
-                    converted.add(convertAttValue(elem));
-                }
-                return converted;
-            }
-            return value;
         }
 
         @Override
