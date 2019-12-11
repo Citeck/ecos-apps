@@ -285,11 +285,20 @@ public class EcosModuleRecords extends LocalRecordsDAO
     }
 
     private Object convertMutAtt(JsonNode value) {
+        if (value == null) {
+            return null;
+        }
         if (value.isTextual()) {
             String strValue = value.asText();
             if (strValue.startsWith(MODULE_REF_PREFIX)) {
                 return strValue.replace(MODULE_REF_PREFIX, "");
             }
+        } else if (value.isArray()) {
+            List<Object> result = new ArrayList<>();
+            for (JsonNode node : value) {
+                result.add(convertMutAtt(node));
+            }
+            return result;
         }
         return value;
     }
@@ -385,13 +394,24 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 case "_state":
                 case "_alias":
                 case "submit":
+                case "permissions":
                     return null;
             }
 
-            Object value = super.getAttribute(name, field);
+            return convertAttValue(super.getAttribute(name, field));
+        }
 
-            if (value instanceof ModuleRef) {
+        private Object convertAttValue(Object value) {
+            if (value == null) {
+                return null;
+            } else if (value instanceof ModuleRef) {
                 return RecordRef.create("eapps", EcosModuleRecords.ID, value.toString());
+            } else if (value instanceof Collection) {
+                List<Object> converted = new ArrayList<>();
+                for (Object elem : (Collection) value) {
+                    converted.add(convertAttValue(elem));
+                }
+                return converted;
             }
             return value;
         }
@@ -414,13 +434,18 @@ public class EcosModuleRecords extends LocalRecordsDAO
                     return name.toString();
                 }
             } catch (Exception e) {
-                return super.getDisplayName();
+                return ref.toString();
             }
-            return super.getDisplayName();
+            return ref.toString();
         }
 
         @Override
         public String getId() {
+            return ref.toString();
+        }
+
+        @Override
+        public String getString() {
             return ref.toString();
         }
     }
