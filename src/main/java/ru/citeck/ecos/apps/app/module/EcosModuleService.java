@@ -222,7 +222,9 @@ public class EcosModuleService {
             List<EcosModuleEntity> modules = dao.getDependentModules(moduleRef);
 
             for (EcosModuleEntity moduleFromDep : modules) {
-                tryToPublish(moduleFromDep);
+                if (PublishStatus.DEPS_WAITING.equals(moduleFromDep.getPublishStatus())) {
+                    tryToPublish(moduleFromDep);
+                }
             }
         }
 
