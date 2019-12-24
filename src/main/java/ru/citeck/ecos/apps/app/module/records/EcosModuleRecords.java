@@ -171,9 +171,10 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 throw new IllegalArgumentException("Module is not found for ref " + moduleRef);
             }
 
+            ModulePublishState publishState = ecosModuleService.getPublishState(moduleRef);
             EcosModule module = eappsModuleService.read(lastModuleRev.getData(), moduleRef.getType());
 
-            return new ModuleValue(valuesConverter.toMetaValue(module), moduleRef, module);
+            return new ModuleValue(valuesConverter.toMetaValue(module), moduleRef, module, publishState);
 
         }).collect(Collectors.toList());
     }
@@ -414,11 +415,13 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
         EcosModule module;
         ModuleRef ref;
+        ModulePublishState publishState;
 
-        ModuleValue(MetaValue impl, ModuleRef ref, EcosModule module) {
+        ModuleValue(MetaValue impl, ModuleRef ref, EcosModule module, ModulePublishState publishState) {
             super(impl);
             this.ref = ref;
             this.module = module;
+            this.publishState = publishState;
         }
 
         @Override
@@ -433,6 +436,10 @@ public class EcosModuleRecords extends LocalRecordsDAO
                     return ref.getType();
                 case RecordConstants.ATT_FORM_MODE:
                     return RecordConstants.FORM_MODE_EDIT;
+                case "publishMsg":
+                    return publishState.getMsg();
+                case "publishStatus":
+                    return publishState.getStatus().toString();
                 case "_state":
                 case "_alias":
                 case "submit":
