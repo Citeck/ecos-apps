@@ -168,7 +168,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             EcosModuleRev lastModuleRev = ecosModuleService.getLastModuleRev(moduleRef);
             if (lastModuleRev == null) {
-                throw new IllegalArgumentException("Module is not found for ref " + moduleRef);
+                return EmptyValue.INSTANCE;
             }
 
             ModulePublishState publishState = ecosModuleService.getPublishState(moduleRef);
@@ -185,7 +185,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
         List<ModuleRef> resultRefs = mutateImpl(mutation.getRecords());
         Set<ModuleRef> unpublished = new HashSet<>(resultRefs);
 
-        long timeToWait = System.currentTimeMillis() + 5_000;
+        long timeToWait = System.currentTimeMillis() + 10_000;
 
         while (!unpublished.isEmpty() && System.currentTimeMillis() < timeToWait) {
 
