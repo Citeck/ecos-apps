@@ -444,6 +444,8 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 case "_alias":
                 case "submit":
                 case "permissions":
+                case "cm:modified":
+                case "pendingUpdate":
                     return null;
             }
 
