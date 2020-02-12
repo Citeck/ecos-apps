@@ -11,6 +11,7 @@
     <include file="changelog/00000000000006_add_deleted_flag.xml" relativeToChangelogFile="true"/>
     <include file="changelog/00000000000007_dependencies.xml" relativeToChangelogFile="true"/>
     <include file="changelog/20200131000000_drop_unique_id_constraint.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/20200212000000_increase_module_ext_id_size.xml" relativeToChangelogFile="true"/>
 
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
