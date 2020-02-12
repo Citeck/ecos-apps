@@ -15,7 +15,7 @@ import ru.citeck.ecos.apps.TestUtils;
 import ru.citeck.ecos.apps.app.*;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.apps.app.module.type.dashboard.DashboardModule;
+import ru.citeck.ecos.apps.app.module.type.ui.dashboard.DashboardModule;
 import ru.citeck.ecos.apps.app.module.type.form.FormModule;
 
 import java.util.*;
