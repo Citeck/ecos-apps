@@ -14,6 +14,7 @@ import ru.citeck.ecos.apps.app.module.EappsModuleService;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
 import ru.citeck.ecos.apps.app.module.ModuleRef;
 import ru.citeck.ecos.apps.app.module.type.model.type.TypeModule;
+import ru.citeck.ecos.records2.scalar.MLText;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,7 +45,7 @@ public class EcosModuleDepsTest {
 
         TypeModule baseTypeModule = new TypeModule();
         baseTypeModule.setId("base");
-        baseTypeModule.setDescription("Base type");
+        baseTypeModule.setDescription(new MLText("Base type"));
 
         TypeModule otherTypeModule = new TypeModule();
         otherTypeModule.setId("custom-type");

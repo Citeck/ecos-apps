@@ -1,6 +1,5 @@
 package ru.citeck.ecos.apps.application;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +16,7 @@ import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.*;
 import ru.citeck.ecos.apps.app.module.type.ui.dashboard.DashboardModule;
 import ru.citeck.ecos.apps.app.module.type.form.FormModule;
+import ru.citeck.ecos.records2.objdata.ObjectData;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -177,13 +177,13 @@ public class EcosAppPublishTest {
 
         FormModule form = new FormModule();
         form.setId("form-0");
-        form.setDefinition(JsonNodeFactory.instance.objectNode());
+        form.setDefinition(new ObjectData());
         form.setTitle("Form title 0");
         modules.add(form);
 
         form = new FormModule();
         form.setId("form-1");
-        form.setDefinition(JsonNodeFactory.instance.objectNode());
+        form.setDefinition(new ObjectData());
         form.setTitle("Form title 1");
         modules.add(form);
 

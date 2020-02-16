@@ -1,8 +1,5 @@
 package ru.citeck.ecos.apps.app.module.records;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,27 +13,31 @@ import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
 import ru.citeck.ecos.apps.utils.EappZipUtils;
 import ru.citeck.ecos.apps.utils.io.mem.EappMemDir;
-import ru.citeck.ecos.predicate.PredicateService;
-import ru.citeck.ecos.predicate.PredicateUtils;
-import ru.citeck.ecos.predicate.model.AndPredicate;
-import ru.citeck.ecos.predicate.model.Predicate;
-import ru.citeck.ecos.predicate.model.Predicates;
+import ru.citeck.ecos.records2.QueryContext;
 import ru.citeck.ecos.records2.RecordConstants;
 import ru.citeck.ecos.records2.RecordMeta;
 import ru.citeck.ecos.records2.RecordRef;
 import ru.citeck.ecos.records2.graphql.meta.value.*;
+import ru.citeck.ecos.records2.objdata.DataValue;
+import ru.citeck.ecos.records2.objdata.ObjectData;
+import ru.citeck.ecos.records2.predicate.PredicateService;
+import ru.citeck.ecos.records2.predicate.PredicateUtils;
+import ru.citeck.ecos.records2.predicate.model.AndPredicate;
+import ru.citeck.ecos.records2.predicate.model.Predicate;
+import ru.citeck.ecos.records2.predicate.model.Predicates;
 import ru.citeck.ecos.records2.request.delete.RecordsDelResult;
 import ru.citeck.ecos.records2.request.delete.RecordsDeletion;
 import ru.citeck.ecos.records2.request.mutation.RecordsMutResult;
 import ru.citeck.ecos.records2.request.mutation.RecordsMutation;
 import ru.citeck.ecos.records2.request.query.RecordsQuery;
 import ru.citeck.ecos.records2.request.query.RecordsQueryResult;
+import ru.citeck.ecos.records2.scalar.MLText;
 import ru.citeck.ecos.records2.source.dao.MutableRecordsDAO;
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDAO;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDAO;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryDAO;
+import ru.citeck.ecos.records2.utils.json.JsonUtils;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,6 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
     private static final String ATT_MODULE_ID = "module_id";
 
-    private final PredicateService predicateService;
     private final EcosModuleService ecosModuleService;
     private final MetaValuesConverter valuesConverter;
     private final EappsModuleService eappsModuleService;
@@ -63,28 +63,19 @@ public class EcosModuleRecords extends LocalRecordsDAO
     public EcosModuleRecords(EcosModuleService ecosModuleService,
                              EappsModuleService eappsModuleService,
                              MetaValuesConverter valuesConverter,
-                             PredicateService predicateService,
                              EcosAppsApiFactory apiFactory) {
         setId(ID);
         this.apiFactory = apiFactory;
         this.valuesConverter = valuesConverter;
-        this.predicateService = predicateService;
         this.ecosModuleService = ecosModuleService;
         this.eappsModuleService = eappsModuleService;
-
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     private Predicate convertCriteria(String criteria) {
 
         AndPredicate pred = new AndPredicate();
 
-        ObjectNode node;
-        try {
-            node = (ObjectNode) objectMapper.readTree(criteria);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        ObjectNode node = JsonUtils.read(criteria, ObjectNode.class);
 
         int i = 0;
         String field = "field_" + i;
@@ -111,13 +102,14 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             case PredicateService.LANGUAGE_PREDICATE:
 
-                Predicate predicate = predicateService.readJson(recordsQuery.getQuery());
+                Predicate predicate = recordsQuery.getQuery(Predicate.class);
                 query = PredicateUtils.convertToDto(predicate, Query.class);
                 break;
 
             case "criteria":
 
-                query = PredicateUtils.convertToDto(convertCriteria(recordsQuery.getQuery().asText()), Query.class);
+                String criteriaText = recordsQuery.getQuery(ObjectNode.class).asText();
+                query = PredicateUtils.convertToDto(convertCriteria(criteriaText), Query.class);
 
                 break;
             default:
@@ -240,7 +232,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
                 EcosModule module = eappsModuleService.read(moduleData, ref.getType());
 
-                record.setAttributes(objectMapper.valueToTree(module));
+                record.setAttributes(new ObjectData(module));
             }
 
             record.forEach((att, value) -> {
@@ -256,7 +248,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
             if (StringUtils.isBlank(ref.getId())) {
 
                 Class<EcosModule> typeClass = eappsModuleService.getTypeClass(ref.getType());
-                EcosModule module = objectMapper.convertValue(data, typeClass);
+                EcosModule module = JsonUtils.convert(data, typeClass);
 
                 moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
 
@@ -268,13 +260,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 }
 
                 EcosModule module = eappsModuleService.read(lastModuleRev.getData(), ref.getType());
-                ObjectReader reader = objectMapper.readerForUpdating(module);
-
-                try {
-                    reader.readValue(objectMapper.convertValue(data, ObjectNode.class));
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                JsonUtils.applyData(data, module);
 
                 moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
             }
@@ -285,7 +271,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
         return resultRefs;
     }
 
-    private Object convertMutAtt(JsonNode value) {
+    private Object convertMutAtt(DataValue value) {
         if (value == null) {
             return null;
         }
@@ -296,17 +282,13 @@ public class EcosModuleRecords extends LocalRecordsDAO
             }
         } else if (value.isArray()) {
             List<Object> result = new ArrayList<>();
-            for (JsonNode node : value) {
+            for (DataValue node : value) {
                 result.add(convertMutAtt(node));
             }
             return result;
         } else if (value.isObject()) {
             Map<String, Object> result = new HashMap<>();
-            Iterator<String> fieldNames = value.fieldNames();
-            while (fieldNames.hasNext()) {
-                String fieldName = fieldNames.next();
-                result.put(fieldName, convertMutAtt(value.get(fieldName)));
-            }
+            value.forEach((fieldName, innerValue) -> result.put(fieldName, convertMutAtt(innerValue)));
             return result;
         }
         return value;
@@ -467,7 +449,11 @@ public class EcosModuleRecords extends LocalRecordsDAO
                     name = getImpl().getAttribute("title", null);
                 }
                 if (name != null) {
-                    return name.toString();
+                    if (name instanceof MLText) {
+                        return ((MLText) name).getClosestValue(QueryContext.getCurrent().getLocale());
+                    } else {
+                        return name.toString();
+                    }
                 }
             } catch (Exception e) {
                 return ref.toString();
