@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20200219000000" author="citeck">
+
+        <addColumn schemaName="public" tableName="ecos_module">
+            <column name="key" type="VARCHAR" />
+        </addColumn>
+
+        <sql>UPDATE ecos_module SET key = ext_id</sql>
+
+        <createTable tableName="ecos_meta">
+
+            <column name="key" type="VARCHAR">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="value" type="BYTEA" />
+            <column name="meta" type="BYTEA" />
+            <column name="timestamp" type="TIMESTAMP" />
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -16,6 +16,8 @@ public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
            "WHERE m.type = ?1 AND m.extId = ?2 AND m.deleted = false")
     EcosModuleEntity getByExtId(String type, String extId);
 
+    EcosModuleEntity findByTypeAndKey(String type, String key);
+
     @Query("SELECT rev FROM EcosModuleEntity module " +
            "JOIN module.lastRev rev " +
            "WHERE module.type = ?1 AND module.deleted = false " +

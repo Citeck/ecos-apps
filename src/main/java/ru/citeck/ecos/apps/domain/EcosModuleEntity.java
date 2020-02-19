@@ -5,9 +5,7 @@ import lombok.Setter;
 import ru.citeck.ecos.apps.app.PublishStatus;
 
 import javax.persistence.*;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @Entity
@@ -22,6 +20,7 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Column(name="ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String type;
+    @Getter @Setter private String key;
 
     @Getter @Setter private boolean deleted;
 
