@@ -27,7 +27,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class UpdateModulesKeysPatch {
 
-    private static final String PATCH_KEY = "patch.UpdateModulesKeys";
+    private static final String PATCH_KEY = "patch.UpdateModulesKeys_v2";
 
     private final EcosMetaRepo metaRepo;
     private final EcosModuleDao modulesDao;

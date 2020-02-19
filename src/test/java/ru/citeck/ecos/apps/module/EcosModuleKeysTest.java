@@ -50,8 +50,7 @@ public class EcosModuleKeysTest {
 
         DashboardModule module0 = new DashboardModule();
         module0.setId(id0);
-        module0.setKey(key);
-        module0.setType(type);
+        module0.setTypeRef(ModuleRef.create("123", key));
         module0.setConfig(content0);
 
         String resId0 = moduleService.uploadModule("test", module0);
@@ -63,8 +62,7 @@ public class EcosModuleKeysTest {
         assertEquals(content0, JsonUtils.convert(data0.get("config"), ObjectData.class));
 
         DashboardModule module1 = new DashboardModule();
-        module1.setKey(key);
-        module1.setType(type);
+        module1.setTypeRef(ModuleRef.create("1234", key));
         module1.setConfig(content1);
 
         String resId1 = moduleService.uploadModule("test", module1);

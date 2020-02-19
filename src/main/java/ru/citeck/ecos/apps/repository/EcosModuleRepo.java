@@ -18,6 +18,11 @@ public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
 
     EcosModuleEntity findByTypeAndKey(String type, String key);
 
+    /**
+     * Should return only one record in normal case.
+     */
+    List<EcosModuleEntity> findAllByTypeAndKey(String type, String key);
+
     @Query("SELECT rev FROM EcosModuleEntity module " +
            "JOIN module.lastRev rev " +
            "WHERE module.type = ?1 AND module.deleted = false " +

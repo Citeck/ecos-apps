@@ -1,0 +1,12 @@
+
+eureka:
+    instance:
+        hostname: host.docker.internal #doesn't work for linux
+        ip-address: host.docker.internal #doesn't work for linux
+
+alfresco:
+    ribbon:
+        listOfServers: localhost:8080
+        NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
+
+

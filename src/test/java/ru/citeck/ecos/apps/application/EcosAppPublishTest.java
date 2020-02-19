@@ -189,12 +189,10 @@ public class EcosAppPublishTest {
 
         DashboardModule dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-0");
-        dashboardModule.setKey("test-key-0");
         modules.add(dashboardModule);
 
         dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-1");
-        dashboardModule.setKey("test-key-2");
         modules.add(dashboardModule);
 
         EcosAppImpl app = new EcosAppImpl();

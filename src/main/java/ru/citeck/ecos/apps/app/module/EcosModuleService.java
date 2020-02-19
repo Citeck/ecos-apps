@@ -123,6 +123,11 @@ public class EcosModuleService {
         return new EcosModuleDb(dao.getLastModuleRev(moduleRef, source));
     }
 
+    public EcosModuleRev getLastModuleRevByKey(String type, String key) {
+        EcosModuleRevEntity rev = dao.getLastModuleRevByKey(type, key);
+        return rev != null ? new EcosModuleDb(rev) : null;
+    }
+
     public PublishStatus getPublishStatus(ModuleRef moduleRef) {
         EcosModuleEntity module = dao.getModule(moduleRef);
         return module.getPublishStatus();

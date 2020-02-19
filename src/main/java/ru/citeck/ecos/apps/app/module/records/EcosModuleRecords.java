@@ -39,6 +39,7 @@ import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryDAO;
 import ru.citeck.ecos.records2.utils.json.JsonUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -235,8 +236,11 @@ public class EcosModuleRecords extends LocalRecordsDAO
                 record.setAttributes(new ObjectData(module));
             }
 
+            AtomicReference<String> moduleId = new AtomicReference<>(ref.getId());
+
             record.forEach((att, value) -> {
                 if (ATT_MODULE_ID.equals(att)) {
+                    moduleId.set(value.asText());
                     data.put("id", value);
                 } else {
                     data.put(att, convertMutAtt(value));
@@ -245,12 +249,26 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             String moduleIdAfterUpload;
 
-            if (StringUtils.isBlank(ref.getId())) {
+            if (StringUtils.isBlank(moduleId.get())) {
 
                 Class<EcosModule> typeClass = eappsModuleService.getTypeClass(ref.getType());
-                EcosModule module = JsonUtils.convert(data, typeClass);
+                String moduleKey = eappsModuleService.getModuleKey(JsonUtils.convert(data, typeClass));
 
-                moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
+                EcosModuleRev lastRev = ecosModuleService.getLastModuleRevByKey(ref.getType(), moduleKey);
+                if (lastRev != null) {
+
+                    EcosModule module = eappsModuleService.read(lastRev.getData(), ref.getType());
+                    JsonUtils.applyData(data, module);
+
+                    moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
+
+                } else {
+
+                    data.put("id", UUID.randomUUID().toString());
+                    EcosModule module = JsonUtils.convert(data, typeClass);
+
+                    moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
+                }
 
             } else {
 
