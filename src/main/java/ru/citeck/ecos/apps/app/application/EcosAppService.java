@@ -119,6 +119,11 @@ public class EcosAppService {
 
         EcosModuleRevEntity lastModuleRev = moduleDao.getLastModuleRev(moduleRef);
 
+        if (lastModuleRev == null) {
+            log.warn("Module doesn't exists: " + moduleRef);
+            return;
+        }
+
         lastModuleRev.getApplications()
             .stream()
             .map(EcosAppRevEntity::getApplication)

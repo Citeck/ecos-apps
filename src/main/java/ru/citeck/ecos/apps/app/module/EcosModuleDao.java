@@ -40,6 +40,11 @@ public class EcosModuleDao {
         return (int) moduleRepo.getCount(type);
     }
 
+    public List<EcosModuleEntity> getModulesByType(Class<? extends EcosModule> type) {
+        String typeId = eappsModuleService.getTypeId(type);
+        return moduleRepo.findAllByType(typeId);
+    }
+
     public List<EcosModuleEntity> getAllModules() {
         return moduleRepo.findAll();
     }
@@ -219,7 +224,11 @@ public class EcosModuleDao {
     }
 
     public EcosModuleRevEntity getLastModuleRev(ModuleRef moduleRef) {
-        return getModule(moduleRef).getLastRev();
+        EcosModuleEntity module = getModule(moduleRef);
+        if (module == null) {
+            return null;
+        }
+        return module.getLastRev();
     }
 
     public EcosModuleEntity getModule(ModuleRef ref) {
@@ -250,14 +259,16 @@ public class EcosModuleDao {
         return moduleRevRepo.save(entity);
     }
 
-    public void delete(ModuleRef ref) {
-
-        EcosModuleEntity module = getModule(ref);
+    public void delete(EcosModuleEntity module) {
 
         if (module != null) {
             module.setExtId(module.getExtId() + "_DELETED_" + module.getId());
             module.setDeleted(true);
             moduleRepo.save(module);
         }
+    }
+
+    public void delete(ModuleRef ref) {
+        delete(getModule(ref));
     }
 }

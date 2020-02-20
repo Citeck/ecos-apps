@@ -16,12 +16,13 @@ public interface EcosModuleRepo extends JpaRepository<EcosModuleEntity, Long> {
            "WHERE m.type = ?1 AND m.extId = ?2 AND m.deleted = false")
     EcosModuleEntity getByExtId(String type, String extId);
 
+    @Query("SELECT m FROM EcosModuleEntity m " +
+        "WHERE m.type = ?1 AND m.key = ?2 AND m.deleted = false")
     EcosModuleEntity findByTypeAndKey(String type, String key);
 
-    /**
-     * Should return only one record in normal case.
-     */
-    List<EcosModuleEntity> findAllByTypeAndKey(String type, String key);
+    @Query("SELECT m FROM EcosModuleEntity m " +
+           "WHERE m.type = ?1 AND m.deleted = false")
+    List<EcosModuleEntity> findAllByType(String type);
 
     @Query("SELECT rev FROM EcosModuleEntity module " +
            "JOIN module.lastRev rev " +
