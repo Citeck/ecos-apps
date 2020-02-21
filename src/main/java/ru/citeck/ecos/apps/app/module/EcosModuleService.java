@@ -116,7 +116,11 @@ public class EcosModuleService {
     }
 
     public EcosModuleRev getLastModuleRev(ModuleRef moduleRef) {
-        return new EcosModuleDb(dao.getLastModuleRev(moduleRef));
+        EcosModuleRevEntity lastModuleRev = dao.getLastModuleRev(moduleRef);
+        if (lastModuleRev == null) {
+            return null;
+        }
+        return new EcosModuleDb(lastModuleRev);
     }
 
     public EcosModuleRev getLastModuleRev(ModuleRef moduleRef, String source) {
