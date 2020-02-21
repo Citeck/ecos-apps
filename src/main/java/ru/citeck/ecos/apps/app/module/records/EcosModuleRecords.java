@@ -273,6 +273,8 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             } else {
 
+                data.put("id", moduleId.get());
+                ref = ModuleRef.create(ref.getType(), moduleId.get());
                 EcosModuleRev lastModuleRev = ecosModuleService.getLastModuleRev(ref);
 
                 EcosModule module;
