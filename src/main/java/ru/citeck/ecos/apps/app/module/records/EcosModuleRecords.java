@@ -249,9 +249,10 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             String moduleIdAfterUpload;
 
+            Class<EcosModule> typeClass = eappsModuleService.getTypeClass(ref.getType());
+
             if (StringUtils.isBlank(moduleId.get())) {
 
-                Class<EcosModule> typeClass = eappsModuleService.getTypeClass(ref.getType());
                 String moduleKey = eappsModuleService.getModuleKey(JsonUtils.convert(data, typeClass));
 
                 EcosModuleRev lastRev = ecosModuleService.getLastModuleRevByKey(ref.getType(), moduleKey);
@@ -272,14 +273,18 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             } else {
 
+                data.put("id", moduleId.get());
+                ref = ModuleRef.create(ref.getType(), moduleId.get());
                 EcosModuleRev lastModuleRev = ecosModuleService.getLastModuleRev(ref);
-                if (lastModuleRev == null) {
-                    throw new IllegalArgumentException("Module is not found with ref '" + ref + "'");
+
+                EcosModule module;
+
+                if (lastModuleRev != null) {
+                    module = eappsModuleService.read(lastModuleRev.getData(), ref.getType());
+                    JsonUtils.applyData(data, module);
+                } else {
+                    module = JsonUtils.convert(data, typeClass);
                 }
-
-                EcosModule module = eappsModuleService.read(lastModuleRev.getData(), ref.getType());
-                JsonUtils.applyData(data, module);
-
                 moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
             }
 
