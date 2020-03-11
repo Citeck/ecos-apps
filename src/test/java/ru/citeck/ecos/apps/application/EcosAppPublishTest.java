@@ -7,16 +7,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import ru.citeck.ecos.apps.EappsFactory;
-import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.EcosAppsApp;
 import ru.citeck.ecos.apps.TestUtils;
 import ru.citeck.ecos.apps.app.*;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.apps.app.module.type.ui.dashboard.DashboardModule;
-import ru.citeck.ecos.apps.app.module.type.form.FormModule;
-import ru.citeck.ecos.records2.objdata.ObjectData;
+import ru.citeck.ecos.commons.data.ObjectData;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -30,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 @SpringBootTest(classes = EcosAppsApp.class)
 public class EcosAppPublishTest {
 
-    private static final String DEPENDENT_APP_ID = "dependent-app";
+    /*private static final String DEPENDENT_APP_ID = "dependent-app";
     private static final String DEPENDANT_MODULE_ID = "test-form-in-dependent-app";
 
     @Autowired
@@ -219,5 +215,5 @@ public class EcosAppPublishTest {
         app.addModule(module);
 
         return app;
-    }
+    }*/
 }

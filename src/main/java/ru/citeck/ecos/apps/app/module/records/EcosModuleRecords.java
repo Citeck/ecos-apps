@@ -7,19 +7,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.apps.utils.EappZipUtils;
-import ru.citeck.ecos.apps.utils.io.mem.EappMemDir;
+import ru.citeck.ecos.commons.json.Json;
 import ru.citeck.ecos.records2.QueryContext;
 import ru.citeck.ecos.records2.RecordConstants;
 import ru.citeck.ecos.records2.RecordMeta;
 import ru.citeck.ecos.records2.RecordRef;
 import ru.citeck.ecos.records2.graphql.meta.value.*;
-import ru.citeck.ecos.records2.objdata.DataValue;
-import ru.citeck.ecos.records2.objdata.ObjectData;
+import ru.citeck.ecos.commons.data.DataValue;
+import ru.citeck.ecos.commons.data.ObjectData;
 import ru.citeck.ecos.records2.predicate.PredicateService;
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
 import ru.citeck.ecos.records2.predicate.model.AndPredicate;
@@ -31,12 +29,11 @@ import ru.citeck.ecos.records2.request.mutation.RecordsMutResult;
 import ru.citeck.ecos.records2.request.mutation.RecordsMutation;
 import ru.citeck.ecos.records2.request.query.RecordsQuery;
 import ru.citeck.ecos.records2.request.query.RecordsQueryResult;
-import ru.citeck.ecos.records2.scalar.MLText;
+import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.records2.source.dao.MutableRecordsDAO;
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDAO;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDAO;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryDAO;
-import ru.citeck.ecos.records2.utils.json.JsonUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,10 +41,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class EcosModuleRecords extends LocalRecordsDAO
+public class EcosModuleRecords/* extends LocalRecordsDAO
                                implements LocalRecordsQueryDAO,
                                           MutableRecordsDAO,
-                                          LocalRecordsMetaDAO<MetaValue> {
+                                          LocalRecordsMetaDAO<MetaValue>*/ {
 
     public static final String MODULES_SOURCE = "mutation";
 
@@ -56,12 +53,12 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
     private static final String ATT_MODULE_ID = "module_id";
 
-    private final EcosModuleService ecosModuleService;
-    private final MetaValuesConverter valuesConverter;
-    private final EappsModuleService eappsModuleService;
-    private final EcosAppsApiFactory apiFactory;
+    //private final EcosModuleService ecosModuleService;
+    //private final MetaValuesConverter valuesConverter;
+    //private final EappsModuleService eappsModuleService;
+    //private final EcosAppsApiFactory apiFactory;
 
-    public EcosModuleRecords(EcosModuleService ecosModuleService,
+    /*public EcosModuleRecords(EcosModuleService ecosModuleService,
                              EappsModuleService eappsModuleService,
                              MetaValuesConverter valuesConverter,
                              EcosAppsApiFactory apiFactory) {
@@ -76,7 +73,7 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
         AndPredicate pred = new AndPredicate();
 
-        ObjectNode node = JsonUtils.read(criteria, ObjectNode.class);
+        ObjectNode node = Json.getMapper().read(criteria, ObjectNode.class);
 
         int i = 0;
         String field = "field_" + i;
@@ -253,20 +250,20 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
             if (StringUtils.isBlank(moduleId.get())) {
 
-                String moduleKey = eappsModuleService.getModuleKey(JsonUtils.convert(data, typeClass));
+                String moduleKey = eappsModuleService.getModuleKey(Json.getMapper().convert(data, typeClass));
 
                 EcosModuleRev lastRev = ecosModuleService.getLastModuleRevByKey(ref.getType(), moduleKey);
                 if (lastRev != null) {
 
                     EcosModule module = eappsModuleService.read(lastRev.getData(), ref.getType());
-                    JsonUtils.applyData(data, module);
+                    Json.getMapper().applyData(module, data);
 
                     moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
 
                 } else {
 
                     data.put("id", UUID.randomUUID().toString());
-                    EcosModule module = JsonUtils.convert(data, typeClass);
+                    EcosModule module = Json.getMapper().convert(data, typeClass);
 
                     moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
                 }
@@ -281,9 +278,9 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
                 if (lastModuleRev != null) {
                     module = eappsModuleService.read(lastModuleRev.getData(), ref.getType());
-                    JsonUtils.applyData(data, module);
+                    Json.getMapper().applyData(module, data);
                 } else {
-                    module = JsonUtils.convert(data, typeClass);
+                    module = Json.getMapper().convert(data, typeClass);
                 }
                 moduleIdAfterUpload = ecosModuleService.uploadModule(MODULES_SOURCE, module, PublishPolicy.PUBLISH);
             }
@@ -500,5 +497,5 @@ public class EcosModuleRecords extends LocalRecordsDAO
 
         private String type;
         private Predicate predicate;
-    }
+    }*/
 }

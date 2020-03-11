@@ -1,20 +1,13 @@
 package ru.citeck.ecos.apps.app.module;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.EcosAppsApiFactory;
-import ru.citeck.ecos.apps.app.PublishPolicy;
-import ru.citeck.ecos.apps.app.api.EcosAppDeployMsg;
-import ru.citeck.ecos.apps.app.application.EcosAppService;
-import ru.citeck.ecos.apps.app.module.api.msg.v2.EcosModuleResultMsg;
 
 @Slf4j
 @Component
 public class EcosAppsListener {
 
+/*
     private EcosModuleService moduleService;
     private EcosAppService ecosAppService;
 
@@ -70,4 +63,5 @@ public class EcosAppsListener {
     public void setApiFactory(EcosAppsApiFactory apiFactory) {
         this.apiFactory = apiFactory;
     }
+*/
 }

@@ -7,14 +7,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import ru.citeck.ecos.apps.EcosAppsApiFactory;
 import ru.citeck.ecos.apps.EcosAppsApp;
 import ru.citeck.ecos.apps.TestUtils;
 import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.apps.app.module.type.form.FormModule;
-import ru.citeck.ecos.records2.objdata.ObjectData;
+import ru.citeck.ecos.commons.data.ObjectData;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -27,7 +25,7 @@ import static org.junit.Assert.assertThat;
 @SpringBootTest(classes = EcosAppsApp.class)
 public class EcosModulePublishTest {
 
-    private static final String PUBLISH_ERR_MSG = "Test publish error";
+    /*private static final String PUBLISH_ERR_MSG = "Test publish error";
 
     @Autowired
     private EcosModuleService moduleService;
@@ -123,5 +121,5 @@ public class EcosModulePublishTest {
         }
 
         assertThat(forms.size(), is(1));
-    }
+    }*/
 }

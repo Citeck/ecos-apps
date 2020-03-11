@@ -5,15 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.EcosApp;
 import ru.citeck.ecos.apps.app.PublishPolicy;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
-import ru.citeck.ecos.apps.app.io.EcosAppIO;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.apps.app.module.ModuleRef;
 import ru.citeck.ecos.apps.domain.*;
+import ru.citeck.ecos.apps.module.ModuleRef;
 import ru.citeck.ecos.apps.repository.EcosAppRevDepRepo;
 
 import java.io.File;
@@ -33,23 +31,24 @@ public class EcosAppService {
     private final EcosAppDao appDao;
     private final EcosModuleDao moduleDao;
     private final EcosModuleService moduleService;
-    private final EcosAppIO appIO;
     private final EcosAppRevDepRepo appDepsRepo;
 
     public void publishApp(String appId) {
 
-        EcosAppRevEntity revision = appDao.getLastRevisionByExtId(appId);
-        revision.getModules().forEach(m -> {
+        //EcosAppRevEntity revision = appDao.getLastRevisionByExtId(appId);
+        /*revision.getModules().forEach(m -> {
             EcosModuleEntity module = m.getModule();
             moduleService.publishModule(ModuleRef.create(module.getType(), module.getExtId()), false);
-        });
+        });*/
     }
 
+/*
     public EcosAppRev uploadApp(String source, EcosApp app, PublishPolicy publishPolicy) {
         return uploadApp(source, appIO.writeToBytes(app), publishPolicy);
     }
+*/
 
-    public EcosAppRev uploadApp(String source, byte[] data, PublishPolicy publishPolicy) {
+  /*  public EcosAppRev uploadApp(String source, byte[] data, PublishPolicy publishPolicy) {
 
         if (publishPolicy == null) {
             publishPolicy = PublishPolicy.NONE;
@@ -178,5 +177,5 @@ public class EcosAppService {
         }
 
         return status;
-    }
+    }*/
 }

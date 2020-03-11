@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
-import ru.citeck.ecos.apps.app.module.type.ui.dashboard.DashboardModule;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.metarepo.EcosMetaRepo;
 
@@ -34,7 +33,7 @@ public class CleanDashboardsPatch {
 
         state = new PatchState();
 
-        List<EcosModuleEntity> modules = modulesDao.getModulesByType(DashboardModule.class);
+        List<EcosModuleEntity> modules = modulesDao.getModulesByType("ui/dashboard");
         state.total = modules.size();
 
         modules.forEach(modulesDao::delete);

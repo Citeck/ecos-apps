@@ -6,15 +6,14 @@ import lombok.Setter;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "ecos_module_type")
-public class EcosModuleTypeEntity extends AbstractImmutableEntity {
+@Table(name = "ecos_module_types")
+public class EcosModuleTypesEntity extends AbstractImmutableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_module_type_id_gen")
     @SequenceGenerator(name = "ecos_module_type_id_gen")
     @Getter @Setter private Long id;
 
-    @Column(name="source")
     @Getter @Setter private String source;
 
     @ManyToOne
