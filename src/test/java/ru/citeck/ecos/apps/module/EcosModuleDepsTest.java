@@ -1,26 +1,12 @@
 package ru.citeck.ecos.apps.module;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import ru.citeck.ecos.apps.EcosAppsApp;
-import ru.citeck.ecos.apps.TestUtils;
-import ru.citeck.ecos.apps.app.PublishStatus;
-import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.commons.data.MLText;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 @Slf4j
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = EcosAppsApp.class)
+//@RunWith(SpringRunner.class)
+//@SpringBootTest(classes = EcosAppsApp.class)
 public class EcosModuleDepsTest {
 
    /* @Autowired
@@ -57,7 +43,7 @@ public class EcosModuleDepsTest {
 
             moduleService.uploadModule("test", otherTypeModule);
 
-            assertThat(moduleService.getPublishStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
+            assertThat(moduleService.getDeployStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
         }
 
         assertThat(publishedTypes.size(), is(0));
@@ -66,15 +52,15 @@ public class EcosModuleDepsTest {
 
             moduleService.uploadModule("test", baseTypeModule);
 
-            assertThat(moduleService.getPublishStatus(baseModuleRef), is(PublishStatus.PUBLISHING));
-            assertThat(moduleService.getPublishStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
+            assertThat(moduleService.getDeployStatus(baseModuleRef), is(PublishStatus.PUBLISHING));
+            assertThat(moduleService.getDeployStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
         }
 
-        TestUtils.waitWhile(() -> moduleService.getPublishStatus(baseModuleRef).equals(PublishStatus.PUBLISHING), 5);
+        TestUtils.waitWhile(() -> moduleService.getDeployStatus(baseModuleRef).equals(PublishStatus.PUBLISHING), 5);
 
-        assertThat(moduleService.getPublishStatus(baseModuleRef), is(PublishStatus.PUBLISHED));
+        assertThat(moduleService.getDeployStatus(baseModuleRef), is(PublishStatus.DEPLOYED));
 
-        TestUtils.waitWhile(() -> !moduleService.getPublishStatus(otherModuleRef).equals(PublishStatus.PUBLISHED), 5);
+        TestUtils.waitWhile(() -> !moduleService.getDeployStatus(otherModuleRef).equals(PublishStatus.DEPLOYED), 5);
 
         assertThat(publishedTypes.size(), is(2));
         assertThat(publishedTypes.get(0), is(baseTypeModule));

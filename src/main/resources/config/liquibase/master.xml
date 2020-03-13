@@ -14,6 +14,7 @@
     <include file="changelog/20200212000000_increase_module_ext_id_size.xml" relativeToChangelogFile="true"/>
     <include file="changelog/20200219000000_add_module_key.xml" relativeToChangelogFile="true"/>
     <include file="changelog/20200310000000_add_module_types.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/20200313000000_rename_module_columns.xml" relativeToChangelogFile="true"/>
 
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->

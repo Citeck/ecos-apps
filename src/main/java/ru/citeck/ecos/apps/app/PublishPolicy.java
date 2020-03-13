@@ -9,7 +9,7 @@ public enum PublishPolicy {
     PUBLISH,
     NONE;
 
-    public boolean shouldPublish(boolean isChanged, Supplier<PublishStatus> statusSupplier) {
+    public boolean shouldPublish(boolean isChanged, Supplier<DeployStatus> statusSupplier) {
 
         boolean shouldPublish = false;
         switch (this) {
@@ -24,11 +24,11 @@ public enum PublishPolicy {
                 if (isChanged) {
                     shouldPublish = true;
                 } else {
-                    PublishStatus status = statusSupplier.get();
-                    if (PublishStatus.DEPS_WAITING.equals(status)) {
+                    DeployStatus status = statusSupplier.get();
+                    if (DeployStatus.DEPS_WAITING.equals(status)) {
                         shouldPublish = false;
                     } else {
-                        shouldPublish = !PublishStatus.PUBLISHED.equals(status);
+                        shouldPublish = !DeployStatus.DEPLOYED.equals(status);
                     }
                 }
                 break;

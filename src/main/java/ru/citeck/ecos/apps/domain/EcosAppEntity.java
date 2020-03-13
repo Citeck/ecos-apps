@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps.domain;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.DeployStatus;
 
 import javax.persistence.*;
 import java.util.Set;
@@ -28,5 +28,5 @@ public class EcosAppEntity extends AbstractAuditingEntity {
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "publish_status")
-    @Getter @Setter private PublishStatus publishStatus = PublishStatus.DRAFT;
+    @Getter @Setter private DeployStatus publishStatus = DeployStatus.DRAFT;
 }

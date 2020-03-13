@@ -2,25 +2,11 @@ package ru.citeck.ecos.apps.app.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.PublishPolicy;
-import ru.citeck.ecos.apps.app.PublishStatus;
-import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.apps.domain.*;
-import ru.citeck.ecos.apps.module.ModuleRef;
 import ru.citeck.ecos.apps.repository.EcosAppRevDepRepo;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -57,7 +43,7 @@ public class EcosAppService {
         UploadStatus<EcosAppRevEntity> uploadStatus = appDao.uploadApp(source, data);
         EcosAppRevEntity appRev = uploadStatus.getEntity();
 
-        Supplier<PublishStatus> statusSupplier = () -> appRev.getApplication().getPublishStatus();
+        Supplier<PublishStatus> statusSupplier = () -> appRev.getApplication().getDeployStatus();
 
         if (publishPolicy.shouldPublish(uploadStatus.isChanged(), statusSupplier)) {
             tryToPublish(appRev.getApplication());
@@ -73,15 +59,15 @@ public class EcosAppService {
         Set<PublishStatus> depsStatuses = lastRevision.getDependencies()
             .stream()
             .map(EcosAppRevDepEntity::getTarget)
-            .map(EcosAppEntity::getPublishStatus)
+            .map(EcosAppEntity::getDeployStatus)
             .collect(Collectors.toSet());
 
-        if (depsStatuses.stream().allMatch(PublishStatus.PUBLISHED::equals)) {
+        if (depsStatuses.stream().allMatch(PublishStatus.DEPLOYED::equals)) {
             String appId = application.getExtId();
             publishApp(appId);
             updateAppPublishStatus(appId);
         } else {
-            PublishStatus publishStatus = application.getPublishStatus();
+            PublishStatus publishStatus = application.getDeployStatus();
             if (!PublishStatus.DEPS_WAITING.equals(publishStatus)) {
                 application.setPublishStatus(PublishStatus.DEPS_WAITING);
                 appDao.save(application);
@@ -109,9 +95,9 @@ public class EcosAppService {
         return uploadApp(source, data, publishPolicy);
     }
 
-    public PublishStatus getPublishStatus(String appId) {
+    public PublishStatus getDeployStatus(String appId) {
         EcosAppEntity ecosApp = appDao.getEcosApp(appId);
-        return ecosApp.getPublishStatus();
+        return ecosApp.getDeployStatus();
     }
 
     public void updateAppsPublishStatus(ModuleRef moduleRef) {
@@ -141,24 +127,24 @@ public class EcosAppService {
         PublishStatus newStatus = getAppStatus(
             lastRevision.getModules()
                 .stream()
-                .map(me -> me.getModule().getPublishStatus())
+                .map(me -> me.getModule().getDeployStatus())
                 .collect(Collectors.toList())
         );
 
-        PublishStatus statusBefore = entity.getPublishStatus();
+        PublishStatus statusBefore = entity.getDeployStatus();
 
         if (!newStatus.equals(statusBefore)) {
 
             entity.setPublishStatus(newStatus);
             appDao.save(entity);
 
-            if (newStatus.equals(PublishStatus.PUBLISHED) && statusBefore.equals(PublishStatus.PUBLISHING)) {
+            if (newStatus.equals(PublishStatus.DEPLOYED) && statusBefore.equals(PublishStatus.PUBLISHING)) {
 
                 List<EcosAppRevDepEntity> deps = appDepsRepo.getDepsByTarget(entity.getId());
                 deps.stream()
                     .map(EcosAppRevDepEntity::getSource)
                     .map(EcosAppRevEntity::getApplication)
-                    .filter(a -> PublishStatus.DEPS_WAITING.equals(a.getPublishStatus()))
+                    .filter(a -> PublishStatus.DEPS_WAITING.equals(a.getDeployStatus()))
                     .forEach(this::tryToPublish);
             }
         }
@@ -173,7 +159,7 @@ public class EcosAppService {
         } else if (statuses.stream().anyMatch(PublishStatus.PUBLISH_FAILED::equals)) {
             status = PublishStatus.PUBLISH_FAILED;
         } else {
-            status = PublishStatus.PUBLISHED;
+            status = PublishStatus.DEPLOYED;
         }
 
         return status;

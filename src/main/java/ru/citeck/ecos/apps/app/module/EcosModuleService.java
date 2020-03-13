@@ -4,14 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.DeployStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
+import ru.citeck.ecos.apps.domain.EcosContentEntity;
+import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.module.ModuleRef;
 import ru.citeck.ecos.apps.module.handler.ModuleWithMeta;
 import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.module.remote.RemoteModulesService;
+import ru.citeck.ecos.commands.dto.CommandError;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,9 +62,91 @@ public class EcosModuleService {
         }
 
         for (ModuleWithMeta<Object> module : modulesMeta) {
-            UploadStatus<EcosModuleRevEntity> uploadStatus = dao.uploadModule(source, type, module, false);
-            if (uploadStatus.isChanged()) {
-                remoteModulesService.deployModule(app, type, module.getModule());
+
+            UploadStatus<EcosModuleEntity, EcosModuleRevEntity> uploadStatus =
+                dao.uploadModule(source, type, module, false);
+
+            if (!DeployStatus.DEPLOYED.equals(uploadStatus.getEntity().getDeployStatus())) {
+                tryToDeploy(uploadStatus.getEntity());
+            }
+        }
+    }
+
+    private void tryToDeploy(EcosModuleEntity moduleEntity) {
+
+        ModuleRef ref = ModuleRef.create(moduleEntity.getType(), moduleEntity.getExtId());
+
+        if (moduleEntity.getDependencies()
+            .stream()
+            .map(EcosModuleDepEntity::getTarget)
+            .anyMatch(d -> !DeployStatus.DEPLOYED.equals(d.getDeployStatus()))) {
+
+            moduleEntity.setDeployStatus(DeployStatus.DEPS_WAITING);
+            log.info("Module " + ref + " can't be deployed yet. Dependencies waiting");
+
+            dao.save(moduleEntity);
+
+        } else {
+
+            String type = moduleEntity.getType();
+            String appName = ecosAppsModuleTypeService.getAppByModuleType(type);
+
+            EcosModuleRevEntity lastRev = moduleEntity.getLastRev();
+            if (lastRev != null) {
+
+                EcosContentEntity content = lastRev.getContent();
+
+                if (content != null) {
+
+                    Object module = localModulesService.readFromBytes(content.getData(), type);
+                    List<CommandError> errors = remoteModulesService.deployModule(appName, type, module);
+
+                    if (errors.isEmpty()) {
+
+                        moduleEntity.setDeployStatus(DeployStatus.DEPLOYED);
+                        moduleEntity.setDeployMsg("");
+
+                        dao.save(moduleEntity);
+
+                        tryToDeployDependentModules(moduleEntity);
+
+                    } else {
+
+                        String msg = errors.stream()
+                            .map(CommandError::getMessage)
+                            .collect(Collectors.joining("|"));
+
+                        log.info("Module " + ref + " deploy failed. Msg: " + msg);
+
+                        moduleEntity.setDeployStatus(DeployStatus.DEPLOY_FAILED);
+                        moduleEntity.setDeployMsg(msg);
+
+                        dao.save(moduleEntity);
+                    }
+                } else {
+
+                    log.info("Module " + ref + " can't be deployed. Content is missing");
+                }
+            } else {
+
+                log.info("Module " + ref + " can't be deployed. Last revision is missing");
+            }
+        }
+    }
+
+    private void tryToDeployDependentModules(EcosModuleEntity module) {
+
+        ModuleRef moduleRef = ModuleRef.create(module.getType(), module.getExtId());
+        List<EcosModuleEntity> modules = dao.getDependentModules(moduleRef);
+
+        for (EcosModuleEntity moduleFromDep : modules) {
+
+            DeployStatus depStatus = moduleFromDep.getDeployStatus();
+
+            if (DeployStatus.DEPS_WAITING.equals(depStatus)
+                || DeployStatus.DEPLOY_FAILED.equals(depStatus)) {
+
+                tryToDeploy(moduleFromDep);
             }
         }
     }
@@ -106,14 +191,14 @@ public class EcosModuleService {
         return rev != null ? new EcosModuleDb(rev) : null;
     }
 
-    synchronized public PublishStatus getPublishStatus(ModuleRef moduleRef) {
+    synchronized public DeployStatus getDeployStatus(ModuleRef moduleRef) {
         EcosModuleEntity module = dao.getModule(moduleRef);
-        return module.getPublishStatus();
+        return module.getDeployStatus();
     }
 
-    synchronized public ModulePublishState getPublishState(ModuleRef moduleRef) {
+    synchronized public ModulePublishState getDeployState(ModuleRef moduleRef) {
         EcosModuleEntity module = dao.getModule(moduleRef);
-        return new ModulePublishState(module.getPublishStatus(), module.getPublishMsg());
+        return new ModulePublishState(module.getDeployStatus(), module.getDeployMsg());
     }
 
     synchronized public EcosModuleRev getModuleRevision(String id) {

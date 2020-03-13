@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps.domain;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.DeployStatus;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -36,10 +36,10 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @Getter @Setter private EcosModuleRevEntity userRev;
 
     @Enumerated(EnumType.ORDINAL)
-    @Column(name = "publish_status")
-    @Getter @Setter private PublishStatus publishStatus = PublishStatus.DRAFT;
-    @Column(name = "publish_msg")
-    @Getter @Setter private String publishMsg;
+    @Column(name = "deploy_status")
+    @Getter @Setter private DeployStatus deployStatus = DeployStatus.DRAFT;
+    @Column(name = "deploy_msg")
+    @Getter @Setter private String deployMsg;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @Getter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
