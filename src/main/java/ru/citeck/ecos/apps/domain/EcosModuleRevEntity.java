@@ -25,6 +25,9 @@ public class EcosModuleRevEntity extends AbstractImmutableEntity {
     @JoinColumn(name = "module_id")
     @Getter @Setter private EcosModuleEntity module;
 
+    @Column(name="is_user_rev")
+    @Getter @Setter private boolean isUserRev;
+
     @Column(name="ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String source;

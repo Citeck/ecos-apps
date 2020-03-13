@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.PublishStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
-import ru.citeck.ecos.apps.app.module.records.EcosModuleRecords;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
 import ru.citeck.ecos.apps.module.ModuleRef;
 import ru.citeck.ecos.apps.module.controller.ModuleControllerService;
-import ru.citeck.ecos.apps.module.controller.ModuleMeta;
+import ru.citeck.ecos.apps.module.handler.ModuleMeta;
+import ru.citeck.ecos.apps.module.handler.ModuleWithMeta;
 import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.module.type.ModuleTypeService;
 import ru.citeck.ecos.apps.module.type.TypeContext;
@@ -38,7 +38,6 @@ public class EcosModuleDao {
     private final EcosModuleDepRepo moduleDepRepo;
     private final ModuleTypeService moduleTypeService;
     private final LocalModulesService localModulesService;
-    private final ModuleControllerService moduleControllerService;
 
     public int getModulesCount() {
         return (int) moduleRepo.getCount();
@@ -69,7 +68,10 @@ public class EcosModuleDao {
             .collect(Collectors.toList());
     }
 
-    public UploadStatus<EcosModuleRevEntity> uploadModule(String source, String type, Object module) {
+    public UploadStatus<EcosModuleRevEntity> uploadModule(String source,
+                                                          String type,
+                                                          ModuleWithMeta<Object> module,
+                                                          boolean userModule) {
 
         TypeContext typeCtx = moduleTypeService.getType(type);
 
@@ -77,25 +79,13 @@ public class EcosModuleDao {
             throw new IllegalArgumentException("Unknown module type: " + type);
         }
 
-        ModuleMeta meta = localModulesService.getModuleMeta(module, type);
+        ModuleMeta meta = module.getMeta();
 
         if (StringUtils.isBlank(meta.getId())) {
             throw new IllegalArgumentException("Module should has id value. " + meta);
         }
 
-        EcosModuleEntity moduleEntity = getModuleByKey(type, meta.getKey());
-        if (moduleEntity == null) {
-            moduleEntity = getModule(ModuleRef.create(type, meta.getId()));
-            if (moduleEntity != null) {
-                moduleEntity.setKey(meta.getKey());
-            }
-        } else {
-            if (!Objects.equals(moduleEntity.getExtId(), meta.getId())) {
-                throw new IllegalStateException("Modules id/key collision. "
-                    + "Type: " + type + " Key: " + meta.getKey() + " Id: "
-                    + meta.getId() + " byKey: " + moduleEntity.getExtId());
-            }
-        }
+        EcosModuleEntity moduleEntity = getModule(ModuleRef.create(type, meta.getId()));
 
         ModuleRef moduleRef = ModuleRef.create(type, meta.getId());
 
@@ -106,40 +96,24 @@ public class EcosModuleDao {
             log.debug("Create new module entity " + moduleRef);
 
             moduleEntity = new EcosModuleEntity();
-            moduleEntity.setKey(meta.getKey());
             moduleEntity.setExtId(meta.getId());
             moduleEntity.setType(type);
             moduleEntity.setPublishStatus(PublishStatus.DRAFT);
             moduleEntity = moduleRepo.save(moduleEntity);
 
         } else {
-
-            lastModuleRev = getLastModuleRev(type, moduleRef.getId());
-            Object currentModule = readModuleFromRev(lastModuleRev, type);
-
-            if (currentModule != null) {
-                module = moduleControllerService.merge(currentModule, module, typeCtx);
+            if (userModule) {
+                lastModuleRev = moduleEntity.getUserRev();
+            } else {
+                lastModuleRev = getLastModuleRev(type, moduleRef.getId());
             }
         }
 
-        byte[] data = localModulesService.writeAsBytes(module, type);
+        byte[] data = localModulesService.writeAsBytes(module.getModule(), type);
         EcosContentEntity content = contentDao.upload(data);
 
-        if (lastModuleRev != null) {
-
-            if (Objects.equals(lastModuleRev.getContent(), content)) {
-
-                return new UploadStatus<>(lastModuleRev, false);
-
-            } else if (source != null && !EcosModuleRecords.MODULES_SOURCE.equals(source)) {
-
-                EcosModuleRevEntity lastBySource = getLastModuleRev(moduleRef, source);
-
-                if (lastBySource != null && Objects.equals(lastBySource.getContent(), content)) {
-
-                    return new UploadStatus<>(lastModuleRev, false);
-                }
-            }
+        if (lastModuleRev != null && Objects.equals(lastModuleRev.getContent(), content)) {
+            return new UploadStatus<>(lastModuleRev, false);
         }
 
         log.debug("Create new module revision entity " + moduleRef);
@@ -149,11 +123,16 @@ public class EcosModuleDao {
         lastModuleRev.setExtId(UUID.randomUUID().toString());
         lastModuleRev.setContent(content);
         lastModuleRev.setModule(moduleEntity);
+        lastModuleRev.setUserRev(userModule);
         lastModuleRev = moduleRevRepo.save(lastModuleRev);
 
-        moduleEntity.setLastRev(lastModuleRev);
-        moduleEntity.setPublishStatus(PublishStatus.DRAFT);
-        moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(meta.getDependencies())));
+        if (userModule) {
+            moduleEntity.setUserRev(lastModuleRev);
+        } else {
+            moduleEntity.setLastRev(lastModuleRev);
+            moduleEntity.setPublishStatus(PublishStatus.DRAFT);
+            moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(meta.getDependencies())));
+        }
 
         moduleRepo.save(moduleEntity);
 

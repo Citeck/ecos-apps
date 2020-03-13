@@ -33,4 +33,20 @@
 
     </changeSet>
 
+    <changeSet id="20200310000003" author="citeck">
+
+        <addColumn tableName="ecos_module">
+            <column name="user_module_rev_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_ecos_module_user_module_rev_id" references="ecos_module_rev(id)" />
+            </column>
+        </addColumn>
+
+        <addColumn tableName="ecos_module_rev">
+            <column name="is_user_rev" type="BOOLEAN" />
+        </addColumn>
+
+        <sql>UPDATE ecos_module_rev SET is_user_rev = false</sql>
+
+    </changeSet>
+
 </databaseChangeLog>

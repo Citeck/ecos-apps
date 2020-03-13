@@ -97,14 +97,18 @@ public class ModulesWatcher {
                 log.info("Loaded " + modules.size() + " modules from '" + fromApp
                     + "' EcosApp: '" + ecosApp.getId() + "' type: '" + typeCtx.getId() + "'");
 
-                modules.forEach(m ->
-                    ecosModuleService.uploadModule(fromApp, typeCtx.getId(), m)
-                );
+                ecosModuleService.uploadModules(fromApp, modules, typeCtx.getId());
             }
         }
     }
 
     private void runWatcher() {
+
+        try {
+            Thread.sleep(10_000);
+        } catch (InterruptedException e) {
+            log.error("Error", e);
+        }
 
         while (true) {
 
@@ -115,25 +119,36 @@ public class ModulesWatcher {
                 Set<String> missingApps = new HashSet<>(currentStatuses.keySet());
 
                 remoteStatus.forEach(it -> {
-                    if (!currentStatuses.containsKey(it.getAppName())) {
+                    AppStatusInfo currentStatus = currentStatuses.get(it.getAppName());
+                    if (currentStatus == null) {
                         newApps.put(it.getAppName(), it);
+                    } else {
+                        List<EcosAppInfo> currentEcosApps = currentStatus.getStatus().getEcosApps();
+                        if (it.getEcosApps().size() != currentEcosApps.size()) {
+                            currentStatuses.remove(it.getAppName());
+                            newApps.put(it.getAppName(), it);
+                        }
                     }
                     missingApps.remove(it.getAppName());
-
                 });
 
-                for (Map.Entry<String, AppStatusInfo> statusInfoEntry : currentStatuses.entrySet()) {
-                    if (missingApps.contains(statusInfoEntry.getKey())) {
+                List<String> apps = new ArrayList<>(currentStatuses.keySet());
 
-                        long lastHealthTime = statusInfoEntry.getValue().lastPassedHealthCheck;
+                for (String appName : apps) {
+
+                    AppStatusInfo appStatusInfo = currentStatuses.get(appName);
+
+                    if (missingApps.contains(appName)) {
+
+                        long lastHealthTime = appStatusInfo.lastPassedHealthCheck;
 
                         if (System.currentTimeMillis() - lastHealthTime > UNHEALTHY_APP_TTL) {
-                            currentStatuses.remove(statusInfoEntry.getKey());
-                            log.info("App '" + statusInfoEntry.getKey() + "' was removed from registry because it " +
+                            currentStatuses.remove(appName);
+                            log.info("App '" + appName + "' was removed from registry because it " +
                                      "doesn't respond " + UNHEALTHY_APP_TTL + " ms");
                         }
                     } else {
-                        statusInfoEntry.getValue().lastPassedHealthCheck = System.currentTimeMillis();
+                        appStatusInfo.lastPassedHealthCheck = System.currentTimeMillis();
                     }
                 }
 
@@ -165,7 +180,7 @@ public class ModulesWatcher {
 
     @Data
     @AllArgsConstructor
-    static class AppStatusInfo {
+    private static class AppStatusInfo {
         private AppStatus status;
         private Long lastPassedHealthCheck;
     }

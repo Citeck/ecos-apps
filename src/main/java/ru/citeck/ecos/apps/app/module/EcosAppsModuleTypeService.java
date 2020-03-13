@@ -44,6 +44,7 @@ public class EcosAppsModuleTypeService {
         moduleTypesRepo.getSources().forEach(source -> {
 
             try {
+                log.info("Load types for " + source + " from DB");
 
                 EcosModuleTypesEntity types = moduleTypesRepo.findFirstBySourceOrderByCreatedDateDesc(source);
                 EcosFile typesDir = ZipUtils.extractZip(types.getContent().getData());
@@ -59,6 +60,10 @@ public class EcosAppsModuleTypeService {
                 log.error("Error with source: " + source, e);
             }
         });
+    }
+
+    public boolean isTypeRegistered(String type) {
+        return getType(type) != null;
     }
 
     public TypeContext getType(String type) {
@@ -115,7 +120,8 @@ public class EcosAppsModuleTypeService {
     }
 
     public String getAppByModuleType(String moduleType) {
-        return appNameByTypeId.getOrDefault(moduleType, "");
+        String result = appNameByTypeId.getOrDefault(moduleType, "");
+        return result != null ? result : "";
     }
 
     @Data
