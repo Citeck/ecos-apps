@@ -15,6 +15,7 @@ import ru.citeck.ecos.apps.repository.EcosModuleTypesRepo;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.utils.ZipUtils;
+import ru.citeck.ecos.records2.RecordRef;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -37,6 +38,7 @@ public class EcosAppsModuleTypeService {
     private final Map<String, String> appNameByTypeId = new ConcurrentHashMap<>();
     private final Map<String, List<TypeContext>> typesByApp = new ConcurrentHashMap<>();
     private final Map<String, EcosFile> typesDirByApp = new ConcurrentHashMap<>();
+    private final Map<AppSourceKey, String> typeBySource = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -112,7 +114,12 @@ public class EcosAppsModuleTypeService {
         if (typeInfo == null || typeInfo.changed < timeMs) {
             typeInfoByTypeId.put(ctx.getId(), new TypeInfo(ctx, timeMs));
             appNameByTypeId.put(ctx.getId(), source);
+            typeBySource.put(new AppSourceKey(source, ctx.getSourceId()), ctx.getId());
         }
+    }
+
+    public String getType(RecordRef recordRef) {
+        return typeBySource.getOrDefault(new AppSourceKey(recordRef), "");
     }
 
     public List<TypeContext> getTypesByAppName(String appName) {
@@ -126,7 +133,20 @@ public class EcosAppsModuleTypeService {
 
     @Data
     @AllArgsConstructor
-    private static class TypeInfo{
+    private static class AppSourceKey {
+
+        private String appName;
+        private String sourceId;
+
+        public AppSourceKey(RecordRef ref) {
+            this.appName = ref.getAppName();
+            this.sourceId = ref.getSourceId();
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class TypeInfo {
         private TypeContext typeCtx;
         private Long changed;
     }

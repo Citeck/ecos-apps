@@ -22,6 +22,7 @@ import ru.citeck.ecos.apps.module.type.TypeContext;
 import ru.citeck.ecos.apps.repository.EcosModuleDepRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRepo;
+import ru.citeck.ecos.records2.RecordRef;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ public class EcosModuleDao {
     private final EcosModuleDepRepo moduleDepRepo;
     private final ModuleTypeService moduleTypeService;
     private final LocalModulesService localModulesService;
+    private final EcosAppsModuleTypeService ecosAppsModuleTypeService;
 
     public int getModulesCount() {
         return (int) moduleRepo.getCount();
@@ -160,13 +162,20 @@ public class EcosModuleDao {
         }
     }
 
-    private Set<EcosModuleDepEntity> getDependenciesModules(EcosModuleEntity baseEntity, Set<ModuleRef> modules) {
+    private Set<EcosModuleDepEntity> getDependenciesModules(EcosModuleEntity baseEntity, Set<RecordRef> modules) {
 
         Set<EcosModuleDepEntity> dependencies = new HashSet<>();
 
         ModuleRef baseRef = ModuleRef.create(baseEntity.getType(), baseEntity.getExtId());
 
-        for (ModuleRef ref : modules) {
+        for (RecordRef recRef : modules) {
+
+            String depType = ecosAppsModuleTypeService.getType(recRef);
+            if (depType.isEmpty()) {
+                continue;
+            }
+
+            ModuleRef ref = ModuleRef.create(depType, recRef.getId());
 
             if (baseRef.equals(ref)) {
                 continue;
