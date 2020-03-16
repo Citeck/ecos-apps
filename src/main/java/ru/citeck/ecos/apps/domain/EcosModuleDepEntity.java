@@ -32,7 +32,8 @@ public class EcosModuleDepEntity {
             return false;
         }
         EcosModuleDepEntity that = (EcosModuleDepEntity) o;
-        return Objects.equals(id, that.id);
+        return Objects.equals(source, that.source)
+            && Objects.equals(target, that.target);
     }
 
     @Override

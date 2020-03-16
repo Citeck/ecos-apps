@@ -135,7 +135,7 @@ public class EcosModuleDao {
             moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(meta.getDependencies())));
         }
 
-        moduleRepo.save(moduleEntity);
+        moduleEntity = moduleRepo.save(moduleEntity);
 
         return new UploadStatus<>(moduleEntity, lastModuleRev, true);
     }
