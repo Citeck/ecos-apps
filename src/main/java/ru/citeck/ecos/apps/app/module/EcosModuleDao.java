@@ -6,17 +6,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.PublishStatus;
+import ru.citeck.ecos.apps.app.DeployStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
 import ru.citeck.ecos.apps.app.content.EcosContentDao;
-import ru.citeck.ecos.apps.app.module.records.EcosModuleRecords;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.module.ModuleRef;
+import ru.citeck.ecos.apps.module.handler.ModuleMeta;
+import ru.citeck.ecos.apps.module.handler.ModuleWithMeta;
+import ru.citeck.ecos.apps.module.local.LocalModulesService;
+import ru.citeck.ecos.apps.module.type.ModuleTypeService;
+import ru.citeck.ecos.apps.module.type.TypeContext;
 import ru.citeck.ecos.apps.repository.EcosModuleDepRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRevRepo;
 import ru.citeck.ecos.apps.repository.EcosModuleRepo;
+import ru.citeck.ecos.records2.RecordRef;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,8 +35,10 @@ public class EcosModuleDao {
     private final EcosModuleRepo moduleRepo;
     private final EcosContentDao contentDao;
     private final EcosModuleRevRepo moduleRevRepo;
-    private final EappsModuleService eappsModuleService;
     private final EcosModuleDepRepo moduleDepRepo;
+    private final ModuleTypeService moduleTypeService;
+    private final LocalModulesService localModulesService;
+    private final EcosAppsModuleTypeService ecosAppsModuleTypeService;
 
     public int getModulesCount() {
         return (int) moduleRepo.getCount();
@@ -40,9 +48,8 @@ public class EcosModuleDao {
         return (int) moduleRepo.getCount(type);
     }
 
-    public List<EcosModuleEntity> getModulesByType(Class<? extends EcosModule> type) {
-        String typeId = eappsModuleService.getTypeId(type);
-        return moduleRepo.findAllByType(typeId);
+    public List<EcosModuleEntity> getModulesByType(String type) {
+        return moduleRepo.findAllByType(type);
     }
 
     public List<EcosModuleEntity> getAllModules() {
@@ -62,37 +69,26 @@ public class EcosModuleDao {
             .collect(Collectors.toList());
     }
 
-    public UploadStatus<EcosModuleRevEntity> uploadModule(String source, EcosModule module) {
+    public UploadStatus<EcosModuleEntity, EcosModuleRevEntity> uploadModule(String source,
+                                                                            String type,
+                                                                            ModuleWithMeta<Object> module,
+                                                                            boolean userModule) {
 
-        String typeId = eappsModuleService.getTypeId(module.getClass());
-        if (typeId == null) {
-            throw new IllegalArgumentException("Unknown module type: "
-                                                + module.getClass() + " (" + module.getId() + ")");
-        }
-        if (StringUtils.isBlank(module.getId())) {
-            throw new IllegalArgumentException("Module should has id value. " + module);
-        }
+        TypeContext typeCtx = moduleTypeService.getType(type);
 
-        Set<ModuleRef> dependencies = eappsModuleService.getDependencies(module);
-
-        String moduleKey = eappsModuleService.getModuleKey(module);
-        String moduleId = module.getId();
-
-        EcosModuleEntity moduleEntity = getModuleByKey(typeId, moduleKey);
-        if (moduleEntity == null) {
-            moduleEntity = getModule(ModuleRef.create(typeId, moduleId));
-            if (moduleEntity != null) {
-                moduleEntity.setKey(moduleKey);
-            }
-        } else {
-            if (!Objects.equals(moduleEntity.getExtId(), module.getId())) {
-                throw new IllegalStateException("Modules id/key collision. "
-                    + "Type: " + typeId + " Key: " + moduleKey + " Id: "
-                    + moduleId + " byKey: " + moduleEntity.getExtId());
-            }
+        if (typeCtx == null) {
+            throw new IllegalArgumentException("Unknown module type: " + type);
         }
 
-        ModuleRef moduleRef = ModuleRef.create(typeId, moduleId);
+        ModuleMeta meta = module.getMeta();
+
+        if (StringUtils.isBlank(meta.getId())) {
+            throw new IllegalArgumentException("Module should has id value. " + meta);
+        }
+
+        EcosModuleEntity moduleEntity = getModule(ModuleRef.create(type, meta.getId()));
+
+        ModuleRef moduleRef = ModuleRef.create(type, meta.getId());
 
         EcosModuleRevEntity lastModuleRev = null;
 
@@ -101,40 +97,24 @@ public class EcosModuleDao {
             log.debug("Create new module entity " + moduleRef);
 
             moduleEntity = new EcosModuleEntity();
-            moduleEntity.setKey(moduleKey);
-            moduleEntity.setExtId(moduleId);
-            moduleEntity.setType(typeId);
-            moduleEntity.setPublishStatus(PublishStatus.DRAFT);
+            moduleEntity.setExtId(meta.getId());
+            moduleEntity.setType(type);
+            moduleEntity.setDeployStatus(DeployStatus.DRAFT);
             moduleEntity = moduleRepo.save(moduleEntity);
 
         } else {
-
-            lastModuleRev = getLastModuleRev(typeId, moduleRef.getId());
-            EcosModule currentModule = readModuleFromRev(lastModuleRev, typeId);
-
-            if (currentModule != null) {
-                module = eappsModuleService.merge(currentModule, module);
+            if (userModule) {
+                lastModuleRev = moduleEntity.getUserRev();
+            } else {
+                lastModuleRev = getLastModuleRev(type, moduleRef.getId());
             }
         }
 
-        byte[] data = eappsModuleService.writeAsBytes(module);
+        byte[] data = localModulesService.writeAsBytes(module.getModule(), type);
         EcosContentEntity content = contentDao.upload(data);
 
-        if (lastModuleRev != null) {
-
-            if (Objects.equals(lastModuleRev.getContent(), content)) {
-
-                return new UploadStatus<>(lastModuleRev, false);
-
-            } else if (source != null && !EcosModuleRecords.MODULES_SOURCE.equals(source)) {
-
-                EcosModuleRevEntity lastBySource = getLastModuleRev(moduleRef, source);
-
-                if (lastBySource != null && Objects.equals(lastBySource.getContent(), content)) {
-
-                    return new UploadStatus<>(lastModuleRev, false);
-                }
-            }
+        if (lastModuleRev != null && Objects.equals(lastModuleRev.getContent(), content)) {
+            return new UploadStatus<>(moduleEntity, lastModuleRev, false);
         }
 
         log.debug("Create new module revision entity " + moduleRef);
@@ -144,21 +124,28 @@ public class EcosModuleDao {
         lastModuleRev.setExtId(UUID.randomUUID().toString());
         lastModuleRev.setContent(content);
         lastModuleRev.setModule(moduleEntity);
+        lastModuleRev.setUserRev(userModule);
         lastModuleRev = moduleRevRepo.save(lastModuleRev);
 
-        moduleEntity.setLastRev(lastModuleRev);
-        moduleEntity.setPublishStatus(PublishStatus.DRAFT);
-        moduleEntity.setDependencies(getDependenciesModules(moduleEntity, dependencies));
+        if (userModule) {
+            moduleEntity.setUserRev(lastModuleRev);
+        } else {
+            moduleEntity.setLastRev(lastModuleRev);
+            moduleEntity.setDeployStatus(DeployStatus.DRAFT);
+            moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(meta.getDependencies())));
+        }
 
-        moduleRepo.save(moduleEntity);
+        moduleEntity = moduleRepo.save(moduleEntity);
 
-        return new UploadStatus<>(lastModuleRev, true);
+        return new UploadStatus<>(moduleEntity, lastModuleRev, true);
     }
 
-    private EcosModule readModuleFromRev(EcosModuleRevEntity entity, String type) {
-        if (entity == null || type == null) {
+    private Object readModuleFromRev(EcosModuleRevEntity entity, String type) {
+
+        if (entity == null || StringUtils.isBlank(type)) {
             return null;
         }
+
         EcosContentEntity content = entity.getContent();
         if (content == null) {
             return null;
@@ -168,18 +155,31 @@ public class EcosModuleDao {
             return null;
         }
         try {
-            return eappsModuleService.read(data, type);
+            return localModulesService.readFromBytes(data, type);
         } catch (Exception e) {
             log.error("Error with entity " + entity.getId() + " " + entity.getExtId() + " " + type, e);
             return null;
         }
     }
 
-    private Set<EcosModuleDepEntity> getDependenciesModules(EcosModuleEntity baseEntity, Set<ModuleRef> modules) {
+    private Set<EcosModuleDepEntity> getDependenciesModules(EcosModuleEntity baseEntity, Set<RecordRef> modules) {
 
         Set<EcosModuleDepEntity> dependencies = new HashSet<>();
 
-        for (ModuleRef ref : modules) {
+        ModuleRef baseRef = ModuleRef.create(baseEntity.getType(), baseEntity.getExtId());
+
+        for (RecordRef recRef : modules) {
+
+            String depType = ecosAppsModuleTypeService.getType(recRef);
+            if (depType.isEmpty()) {
+                continue;
+            }
+
+            ModuleRef ref = ModuleRef.create(depType, recRef.getId());
+
+            if (baseRef.equals(ref)) {
+                continue;
+            }
 
             EcosModuleEntity moduleEntity = moduleRepo.getByExtId(ref.getType(), ref.getId());
             if (moduleEntity == null) {

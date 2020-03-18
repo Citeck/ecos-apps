@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.module.EappsModuleService;
-import ru.citeck.ecos.apps.app.module.EcosModule;
 import ru.citeck.ecos.apps.app.module.EcosModuleDao;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
@@ -27,7 +25,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class UpdateModulesKeysPatch {
 
-    private static final String PATCH_KEY = "patch.UpdateModulesKeys_v2";
+    /*private static final String PATCH_KEY = "patch.UpdateModulesKeys_v2";
 
     private final EcosMetaRepo metaRepo;
     private final EcosModuleDao modulesDao;
@@ -137,5 +135,5 @@ public class UpdateModulesKeysPatch {
         private long id;
         private String before;
         private String after;
-    }
+    }*/
 }

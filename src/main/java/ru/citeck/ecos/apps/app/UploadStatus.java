@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UploadStatus<T> {
-    private T entity;
+public class UploadStatus<E, R> {
+    private E entity;
+    private R entityRev;
     private boolean changed;
 }

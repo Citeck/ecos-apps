@@ -9,15 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.citeck.ecos.apps.app.application.AppsAutoUpload;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-import ru.citeck.ecos.apps.app.module.ModuleRef;
-import ru.citeck.ecos.apps.utils.EappZipUtils;
-import ru.citeck.ecos.apps.utils.io.EappFile;
-import ru.citeck.ecos.apps.utils.io.EappFileBase;
-import ru.citeck.ecos.apps.utils.io.mem.EappMemDir;
 
 import java.util.List;
 
@@ -27,14 +21,11 @@ import java.util.List;
 public class EcosAppController {
 
     private EcosModuleService moduleService;
-    private AppsAutoUpload appsAutoUpload;
     private EcosAppService appService;
 
     public EcosAppController(EcosModuleService moduleService,
-                             AppsAutoUpload appsAutoUpload,
                              EcosAppService appService) {
         this.moduleService = moduleService;
-        this.appsAutoUpload = appsAutoUpload;
         this.appService = appService;
     }
 
@@ -47,12 +38,13 @@ public class EcosAppController {
     public HttpEntity<byte[]> downloadModule(@PathVariable String type,
                                              @PathVariable String moduleId) {
 
-        return toDownloadHttpEntity(moduleService.getLastModuleRev(ModuleRef.create(type, moduleId)));
+        //return toDownloadHttpEntity(moduleService.getLastModuleRev(ModuleRef.create(type, moduleId)));
+        return null;
     }
 
     @GetMapping("/module/all/publish")
     public String publishAllModules() {
-        moduleService.publishAllModules(true);
+        //moduleService.publishAllModules(true);
         return "OK";
     }
 
@@ -60,7 +52,7 @@ public class EcosAppController {
     public String publishModule(@PathVariable String type,
                                 @PathVariable String moduleId) {
 
-        moduleService.publishModule(ModuleRef.create(type, moduleId), true);
+        //moduleService.publishModule(ModuleRef.create(type, moduleId), true);
         return "OK";
     }
 
@@ -71,15 +63,9 @@ public class EcosAppController {
         return "OK";
     }
 
-    @GetMapping("/autoupload/update")
-    public String updateAppsAutoUpload() {
-        appsAutoUpload.upload();
-        return "OK";
-    }
-
     private HttpEntity<byte[]> toDownloadHttpEntity(EcosModuleRev rev) {
 
-        EappMemDir eappMemDir = EappZipUtils.extractZip(rev.getData());
+        /*EappMemDir eappMemDir = EappZipUtils.extractZip(rev.getData());
         List<EappFileBase> files = eappMemDir.getChildren();
 
         byte[] data;
@@ -104,7 +90,8 @@ public class EcosAppController {
                 .filename(filename)
                 .build());
 
-        return new HttpEntity<>(data, headers);
+        return new HttpEntity<>(data, headers);*/
+        return null;
     }
 }
 

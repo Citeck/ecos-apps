@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20200310000000" author="citeck">
+
+        <createTable tableName="ecos_module_types">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="source" type="VARCHAR(32)">
+                <constraints nullable="false" />
+            </column>
+            <column name="content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_module_type_content" references="ecos_content(id)" nullable="false"/>
+            </column>
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="20200310000002" author="citeck">
+
+        <addUniqueConstraint constraintName="c_unique_source_content"
+                             tableName="ecos_module_types"
+                             columnNames="source,content_id" />
+
+    </changeSet>
+
+    <changeSet id="20200310000003" author="citeck">
+
+        <addColumn tableName="ecos_module">
+            <column name="user_module_rev_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_ecos_module_user_module_rev_id" references="ecos_module_rev(id)" />
+            </column>
+        </addColumn>
+
+        <addColumn tableName="ecos_module_rev">
+            <column name="is_user_rev" type="BOOLEAN" />
+        </addColumn>
+
+        <sql>UPDATE ecos_module_rev SET is_user_rev = false</sql>
+
+    </changeSet>
+
+</databaseChangeLog>

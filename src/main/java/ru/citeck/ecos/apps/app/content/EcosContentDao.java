@@ -4,8 +4,9 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.repository.EcosContentRepo;
-import ru.citeck.ecos.apps.utils.digest.EappDigest;
-import ru.citeck.ecos.apps.utils.digest.EappDigestUtils;
+import ru.citeck.ecos.commons.utils.digest.Digest;
+import ru.citeck.ecos.commons.utils.digest.DigestAlgorithm;
+import ru.citeck.ecos.commons.utils.digest.DigestUtils;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -33,7 +34,7 @@ public class EcosContentDao {
 
     public EcosContentEntity upload(byte[] data) {
 
-        EappDigest digest = EappDigestUtils.getSha256Digest(new ByteArrayInputStream(data));
+        Digest digest = DigestUtils.getDigest(new ByteArrayInputStream(data), DigestAlgorithm.SHA256);
         EcosContentEntity content = repo.findContent(digest.getHash(), digest.getSize());
 
         if (content == null) {

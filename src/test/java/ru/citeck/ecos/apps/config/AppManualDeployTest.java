@@ -3,9 +3,7 @@ package ru.citeck.ecos.apps.config;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
-import ru.citeck.ecos.apps.EappsFactory;
 import ru.citeck.ecos.apps.app.EcosApp;
-import ru.citeck.ecos.apps.rabbit.EappsRabbitApi;
 
 import java.io.File;
 
@@ -14,7 +12,7 @@ public class AppManualDeployTest {
     //@Test
     public void test() {
 
-        CachingConnectionFactory factory = new CachingConnectionFactory();
+        /*CachingConnectionFactory factory = new CachingConnectionFactory();
         factory.setHost("localhost");
         factory.setUsername("admin");
         factory.setPassword("admin");
@@ -27,6 +25,6 @@ public class AppManualDeployTest {
 
         EcosApp app = appsFactory.getEcosAppIO().read(new File("C:/eapps/eapps.zip"));
 
-        api.getAppApi().deployApp("test-source", app);
+        api.getAppApi().deployApp("test-source", app);*/
     }
 }
