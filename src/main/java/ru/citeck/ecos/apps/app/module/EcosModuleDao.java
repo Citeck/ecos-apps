@@ -114,6 +114,13 @@ public class EcosModuleDao {
         EcosContentEntity content = contentDao.upload(data);
 
         if (lastModuleRev != null && Objects.equals(lastModuleRev.getContent(), content)) {
+            if (!userModule) {
+                moduleEntity.setDependencies(getDependenciesModules(
+                    moduleEntity,
+                    new HashSet<>(meta.getDependencies())
+                ));
+                moduleEntity = moduleRepo.save(moduleEntity);
+            }
             return new UploadStatus<>(moduleEntity, lastModuleRev, false);
         }
 
