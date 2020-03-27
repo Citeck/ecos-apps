@@ -3,6 +3,7 @@ package ru.citeck.ecos.apps.domain;
 import lombok.Getter;
 import lombok.Setter;
 import ru.citeck.ecos.apps.app.DeployStatus;
+import ru.citeck.ecos.apps.app.EcosAppType;
 
 import javax.persistence.*;
 import java.util.Set;
@@ -19,6 +20,8 @@ public class EcosAppEntity extends AbstractAuditingEntity {
     @Column(name = "ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String version;
+    @Enumerated(value = EnumType.STRING)
+    @Getter @Setter private EcosAppType type;
 
     @Column(name = "is_system")
     @Getter @Setter private Boolean isSystem;

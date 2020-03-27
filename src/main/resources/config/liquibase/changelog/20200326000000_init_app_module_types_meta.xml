@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20200326000000" author="citeck">
+
+        <addColumn schemaName="public" tableName="ecos_app">
+            <column name="type" type="VARCHAR" />
+        </addColumn>
+
+        <sql>UPDATE ecos_app SET type = 'FILE'</sql>
+
+        <createTable tableName="ecos_app_module_type_meta">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="app_id" type="BIGINT">
+                <constraints foreignKeyName="fk_app_module_types_app_id" references="ecos_app(id)"/>
+            </column>
+
+            <column name="module_type" type="VARCHAR" />
+            <column name="last_consumed" type="BIGINT" />
+
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
