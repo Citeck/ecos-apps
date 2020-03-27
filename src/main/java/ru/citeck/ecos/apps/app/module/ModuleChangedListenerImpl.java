@@ -15,6 +15,7 @@ public class ModuleChangedListenerImpl implements ModuleChangedListener {
 
     @Override
     public void onChanged(@NotNull String type, @NotNull ModuleWithMeta<Object> module) {
+
         ecosModuleService.uploadUserModule(CommandCtxManager.getSourceAppName(), module, type);
     }
 }

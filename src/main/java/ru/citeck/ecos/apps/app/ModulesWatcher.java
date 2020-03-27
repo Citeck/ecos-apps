@@ -128,6 +128,10 @@ public class ModulesWatcher {
 
                 for (TypeContext typeCtx : toTypes) {
 
+                    if (providedTypes != null && !providedTypes.contains(typeCtx.getId())) {
+                        continue;
+                    }
+
                     List<Object> modules = localModulesService.readModulesForType(modulesDir, typeCtx.getId());
 
                     if (iterations == 0 || modules.size() > 0) {

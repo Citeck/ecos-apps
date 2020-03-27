@@ -73,6 +73,7 @@ public class EcosAppService {
             if (appEntity == null) {
                 appEntity = new EcosAppEntity();
                 appEntity.setExtId(appName);
+                appEntity.setVersion("1.0.0");
                 appEntity = appRepo.save(appEntity);
             }
 
