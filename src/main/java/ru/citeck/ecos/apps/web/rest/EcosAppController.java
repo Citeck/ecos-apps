@@ -1,9 +1,6 @@
 package ru.citeck.ecos.apps.web.rest;
 
-import org.apache.commons.io.IOUtils;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,8 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosModuleRev;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
-
-import java.util.List;
 
 @Component
 @RestController
@@ -53,13 +48,6 @@ public class EcosAppController {
                                 @PathVariable String moduleId) {
 
         //moduleService.publishModule(ModuleRef.create(type, moduleId), true);
-        return "OK";
-    }
-
-    @GetMapping("/app/{appId}/publish")
-    public String publishApp(@PathVariable String appId) {
-
-        appService.publishApp(appId);
         return "OK";
     }
 
