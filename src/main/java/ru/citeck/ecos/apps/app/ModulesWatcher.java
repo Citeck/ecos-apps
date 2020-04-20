@@ -179,14 +179,29 @@ public class ModulesWatcher {
                 Set<String> missingApps = new HashSet<>(currentStatuses.keySet());
 
                 remoteStatus.forEach(it -> {
+
                     AppStatusInfo currentStatus = currentStatuses.get(it.getAppName());
+
                     if (currentStatus == null) {
+
                         newApps.put(it.getAppName(), it);
+
                     } else {
+
                         List<EcosAppInfo> currentEcosApps = currentStatus.getStatus().getEcosApps();
+
                         if (it.getEcosApps().size() != currentEcosApps.size()) {
+
                             currentStatuses.remove(it.getAppName());
                             newApps.put(it.getAppName(), it);
+
+                        } else if (it.getStarted() > currentStatus.getStatus().getStarted()) {
+
+                            AppStatus existingNewStatus = newApps.get(it.getAppName());
+                            if (existingNewStatus == null || existingNewStatus.getStarted() < it.getStarted()) {
+                                currentStatuses.remove(it.getAppName());
+                                newApps.put(it.getAppName(), it);
+                            }
                         }
                     }
                     missingApps.remove(it.getAppName());
