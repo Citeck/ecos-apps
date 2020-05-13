@@ -1,0 +1,11 @@
+
+id: change-test-module
+
+name: change-test-module
+
+target: app/test$test-module
+
+type: json
+config:
+  operations:
+    - { op: set, path: '$["config"]["key0"]', value: 'changed-value' }

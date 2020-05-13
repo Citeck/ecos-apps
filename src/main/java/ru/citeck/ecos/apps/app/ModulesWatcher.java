@@ -11,8 +11,11 @@ import ru.citeck.ecos.apps.app.application.AppModuleTypeMeta;
 import ru.citeck.ecos.apps.app.application.EcosAppService;
 import ru.citeck.ecos.apps.app.module.EcosAppsModuleTypeService;
 import ru.citeck.ecos.apps.app.module.EcosModuleService;
+import ru.citeck.ecos.apps.app.module.patch.ModulePatchService;
 import ru.citeck.ecos.apps.app.provider.ComputedMeta;
 import ru.citeck.ecos.apps.app.remote.AppStatus;
+import ru.citeck.ecos.apps.config.ApplicationProperties;
+import ru.citeck.ecos.apps.module.ModuleRef;
 import ru.citeck.ecos.apps.module.command.getmodules.GetModulesMeta;
 import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.module.remote.EcosAppInfo;
@@ -23,6 +26,8 @@ import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.json.Json;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 @Component
@@ -39,17 +44,19 @@ public class ModulesWatcher {
     private final EcosAppsService ecosAppsService;
     private final LocalModulesService localModulesService;
     private final EcosModuleService ecosModuleService;
-
+    private final ModulePatchService modulePatchService;
     private final EcosAppService ecosAppService;
-
     private final EcosAppsModuleTypeService appsModuleTypeService;
+
+    private final ApplicationProperties props;
 
     private boolean started = false;
 
     private Throwable lastError;
     private long errorNextPrintTime = 0L;
 
-    private Map<String, AppStatusInfo> currentStatuses = new HashMap<>();
+    private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
+    private final Queue<ModuleRef> modulesToUpdate = new ConcurrentLinkedQueue<>();
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -57,6 +64,8 @@ public class ModulesWatcher {
         if (!started) {
 
             log.info("ModulesWatcher initialization");
+
+            modulePatchService.addListener(patch -> modulesToUpdate.add(patch.getTarget()));
 
             Thread watcherThread = new Thread(this::runWatcher, "ModulesWatcher");
             watcherThread.start();
@@ -115,7 +124,7 @@ public class ModulesWatcher {
                 Map<String, GetModulesMeta> getModulesMeta = new HashMap<>();
 
                 typeMeta.forEach((type, module) ->
-                    getModulesMeta.put(type, new GetModulesMeta(module.getLastConsumedMs(), new ObjectData()))
+                    getModulesMeta.put(type, new GetModulesMeta(module.getLastConsumedMs(), ObjectData.create()))
                 );
 
                 EcosFile modulesDir = remoteModulesService.getModulesDir(
@@ -164,8 +173,10 @@ public class ModulesWatcher {
 
     private void runWatcher() {
 
+        long initDelay = props.getModulesWatcher().getInitDelayMs();
+        log.info("Modules watcher init sleep: " + initDelay);
         try {
-            Thread.sleep(10_000);
+            Thread.sleep(initDelay);
         } catch (InterruptedException e) {
             log.error("Error", e);
         }
@@ -229,6 +240,17 @@ public class ModulesWatcher {
 
                 lastError = null;
                 errorNextPrintTime = 0L;
+
+                Set<ModuleRef> modulesToUpdateSet = new HashSet<>();
+                ModuleRef moduleToUpdate = modulesToUpdate.poll();
+                while (moduleToUpdate != null) {
+                    modulesToUpdateSet.add(moduleToUpdate);
+                    moduleToUpdate = modulesToUpdate.poll();
+                }
+
+                for (ModuleRef moduleRef : modulesToUpdateSet) {
+                    ecosModuleService.updateModule(moduleRef);
+                }
 
                 Thread.sleep(CHECK_STATUS_PERIOD);
 

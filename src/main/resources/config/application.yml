@@ -184,6 +184,10 @@ ecos-app:
     name: ECOS Applications
     version: 1.4.0
 
+ecos-apps:
+  modules-watcher:
+    init-delay-ms: 10000
+
 spring.rabbitmq:
     host: rabbitmq
     username: admin

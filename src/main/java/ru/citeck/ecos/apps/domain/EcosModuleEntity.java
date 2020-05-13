@@ -35,6 +35,10 @@ public class EcosModuleEntity extends AbstractAuditingEntity {
     @JoinColumn(name = "user_module_rev_id")
     @Getter @Setter private EcosModuleRevEntity userRev;
 
+    @OneToOne
+    @JoinColumn(name = "patched_module_rev_id")
+    @Getter @Setter private EcosModuleRevEntity patchedRev;
+
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "deploy_status")
     @Getter @Setter private DeployStatus deployStatus = DeployStatus.DRAFT;

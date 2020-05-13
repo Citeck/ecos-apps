@@ -1,11 +1,16 @@
 package ru.citeck.ecos.apps.app.module;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.DeployStatus;
 import ru.citeck.ecos.apps.app.UploadStatus;
+import ru.citeck.ecos.apps.app.module.patch.ModulePatchDto;
+import ru.citeck.ecos.apps.app.module.patch.ModulePatchService;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleDepEntity;
 import ru.citeck.ecos.apps.domain.EcosModuleEntity;
@@ -16,8 +21,7 @@ import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.module.remote.RemoteModulesService;
 import ru.citeck.ecos.commands.dto.CommandError;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,6 +34,7 @@ public class EcosModuleService {
     private final RemoteModulesService remoteModulesService;
     private final LocalModulesService localModulesService;
     private final EcosAppsModuleTypeService ecosAppsModuleTypeService;
+    private final ModulePatchService modulePatchService;
 
     synchronized public boolean isExists(ModuleRef ref) {
         EcosModuleEntity module = dao.getModule(ref);
@@ -44,6 +49,28 @@ public class EcosModuleService {
         dao.uploadModule(source, type, module, true);
     }
 
+    public void updateModule(ModuleRef moduleRef) {
+
+        EcosModuleEntity module = dao.getModule(moduleRef);
+        if (module != null) {
+
+            try {
+                EcosModuleRevEntity lastRev = module.getLastRev();
+                byte[] lastRevData = lastRev.getContent().getData();
+                Object moduleObj = localModulesService.readFromBytes(lastRevData, moduleRef.getType());
+
+                uploadModules(
+                    "update-modules",
+                    Collections.singletonList(moduleObj),
+                    moduleRef.getType()
+                );
+
+            } catch (Exception e) {
+                log.error("Module can't be updated. Module: '" + moduleRef + "'", e);
+            }
+        }
+    }
+
     synchronized public void uploadModules(String source, List<Object> modules, String type) {
 
         if (modules.isEmpty()) {
@@ -53,6 +80,7 @@ public class EcosModuleService {
         String app = ecosAppsModuleTypeService.getAppByModuleType(type);
         if (app.isEmpty()) {
             log.info("Application is not defined for type " + type + ". Modules can't be uploaded");
+            return;
         }
 
         List<ModuleWithMeta<Object>> modulesMeta = remoteModulesService.prepareToDeploy(app, type, modules);
@@ -61,13 +89,46 @@ public class EcosModuleService {
                 + modules.size() + " After: " + modulesMeta.size());
         }
 
+        List<Object> patchedModules = new ArrayList<>();
+
         for (ModuleWithMeta<Object> module : modulesMeta) {
 
-            UploadStatus<EcosModuleEntity, EcosModuleRevEntity> uploadStatus =
-                dao.uploadModule(source, type, module, false);
+            dao.uploadModule(source, type, module, false);
 
-            if (!DeployStatus.DEPLOYED.equals(uploadStatus.getEntity().getDeployStatus())) {
-                tryToDeploy(uploadStatus.getEntity());
+            ModuleRef moduleRef = ModuleRef.create(type, module.getMeta().getId());
+            List<ModulePatchDto> patches = modulePatchService.getPatches(moduleRef);
+            boolean wasPatched = false;
+            if (!patches.isEmpty()) {
+                Object patchedData = modulePatchService.applyPatches(module.getModule(), moduleRef, patches);
+                if (!Objects.equals(patchedData, module.getModule())) {
+                    patchedModules.add(patchedData);
+                    wasPatched = true;
+                }
+            }
+            if (!wasPatched) {
+                dao.removePatchedRev(moduleRef);
+            }
+        }
+
+        if (!patchedModules.isEmpty()) {
+
+            List<ModuleWithMeta<Object>> patchedMeta = remoteModulesService.prepareToDeploy(app, type, patchedModules);
+            if (patchedModules.size() != patchedMeta.size()) {
+                log.info("Patched modules count was changed by target app. Before: "
+                    + patchedModules.size() + " After: " + patchedMeta.size());
+            }
+
+            for (ModuleWithMeta<Object> module : patchedMeta) {
+                dao.uploadPatchedModule(type, module);
+            }
+        }
+
+        for (ModuleWithMeta<Object> module : modulesMeta) {
+
+            EcosModuleEntity entity = dao.getModule(ModuleRef.create(type, module.getMeta().getId()));
+
+            if (!DeployStatus.DEPLOYED.equals(entity.getDeployStatus())) {
+                tryToDeploy(entity);
             }
         }
     }
@@ -91,10 +152,13 @@ public class EcosModuleService {
             String type = moduleEntity.getType();
             String appName = ecosAppsModuleTypeService.getAppByModuleType(type);
 
-            EcosModuleRevEntity lastRev = moduleEntity.getLastRev();
-            if (lastRev != null) {
+            EcosModuleRevEntity revToDeploy = moduleEntity.getPatchedRev();
+            if (revToDeploy == null) {
+                revToDeploy = moduleEntity.getLastRev();
+            }
+            if (revToDeploy != null) {
 
-                EcosContentEntity content = lastRev.getContent();
+                EcosContentEntity content = revToDeploy.getContent();
 
                 if (content != null) {
 
