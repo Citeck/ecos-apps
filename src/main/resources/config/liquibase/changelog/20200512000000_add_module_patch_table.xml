@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20200512000000" author="citeck">
+
+        <createTable tableName="ecos_module_patch">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="ext_id" type="VARCHAR">
+                <constraints nullable="false" unique="true" />
+            </column>
+
+            <column name="name" type="VARCHAR">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="target" type="VARCHAR" />
+            <column name="patch_order" type="REAL" />
+            <column name="type" type="VARCHAR" />
+            <column name="config" type="VARCHAR" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <addColumn tableName="ecos_module">
+            <column name="patched_module_rev_id" type="BIGINT">
+                <constraints nullable="true"
+                             foreignKeyName="fk_ecos_module_patched_module_rev_id"
+                             references="ecos_module_rev(id)" />
+            </column>
+        </addColumn>
+
+        <addColumn tableName="ecos_module_rev">
+            <column name="rev_type" type="INT" />
+            <column name="prev_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_module_rev_prev_rev" references="ecos_module_rev(id)"/>
+            </column>
+        </addColumn>
+
+        <sql>UPDATE ecos_module_rev SET rev_type = 1 WHERE is_user_rev=true</sql>
+        <sql>UPDATE ecos_module_rev SET rev_type = 0 WHERE NOT is_user_rev=true</sql>
+
+    </changeSet>
+
+</databaseChangeLog>

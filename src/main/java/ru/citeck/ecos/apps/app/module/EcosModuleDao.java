@@ -69,6 +69,15 @@ public class EcosModuleDao {
             .collect(Collectors.toList());
     }
 
+    public void removePatchedRev(ModuleRef moduleRef) {
+        EcosModuleEntity module = getModule(moduleRef);
+        if (module != null && module.getPatchedRev() != null) {
+            module.setDeployStatus(DeployStatus.DRAFT);
+            module.setPatchedRev(null);
+            save(module);
+        }
+    }
+
     public UploadStatus<EcosModuleEntity, EcosModuleRevEntity> uploadModule(String source,
                                                                             String type,
                                                                             ModuleWithMeta<Object> module,
@@ -91,6 +100,7 @@ public class EcosModuleDao {
         ModuleRef moduleRef = ModuleRef.create(type, meta.getId());
 
         EcosModuleRevEntity lastModuleRev = null;
+        EcosModuleRevEntity lastCreatedModuleRev = null;
 
         if (moduleEntity == null) {
 
@@ -103,10 +113,16 @@ public class EcosModuleDao {
             moduleEntity = moduleRepo.save(moduleEntity);
 
         } else {
+            EcosModuleRevEntity userRev = moduleEntity.getUserRev();
+            EcosModuleRevEntity lastBaseRev = moduleEntity.getLastRev();
             if (userModule) {
-                lastModuleRev = moduleEntity.getUserRev();
+                lastModuleRev = userRev;
             } else {
-                lastModuleRev = getLastModuleRev(type, moduleRef.getId());
+                lastModuleRev = lastBaseRev;
+            }
+            lastCreatedModuleRev = lastBaseRev;
+            if (userRev != null && userRev.getCreatedDate().isAfter(lastBaseRev.getCreatedDate())) {
+                lastCreatedModuleRev = userRev;
             }
         }
 
@@ -131,7 +147,9 @@ public class EcosModuleDao {
         lastModuleRev.setExtId(UUID.randomUUID().toString());
         lastModuleRev.setContent(content);
         lastModuleRev.setModule(moduleEntity);
-        lastModuleRev.setUserRev(userModule);
+        lastModuleRev.setIsUserRev(userModule);
+        lastModuleRev.setRevType(userModule ? ModuleRevType.USER : ModuleRevType.BASE);
+        lastModuleRev.setPrevRev(lastCreatedModuleRev);
         lastModuleRev = moduleRevRepo.save(lastModuleRev);
 
         if (userModule) {
@@ -145,6 +163,50 @@ public class EcosModuleDao {
         moduleEntity = moduleRepo.save(moduleEntity);
 
         return new UploadStatus<>(moduleEntity, lastModuleRev, true);
+    }
+
+    public EcosModuleEntity uploadPatchedModule(String type, ModuleWithMeta<Object> module) {
+
+        EcosModuleEntity entity = moduleRepo.getByExtId(type, module.getMeta().getId());
+
+        byte[] dataBytes = localModulesService.writeAsBytes(module.getModule(), entity.getType());
+        EcosContentEntity content = contentDao.upload(dataBytes);
+
+        EcosModuleRevEntity currentRev = entity.getPatchedRev();
+
+        if (currentRev != null && Objects.equals(currentRev.getContent(), content)) {
+            return entity;
+        }
+
+        EcosModuleRevEntity lastRev = entity.getLastRev();
+        if (!content.equals(lastRev.getContent())) {
+
+            log.info("Create new patch revision for module '" + entity.getType() + "$" + entity.getExtId() + "'");
+
+            EcosModuleRevEntity patchModuleRev = new EcosModuleRevEntity();
+            patchModuleRev.setSource("patch");
+            patchModuleRev.setExtId(UUID.randomUUID().toString());
+            patchModuleRev.setContent(content);
+            patchModuleRev.setModule(entity);
+            patchModuleRev.setIsUserRev(false);
+            patchModuleRev.setPrevRev(lastRev);
+            patchModuleRev.setRevType(ModuleRevType.PATCHED);
+            patchModuleRev = moduleRevRepo.save(patchModuleRev);
+
+            entity.setPatchedRev(patchModuleRev);
+
+            entity.setDeployStatus(DeployStatus.DRAFT);
+            entity.setDependencies(getDependenciesModules(
+                entity,
+                new HashSet<>(module.getMeta().getDependencies())
+            ));
+
+        } else {
+
+            entity.setPatchedRev(null);
+        }
+
+        return moduleRepo.save(entity);
     }
 
     private Object readModuleFromRev(EcosModuleRevEntity entity, String type) {

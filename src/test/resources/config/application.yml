@@ -110,6 +110,10 @@ jhipster:
 
 # application:
 
+ecos-apps:
+  modules-watcher:
+    init-delay-ms: 0
+
 ecosapps:
     alfresco:
         #ribbon:

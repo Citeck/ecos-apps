@@ -1,0 +1,7 @@
+
+id: test-module
+
+config:
+  key0: value0
+  key1: value1
+

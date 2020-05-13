@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
+import ru.citeck.ecos.apps.app.module.ModuleRevType;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -25,8 +26,17 @@ public class EcosModuleRevEntity extends AbstractImmutableEntity {
     @JoinColumn(name = "module_id")
     @Getter @Setter private EcosModuleEntity module;
 
+    @Deprecated
     @Column(name="is_user_rev")
-    @Getter @Setter private boolean isUserRev;
+    @Getter @Setter private Boolean isUserRev;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name="rev_type")
+    @Getter @Setter private ModuleRevType revType;
+
+    @ManyToOne
+    @JoinColumn(name = "prev_rev_id")
+    @Getter @Setter private EcosModuleRevEntity prevRev;
 
     @Column(name="ext_id")
     @Getter @Setter private String extId;
