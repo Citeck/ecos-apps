@@ -22,7 +22,7 @@ columns:
     label: { ru: Имя, en: Name }
 
   - name: target
-    label: { ru: Тип ECOS, en: ECOS Type }
+    label: { ru: Цель патча, en: Patch target }
 
   - name: order
     label: { ru: Порядок, en: Order }

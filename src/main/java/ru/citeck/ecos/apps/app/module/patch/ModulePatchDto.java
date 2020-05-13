@@ -20,17 +20,11 @@ public class ModulePatchDto {
     }
 
     public ModulePatchDto(ModulePatchDto other) {
-
-        ModulePatchDto copy = Json.getMapper().copy(other);
-        if (copy == null) {
-            return;
-        }
-
-        this.id = copy.id;
-        this.name = copy.name;
-        this.order = copy.order;
-        this.target = copy.target;
-        this.type = copy.type;
-        this.config = copy.config;
+        this.id = other.id;
+        this.name = Json.getMapper().copy(other.name);
+        this.order = other.order;
+        this.target = other.target;
+        this.type = other.type;
+        this.config = ObjectData.deepCopy(other.config);
     }
 }
