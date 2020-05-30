@@ -121,7 +121,8 @@ public class EcosModuleDao {
                 lastModuleRev = lastBaseRev;
             }
             lastCreatedModuleRev = lastBaseRev;
-            if (userRev != null && userRev.getCreatedDate().isAfter(lastBaseRev.getCreatedDate())) {
+            if (lastBaseRev == null ||
+                    userRev != null && userRev.getCreatedDate().isAfter(lastBaseRev.getCreatedDate())) {
                 lastCreatedModuleRev = userRev;
             }
         }
