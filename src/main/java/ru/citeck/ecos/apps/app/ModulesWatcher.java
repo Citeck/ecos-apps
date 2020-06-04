@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @RequiredArgsConstructor
 public class ModulesWatcher {
 
-    private static final long UNHEALTHY_APP_TTL = 10_000L;
+    private static final long UNHEALTHY_APP_TTL = 30_000L;
     private static final long CHECK_STATUS_PERIOD = 5_000L;
     private static final int HEALTH_CHECK_PROTECTION = (int) (UNHEALTHY_APP_TTL / CHECK_STATUS_PERIOD);
 
