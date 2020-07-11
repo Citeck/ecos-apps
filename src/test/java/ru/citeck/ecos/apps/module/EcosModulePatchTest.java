@@ -10,6 +10,8 @@ import ru.citeck.ecos.apps.EcosAppsApp;
 import ru.citeck.ecos.commands.CommandsServiceFactory;
 import ru.citeck.ecos.commons.data.ObjectData;
 
+import java.util.Objects;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -26,11 +28,19 @@ public class EcosModulePatchTest {
     @Test
     public void test() throws InterruptedException {
 
-        Thread.sleep(5000);
+        log.info("Start EcosModulePatch test");
 
         ObjectData module = testModules.getById("test-module");
-        assertNotNull(module);
 
+        int idx = 30;
+        while (--idx > 0 && (module == null
+                || !Objects.equals("changed-value", module.get("/config/key0").asText()))) {
+
+            module = testModules.getById("test-module");
+            Thread.sleep(1000);
+        }
+
+        assertNotNull(module);
         assertEquals("changed-value", module.get("/config/key0").asText());
     }
 }
