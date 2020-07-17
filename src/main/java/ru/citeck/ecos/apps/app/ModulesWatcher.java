@@ -24,6 +24,7 @@ import ru.citeck.ecos.apps.module.type.TypeContext;
 import ru.citeck.ecos.commons.data.ObjectData;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,8 +91,14 @@ public class ModulesWatcher {
 
         // get modules by all from new
 
-        for (AppStatusInfo registeredApp : currentStatuses.values()) {
-            loadModules(newApp.getAppName(), registeredApp.status.getAppName());
+        try {
+            for (AppStatusInfo registeredApp : currentStatuses.values()) {
+                loadModules(newApp.getAppName(), registeredApp.status.getAppName());
+            }
+        } catch (Exception e) {
+            // Something went wrong. Forget new app and wait until watcher find it again
+            currentStatuses.remove(newApp.getAppName());
+            ExceptionUtils.throwException(e);
         }
     }
 
