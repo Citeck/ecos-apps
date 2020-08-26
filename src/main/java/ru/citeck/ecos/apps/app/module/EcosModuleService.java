@@ -73,6 +73,10 @@ public class EcosModuleService {
 
     synchronized public void uploadModules(String source, List<Object> modules, String type) {
 
+        if (log.isDebugEnabled()) {
+            log.debug("Modules to upload: " + modules.size() + " with type '" + type + "' and source '" + source + "'");
+        }
+
         if (modules.isEmpty()) {
             return;
         }
@@ -92,6 +96,10 @@ public class EcosModuleService {
         List<Object> patchedModules = new ArrayList<>();
 
         for (ModuleWithMeta<Object> module : modulesMeta) {
+
+            if (log.isDebugEnabled()) {
+                log.debug("Upload module " + module.getMeta());
+            }
 
             dao.uploadModule(source, type, module, false);
 
@@ -127,7 +135,7 @@ public class EcosModuleService {
 
             EcosModuleEntity entity = dao.getModule(ModuleRef.create(type, module.getMeta().getId()));
 
-            if (!DeployStatus.DEPLOYED.equals(entity.getDeployStatus())) {
+            if (entity != null && !DeployStatus.DEPLOYED.equals(entity.getDeployStatus())) {
                 tryToDeploy(entity);
             }
         }

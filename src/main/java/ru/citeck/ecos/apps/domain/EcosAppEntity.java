@@ -6,7 +6,6 @@ import ru.citeck.ecos.apps.app.DeployStatus;
 import ru.citeck.ecos.apps.app.EcosAppType;
 
 import javax.persistence.*;
-import java.util.Set;
 
 @Entity
 @Table(name = "ecos_app")
@@ -25,9 +24,6 @@ public class EcosAppEntity extends AbstractAuditingEntity {
 
     @Column(name = "is_system")
     @Getter @Setter private Boolean isSystem;
-
-    @OneToMany(mappedBy = "application", fetch = FetchType.LAZY)
-    @Getter @Setter private Set<EcosAppRevEntity> revisions;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "publish_status")

@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.app.content;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.domain.EcosContentEntity;
@@ -12,13 +13,10 @@ import java.io.*;
 import java.nio.file.Path;
 
 @Component
+@RequiredArgsConstructor
 public class EcosContentDao {
 
-    private EcosContentRepo repo;
-
-    public EcosContentDao(EcosContentRepo repo) {
-        this.repo = repo;
-    }
+    private final EcosContentRepo repo;
 
     public EcosContentEntity upload(Path path) {
         return upload(path.toFile());
@@ -35,7 +33,7 @@ public class EcosContentDao {
     public EcosContentEntity upload(byte[] data) {
 
         Digest digest = DigestUtils.getDigest(new ByteArrayInputStream(data), DigestAlgorithm.SHA256);
-        EcosContentEntity content = repo.findContent(digest.getHash(), digest.getSize());
+        EcosContentEntity content = repo.findFirstByHashAndSize(digest.getHash(), digest.getSize());
 
         if (content == null) {
             content = new EcosContentEntity();
