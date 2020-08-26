@@ -34,7 +34,7 @@ public class EcosModuleRevEntity extends AbstractImmutableEntity {
     @Column(name="rev_type")
     @Getter @Setter private ModuleRevType revType;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prev_rev_id")
     @Getter @Setter private EcosModuleRevEntity prevRev;
 
@@ -42,12 +42,12 @@ public class EcosModuleRevEntity extends AbstractImmutableEntity {
     @Getter @Setter private String extId;
     @Getter @Setter private String source;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")
     @Getter @Setter private EcosContentEntity content;
 
     @JsonIgnore
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "ecos_app_modules",
         joinColumns = {@JoinColumn(name = "module_rev_id", referencedColumnName = "id")},
