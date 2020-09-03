@@ -19,10 +19,10 @@ import ru.citeck.ecos.records2.request.delete.RecordsDeletion;
 import ru.citeck.ecos.records2.request.mutation.RecordsMutResult;
 import ru.citeck.ecos.records2.request.query.RecordsQuery;
 import ru.citeck.ecos.records2.request.query.RecordsQueryResult;
-import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDAO;
-import ru.citeck.ecos.records2.source.dao.local.MutableRecordsLocalDAO;
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDAO;
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDAO;
+import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao;
+import ru.citeck.ecos.records2.source.dao.local.MutableRecordsLocalDao;
+import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao;
+import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,10 +31,10 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class ModulePatchRecords extends LocalRecordsDAO
-                                implements LocalRecordsQueryWithMetaDAO<ModulePatchRecords.PatchRecord>,
-                                           LocalRecordsMetaDAO<ModulePatchRecords.PatchRecord>,
-                                           MutableRecordsLocalDAO<ModulePatchRecords.PatchRecord> {
+public class ModulePatchRecords extends LocalRecordsDao
+                                implements LocalRecordsQueryWithMetaDao<ModulePatchRecords.PatchRecord>,
+                                           LocalRecordsMetaDao<ModulePatchRecords.PatchRecord>,
+                                           MutableRecordsLocalDao<ModulePatchRecords.PatchRecord> {
 
     public static final String ID = "module-patch";
 
