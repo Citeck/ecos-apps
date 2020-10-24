@@ -29,6 +29,7 @@ import ru.citeck.ecos.commons.utils.ExceptionUtils;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -104,6 +105,10 @@ public class ModulesWatcher {
 
     private void loadModules(String fromApp, String toApp) {
 
+        if (log.isDebugEnabled()) {
+            log.debug("Load modules from: " + fromApp + " to app: " + toApp);
+        }
+
         AppStatus fromStatus = currentStatuses.get(fromApp).status;
 
         List<TypeContext> toTypes = appsModuleTypeService.getTypesByAppName(toApp);
@@ -127,6 +132,10 @@ public class ModulesWatcher {
             while (true) {
 
                 String ecosAppId = ecosApp.getId();
+                if (log.isDebugEnabled()) {
+                    log.debug("Get app module types meta '" + ecosAppId + "' "
+                        + toTypes.stream().map(TypeContext::getId).collect(Collectors.joining(", ")));
+                }
                 Map<String, AppModuleTypeMeta> typeMeta = ecosAppService.getAppModuleTypesMeta(ecosAppId, toTypes);
                 Map<String, GetModulesMeta> getModulesMeta = new HashMap<>();
 
