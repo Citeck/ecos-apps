@@ -2,19 +2,23 @@ package ru.citeck.ecos.apps;
 
 import com.github.fridujo.rabbitmq.mock.MockConnectionFactory;
 import com.rabbitmq.client.ConnectionFactory;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.amqp.rabbit.connection.SimpleConnection;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.rabbitmq.RabbitMqConn;
+import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 @Component
-public class RabbitConnection implements org.springframework.amqp.rabbit.connection.ConnectionFactory {
+public class RabbitConnection implements org.springframework.amqp.rabbit.connection.ConnectionFactory,
+    RabbitMqConnProvider {
 
-    private ConnectionFactory impl = new MockConnectionFactory();
+    private final ConnectionFactory impl = new MockConnectionFactory();
 
     @Override
     public Connection createConnection() throws AmqpException {
@@ -23,6 +27,12 @@ public class RabbitConnection implements org.springframework.amqp.rabbit.connect
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Nullable
+    @Override
+    public RabbitMqConn getConnection() {
+        return new RabbitMqConn(impl);
     }
 
     @Override
