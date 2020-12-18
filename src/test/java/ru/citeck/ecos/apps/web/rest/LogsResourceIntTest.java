@@ -1,7 +1,8 @@
 package ru.citeck.ecos.apps.web.rest;
 
 import ru.citeck.ecos.apps.EcosAppsApp;
-import ru.citeck.ecos.apps.web.rest.vm.LoggerVM;
+import ru.citeck.ecos.apps.app.application.api.rest.LogsResource;
+import ru.citeck.ecos.apps.app.application.api.rest.vm.LoggerVM;
 import ch.qos.logback.classic.AsyncAppender;
 import ch.qos.logback.classic.LoggerContext;
 import org.junit.Before;

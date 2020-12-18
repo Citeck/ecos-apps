@@ -1,21 +1,6 @@
 package ru.citeck.ecos.apps.application;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import ru.citeck.ecos.apps.EcosAppsApp;
-import ru.citeck.ecos.apps.TestUtils;
-import ru.citeck.ecos.apps.app.*;
-import ru.citeck.ecos.apps.app.application.EcosAppService;
-import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.commons.data.ObjectData;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
