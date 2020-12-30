@@ -1,0 +1,5 @@
+
+eureka:
+    instance:
+        hostname: host.docker.internal #doesn't work for linux
+        ip-address: host.docker.internal #doesn't work for linux

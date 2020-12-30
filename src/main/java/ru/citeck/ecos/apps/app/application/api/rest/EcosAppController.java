@@ -7,18 +7,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
-import ru.citeck.ecos.apps.domain.module.service.EcosModuleRev;
-import ru.citeck.ecos.apps.domain.module.service.EcosModuleService;
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactRev;
+import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService;
 
 @Component
 @RestController
 @RequestMapping("/api")
 public class EcosAppController {
 
-    private EcosModuleService moduleService;
+    private ArtifactsService moduleService;
     private EcosAppService appService;
 
-    public EcosAppController(EcosModuleService moduleService,
+    public EcosAppController(ArtifactsService moduleService,
                              EcosAppService appService) {
         this.moduleService = moduleService;
         this.appService = appService;
@@ -51,7 +51,7 @@ public class EcosAppController {
         return "OK";
     }
 
-    private HttpEntity<byte[]> toDownloadHttpEntity(EcosModuleRev rev) {
+    private HttpEntity<byte[]> toDownloadHttpEntity(EcosArtifactRev rev) {
 
         /*EappMemDir eappMemDir = EappZipUtils.extractZip(rev.getData());
         List<EappFileBase> files = eappMemDir.getChildren();

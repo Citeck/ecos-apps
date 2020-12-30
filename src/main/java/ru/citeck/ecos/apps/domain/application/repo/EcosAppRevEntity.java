@@ -6,7 +6,7 @@ import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 import ru.citeck.ecos.apps.domain.common.repo.AbstractImmutableEntity;
 import ru.citeck.ecos.apps.domain.common.repo.utils.EntityUtils;
-import ru.citeck.ecos.apps.domain.module.repo.EcosModuleRevEntity;
+import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactRevEntity;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -39,7 +39,7 @@ public class EcosAppRevEntity extends AbstractImmutableEntity {
         joinColumns = {@JoinColumn(name = "app_rev_id", referencedColumnName = "id")},
         inverseJoinColumns = {@JoinColumn(name = "module_rev_id", referencedColumnName = "id")})
     @BatchSize(size = 20)
-    @Getter @Setter private Set<EcosModuleRevEntity> modules = new HashSet<>();
+    @Getter @Setter private Set<EcosArtifactRevEntity> modules = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20201218000001" author="citeck">
+
+        <createTable tableName="ecos_app_artifact">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="ext_id" type="VARCHAR">
+                <constraints unique="true" />
+            </column>
+
+            <column name="name" type="VARCHAR" />
+            <column name="version" type="VARCHAR" />
+            <column name="type_refs" type="VARCHAR" />
+            <column name="artifacts" type="VARCHAR" />
+            <column name="artifacts_dir_content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_app_artifact_ecos_content_id" references="ecos_content(id)" />
+            </column>
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+<!--        <createTable tableName="ecos_app_artifact_release">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="name" type="VARCHAR" />
+            <column name="version" type="VARCHAR" />
+            <column name="hash" type="VARCHAR" />
+
+            <column name="type_refs" type="VARCHAR" />
+            <column name="artifacts" type="VARCHAR" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <createTable tableName="ecos_app_artifact_release_artifacts">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="release_id" type="BIGINT">
+                <constraints foreignKeyName="fk_ecos_app_artifact_release_id" references="ecos_app_artifact_release(id)" />
+            </column>
+            <column name="artifact_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_artifact_rev_id" references="ecos_module_rev(id)" />
+            </column>
+
+        </createTable>-->
+
+    </changeSet>
+
+</databaseChangeLog>

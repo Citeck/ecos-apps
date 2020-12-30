@@ -6,7 +6,6 @@ typeRef: emodel/type@ecos-module-patch
 sourceId: eapps/module-patch
 
 attributes:
-  actionFormatter: '' #include include/legacy-actions.js
   journalsListId: global-system
 
 actions:

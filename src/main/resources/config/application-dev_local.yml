@@ -1,12 +1,18 @@
 
-eureka:
-    instance:
-        hostname: host.docker.internal #doesn't work for linux
-        ip-address: host.docker.internal #doesn't work for linux
+# force setup host and port of microservices to fix requests sending from this app
 
 alfresco:
-    ribbon:
-        listOfServers: localhost:8080
-        NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
+  ribbon:
+    listOfServers: localhost:8080
+    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
 
+eapps:
+  ribbon:
+    listOfServers: localhost:8089
+    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
+
+emodel:
+  ribbon:
+    listOfServers: localhost:8094
+    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
 

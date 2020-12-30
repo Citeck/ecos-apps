@@ -10,5 +10,4 @@ public interface EcosAppRepo extends JpaRepository<EcosAppEntity, Long> {
 
     @Query("SELECT a FROM EcosAppEntity a WHERE a.extId = ?1")
     EcosAppEntity getByExtId(String extId);
-
 }

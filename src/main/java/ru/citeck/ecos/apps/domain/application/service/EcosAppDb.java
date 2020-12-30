@@ -1,8 +1,8 @@
 package ru.citeck.ecos.apps.domain.application.service;
 
 import lombok.Data;
-import ru.citeck.ecos.apps.domain.module.service.EcosModuleDb;
-import ru.citeck.ecos.apps.domain.module.service.EcosModuleRev;
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactDb;
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactRev;
 import ru.citeck.ecos.apps.domain.application.repo.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.application.repo.EcosAppRevEntity;
 
@@ -20,7 +20,7 @@ public class EcosAppDb /*implements EcosAppRev*/ {
 
     //private EcosAppVersion version;
     private Map<String, String> dependencies;
-    private List<EcosModuleRev> modules;
+    private List<EcosArtifactRev> modules;
     //private List<EcosPatch> patches;
     private String hash;
     private long size;
@@ -36,7 +36,7 @@ public class EcosAppDb /*implements EcosAppRev*/ {
         dependencies = new HashMap<>();
         modules = entity.getModules()
             .stream()
-            .map(EcosModuleDb::new)
+            .map(EcosArtifactDb::new)
             .collect(Collectors.toList());
     }
 }

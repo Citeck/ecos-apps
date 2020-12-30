@@ -3,7 +3,7 @@ package ru.citeck.ecos.apps.domain.application.repo;
 import lombok.Getter;
 import lombok.Setter;
 import ru.citeck.ecos.apps.app.audit.repo.AbstractAuditingEntity;
-import ru.citeck.ecos.apps.domain.common.dto.DeployStatus;
+import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus;
 import ru.citeck.ecos.apps.app.EcosAppType;
 
 import javax.persistence.*;

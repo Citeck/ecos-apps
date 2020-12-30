@@ -7,7 +7,7 @@ name:
 
 system: true
 
-journal: uiserv/journal@ecos-module-patches
+journalRef: uiserv/journal@ecos-module-patches
 
 createVariants:
 

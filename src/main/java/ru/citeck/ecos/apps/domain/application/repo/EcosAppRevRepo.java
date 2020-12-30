@@ -4,8 +4,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import ru.citeck.ecos.apps.domain.common.dto.DeployStatus;
-import ru.citeck.ecos.apps.domain.application.repo.EcosAppRevEntity;
+import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus;
 
 import java.util.List;
 
