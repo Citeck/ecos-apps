@@ -8,17 +8,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactRev;
-import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService;
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 
 @Component
 @RestController
 @RequestMapping("/api")
 public class EcosAppController {
 
-    private ArtifactsService moduleService;
+    private EcosArtifactsService moduleService;
     private EcosAppService appService;
 
-    public EcosAppController(ArtifactsService moduleService,
+    public EcosAppController(EcosArtifactsService moduleService,
                              EcosAppService appService) {
         this.moduleService = moduleService;
         this.appService = appService;
@@ -33,7 +33,7 @@ public class EcosAppController {
     public HttpEntity<byte[]> downloadModule(@PathVariable String type,
                                              @PathVariable String moduleId) {
 
-        //return toDownloadHttpEntity(moduleService.getLastModuleRev(ModuleRef.create(type, moduleId)));
+        //return toDownloadHttpEntity(moduleService.getLastModuleRev(ArtifactRef.create(type, moduleId)));
         return null;
     }
 
@@ -47,7 +47,7 @@ public class EcosAppController {
     public String publishModule(@PathVariable String type,
                                 @PathVariable String moduleId) {
 
-        //moduleService.publishModule(ModuleRef.create(type, moduleId), true);
+        //moduleService.publishModule(ArtifactRef.create(type, moduleId), true);
         return "OK";
     }
 

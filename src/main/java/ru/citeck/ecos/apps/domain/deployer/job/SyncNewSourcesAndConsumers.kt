@@ -2,11 +2,11 @@ package ru.citeck.ecos.apps.domain.deployer.job
 
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.apps.domain.deployer.service.ArtifactsDeployer
+import ru.citeck.ecos.apps.domain.deployer.service.loader.ArtifactsLoader
 
 @Component
 class SyncNewSourcesAndConsumers(
-    private val artifactsDeployer: ArtifactsDeployer
+    private val artifactsLoader: ArtifactsLoader
 ) {
 
     companion object {
@@ -16,13 +16,13 @@ class SyncNewSourcesAndConsumers(
     @Scheduled(fixedDelay = SYNC_PERIOD, initialDelay = 10_000)
     fun execute() {
 
-        val lastChanged = artifactsDeployer.getLastChangedMs()
+        val lastChanged = artifactsLoader.getLastChangedMs()
 
         if (System.currentTimeMillis() - lastChanged < SYNC_PERIOD) {
             // wait until next sync if new source or consumer was registered after last sync
             return
         }
 
-        artifactsDeployer.syncNewSourcesAndConsumers()
+        artifactsLoader.syncNewSourcesAndConsumers()
     }
 }

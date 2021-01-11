@@ -10,6 +10,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.apps.artifact.ArtifactMeta;
+import ru.citeck.ecos.apps.artifact.ArtifactRef;
+import ru.citeck.ecos.apps.artifact.type.TypeContext;
 import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactRevType;
 import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus;
@@ -18,12 +21,6 @@ import ru.citeck.ecos.apps.domain.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactEntity;
-import ru.citeck.ecos.apps.module.ModuleRef;
-import ru.citeck.ecos.apps.module.handler.ModuleMeta;
-import ru.citeck.ecos.apps.module.handler.ModuleWithMeta;
-import ru.citeck.ecos.apps.module.local.LocalModulesService;
-import ru.citeck.ecos.apps.module.type.ModuleTypeService;
-import ru.citeck.ecos.apps.module.type.TypeContext;
 import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.json.Json;
 import ru.citeck.ecos.records2.RecordRef;
@@ -38,10 +35,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EcosArtifactDao {
 
-    private final EcosModuleRepo moduleRepo;
+    private final EcosArtifactsRepo moduleRepo;
     private final EcosContentDao contentDao;
-    private final EcosArtifactRevRepo moduleRevRepo;
-    private final EcosModuleDepRepo moduleDepRepo;
+    private final EcosArtifactsRevRepo moduleRevRepo;
+    private final EcosArtifactsDepRepo moduleDepRepo;
     private final ModuleTypeService moduleTypeService;
     private final LocalModulesService localModulesService;
     private final EcosArtifactTypesService ecosArtifactTypesService;
@@ -92,7 +89,7 @@ public class EcosArtifactDao {
         return moduleRepo.count(spec);
     }
 
-    public void removePatchedRev(ModuleRef moduleRef) {
+    public void removePatchedRev(ArtifactRef moduleRef) {
         EcosArtifactEntity module = getModule(moduleRef);
         if (module != null && module.getPatchedRev() != null) {
             module.setDeployStatus(DeployStatus.DRAFT);
@@ -113,15 +110,15 @@ public class EcosArtifactDao {
             throw new IllegalArgumentException("Unknown module type: " + type);
         }
 
-        ModuleMeta meta = module.getMeta();
+        ArtifactMeta meta = module.getMeta();
 
         if (StringUtils.isBlank(meta.getId())) {
             throw new IllegalArgumentException("Module should has id value. " + meta);
         }
 
-        EcosArtifactEntity moduleEntity = getModule(ModuleRef.create(type, meta.getId()));
+        EcosArtifactEntity moduleEntity = getModule(ArtifactRef.create(type, meta.getId()));
 
-        ModuleRef moduleRef = ModuleRef.create(type, meta.getId());
+        ArtifactRef moduleRef = ArtifactRef.create(type, meta.getId());
 
         EcosArtifactRevEntity lastModuleRev = null;
         EcosArtifactRevEntity lastCreatedModuleRev = null;
@@ -306,54 +303,20 @@ public class EcosArtifactDao {
         }
     }
 
-    private Set<EcosModuleDepEntity> getDependenciesModules(EcosArtifactEntity baseEntity, Set<RecordRef> modules) {
 
-        Set<EcosModuleDepEntity> dependencies = new HashSet<>();
 
-        ModuleRef baseRef = ModuleRef.create(baseEntity.getType(), baseEntity.getExtId());
-
-        for (RecordRef recRef : modules) {
-
-            String depType = ecosArtifactTypesService.getType(recRef);
-            if (depType.isEmpty()) {
-                continue;
-            }
-
-            ModuleRef ref = ModuleRef.create(depType, recRef.getId());
-
-            if (baseRef.equals(ref)) {
-                continue;
-            }
-
-            EcosArtifactEntity moduleEntity = moduleRepo.getByExtId(ref.getType(), ref.getId());
-            if (moduleEntity == null) {
-                moduleEntity = new EcosArtifactEntity();
-                moduleEntity.setExtId(ref.getId());
-                moduleEntity.setType(ref.getType());
-                moduleEntity = moduleRepo.save(moduleEntity);
-            }
-
-            EcosModuleDepEntity depEntity = new EcosModuleDepEntity();
-            depEntity.setSource(baseEntity);
-            depEntity.setTarget(moduleEntity);
-            dependencies.add(depEntity);
-        }
-
-        return new HashSet<>(dependencies);
-    }
-
-    synchronized public void setEcosAppFull(List<ModuleRef> artifacts, String ecosAppId) {
+    synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {
 
         List<EcosArtifactEntity> currentArtifacts = moduleRepo.findAllByEcosApp(ecosAppId);
         for (EcosArtifactEntity artifact : currentArtifacts) {
-            ModuleRef currentModuleRef = ModuleRef.create(artifact.getType(), artifact.getExtId());
-            if (!artifacts.contains(currentModuleRef)) {
+            ArtifactRef currentArtifactRef = ArtifactRef.create(artifact.getType(), artifact.getExtId());
+            if (!artifacts.contains(currentArtifactRef)) {
                 artifact.setEcosApp(null);
                 moduleRepo.save(artifact);
             }
         }
 
-        for (ModuleRef artifactRef : artifacts) {
+        for (ArtifactRef artifactRef : artifacts) {
 
             EcosArtifactEntity moduleEntity = moduleRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
 
@@ -386,21 +349,21 @@ public class EcosArtifactDao {
         }
     }
 
-    public List<EcosArtifactEntity> getDependentModules(ModuleRef targetRef) {
+    public List<EcosArtifactEntity> getDependentModules(ArtifactRef targetRef) {
 
         EcosArtifactEntity moduleEntity = moduleRepo.getByExtId(targetRef.getType(), targetRef.getId());
-        List<EcosModuleDepEntity> depsByTarget = moduleDepRepo.getDepsByTarget(moduleEntity.getId());
+        List<EcosArtifactDepEntity> depsByTarget = moduleDepRepo.getDepsByTarget(moduleEntity.getId());
 
         return depsByTarget.stream()
-            .map(EcosModuleDepEntity::getSource)
+            .map(EcosArtifactDepEntity::getSource)
             .collect(Collectors.toList());
     }
 
     public EcosArtifactRevEntity getLastModuleRev(String type, String id) {
-        return getLastModuleRev(ModuleRef.create(type, id));
+        return getLastModuleRev(ArtifactRef.create(type, id));
     }
 
-    public EcosArtifactRevEntity getLastModuleRev(ModuleRef moduleRef, String source) {
+    public EcosArtifactRevEntity getLastModuleRev(ArtifactRef moduleRef, String source) {
 
         Pageable page = PageRequest.of(0, 1);
 
@@ -411,7 +374,7 @@ public class EcosArtifactDao {
         return rev.stream().findFirst().orElse(null);
     }
 
-    public EcosArtifactRevEntity getLastModuleRev(ModuleRef moduleRef) {
+    public EcosArtifactRevEntity getLastModuleRev(ArtifactRef moduleRef) {
         EcosArtifactEntity module = getModule(moduleRef);
         if (module == null) {
             return null;
@@ -419,7 +382,7 @@ public class EcosArtifactDao {
         return module.getLastRev();
     }
 
-    public EcosArtifactEntity getModule(ModuleRef ref) {
+    public EcosArtifactEntity getModule(ArtifactRef ref) {
         return moduleRepo.getByExtId(ref.getType(), ref.getId());
     }
 
@@ -456,7 +419,7 @@ public class EcosArtifactDao {
         }
     }
 
-    public void delete(ModuleRef ref) {
+    public void delete(ArtifactRef ref) {
         delete(getModule(ref));
     }
 

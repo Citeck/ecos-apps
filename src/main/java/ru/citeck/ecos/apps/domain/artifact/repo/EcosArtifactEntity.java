@@ -50,9 +50,9 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Getter @Setter private String ecosApp;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @Getter private Set<EcosModuleDepEntity> dependencies = new HashSet<>();
+    @Getter private Set<EcosArtifactDepEntity> dependencies = new HashSet<>();
 
-    public void setDependencies(Set<EcosModuleDepEntity> dependencies) {
-        EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosModuleDepEntity::getTarget);
+    public void setDependencies(Set<EcosArtifactDepEntity> dependencies) {
+        EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosArtifactDepEntity::getTarget);
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactPatchDto;
 import ru.citeck.ecos.apps.domain.artifactpatch.repo.EcosArtifactPatchEntity;
-import ru.citeck.ecos.apps.module.ModuleRef;
+import ru.citeck.ecos.apps.module.ArtifactRef;
 import ru.citeck.ecos.apps.module.controller.patch.ModulePatch;
 import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.domain.artifactpatch.repo.EcosArtifactPatchRepo;
@@ -95,7 +95,7 @@ public class ArtifactPatchService {
         }
     }
 
-    public Object applyPatches(Object module, ModuleRef moduleRef, List<ArtifactPatchDto> patches) {
+    public Object applyPatches(Object module, ArtifactRef moduleRef, List<ArtifactPatchDto> patches) {
 
         List<ModulePatch> modulePatches = Json.getMapper().convert(
             patches,
@@ -111,7 +111,7 @@ public class ArtifactPatchService {
         return localModulesService.applyPatches(module, moduleRef.getType(), modulePatches);
     }
 
-    public List<ArtifactPatchDto> getPatches(ModuleRef moduleRef) {
+    public List<ArtifactPatchDto> getPatches(ArtifactRef moduleRef) {
 
         List<EcosArtifactPatchEntity> patchEntities = patchRepo.findAllByTarget(moduleRef.toString());
         return patchEntities.stream()
@@ -144,7 +144,7 @@ public class ArtifactPatchService {
         result.setConfig(config);
         result.setName(name);
         result.setOrder(entity.getOrder());
-        result.setTarget(ModuleRef.valueOf(entity.getTarget()));
+        result.setTarget(ArtifactRef.valueOf(entity.getTarget()));
         result.setType(entity.getType());
 
         return result;

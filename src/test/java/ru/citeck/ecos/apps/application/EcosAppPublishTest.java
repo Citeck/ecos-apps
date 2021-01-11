@@ -52,7 +52,7 @@ public class EcosAppPublishTest {
 
     private boolean isPublishStatus(EcosModule module, PublishStatus status) {
         String typeId = eappsModuleService.getTypeId(module.getClass());
-        return status.equals(moduleService.getDeployStatus(ModuleRef.create(typeId, module.getId())));
+        return status.equals(moduleService.getDeployStatus(ArtifactRef.create(typeId, module.getId())));
     }
 
     private boolean isPublishing(EcosApp app) {
@@ -107,7 +107,7 @@ public class EcosAppPublishTest {
         deployedModules.forEach(m -> {
 
             String typeId = eappsModuleService.getTypeId(m.getClass());
-            PublishStatus status = moduleService.getDeployStatus(ModuleRef.create(typeId, m.getId()));
+            PublishStatus status = moduleService.getDeployStatus(ArtifactRef.create(typeId, m.getId()));
 
             assertThat(status, is(PublishStatus.DEPLOYED));
         });
@@ -170,12 +170,12 @@ public class EcosAppPublishTest {
 
         DashboardModule dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-0");
-        dashboardModule.setTypeRef(ModuleRef.create("type", "type0"));
+        dashboardModule.setTypeRef(ArtifactRef.create("type", "type0"));
         modules.add(dashboardModule);
 
         dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-1");
-        dashboardModule.setTypeRef(ModuleRef.create("type", "type2"));
+        dashboardModule.setTypeRef(ArtifactRef.create("type", "type2"));
         modules.add(dashboardModule);
 
         EcosAppImpl app = new EcosAppImpl();

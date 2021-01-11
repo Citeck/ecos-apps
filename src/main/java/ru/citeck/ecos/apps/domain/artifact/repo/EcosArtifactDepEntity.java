@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "ecos_module_dep")
-public class EcosModuleDepEntity {
+public class EcosArtifactDepEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_module_dep_id_gen")
@@ -31,7 +31,7 @@ public class EcosModuleDepEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EcosModuleDepEntity that = (EcosModuleDepEntity) o;
+        EcosArtifactDepEntity that = (EcosArtifactDepEntity) o;
         return Objects.equals(source, that.source)
             && Objects.equals(target, that.target);
     }

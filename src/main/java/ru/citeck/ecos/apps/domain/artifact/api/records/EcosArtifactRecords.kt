@@ -1,14 +1,12 @@
 package ru.citeck.ecos.apps.domain.artifact.api.records
 
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.apps.app.command.artifacts.GetTypeArtifactsCommand
-import ru.citeck.ecos.apps.app.command.artifacts.GetTypeArtifactsResponse
+import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommand
+import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.dto.EcosArtifact
-import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
-import ru.citeck.ecos.apps.module.ModuleRef
-import ru.citeck.ecos.apps.module.type.TypeContext
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.records2.QueryContext
@@ -26,7 +24,7 @@ import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
 
 @Component
 class EcosArtifactRecords(
-    private val artifactsService: ArtifactsService,
+    private val ecosArtifactsService: EcosArtifactsService,
     private val commandsService: CommandsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService
 ) : LocalRecordsDao(),
@@ -44,7 +42,7 @@ class EcosArtifactRecords(
     override fun getLocalRecordsMeta(records: List<RecordRef>, metaField: MetaField): List<Any> {
 
         return records.map {
-            artifactsService.getLastArtifact(ModuleRef.valueOf(it.id))
+            ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(it.id))
         }.map {
             if (it == null) {
                 EmptyValue.INSTANCE
@@ -81,7 +79,7 @@ class EcosArtifactRecords(
             }
 
             val results = commandsService.executeForGroupSync {
-                body = GetTypeArtifactsCommand(expandedTypes)
+                body = GetEcosTypeArtifactsCommand(expandedTypes)
                 targetApp = "all"
             }
 
@@ -96,7 +94,7 @@ class EcosArtifactRecords(
                 val type = ecosArtifactTypesService.getType(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
-                    val artifact = artifactsService.getLastArtifact(ModuleRef.create(type, it.id))
+                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.id))
                     if (artifact != null) {
                         moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getType(artifact.type))
                     }
@@ -107,13 +105,13 @@ class EcosArtifactRecords(
         } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
             val predicate = recordsQuery.getQuery(Predicate::class.java);
-            val res = artifactsService.getAllArtifacts(
+            val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
                 recordsQuery.skipCount,
                 recordsQuery.maxItems
             )
             result.records = res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getType(it.type)) }
-            result.totalCount = artifactsService.getAllArtifactsCount(predicate)
+            result.totalCount = ecosArtifactsService.getAllArtifactsCount(predicate)
         }
 
         return result
@@ -125,7 +123,7 @@ class EcosArtifactRecords(
     ) {
 
         fun getId(): String {
-            return ModuleRef.create(artifact.type, artifact.id).toString()
+            return ArtifactRef.create(artifact.type, artifact.id).toString()
         }
 
         fun getModuleId(): String {

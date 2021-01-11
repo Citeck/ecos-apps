@@ -7,12 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import ru.citeck.ecos.apps.artifact.type.TypeContext;
+import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactTypesEntity;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
-import ru.citeck.ecos.apps.domain.artifact.repo.EcosModuleTypesEntity;
-import ru.citeck.ecos.apps.module.type.ModuleTypeService;
-import ru.citeck.ecos.apps.module.type.TypeContext;
-import ru.citeck.ecos.apps.domain.artifact.repo.EcosModuleTypesRepo;
+import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactTypesRepo;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.utils.ZipUtils;
@@ -32,8 +31,8 @@ public class EcosArtifactTypesService {
 
     private static final EcosFile EMPTY_DIR = new EcosMemDir();
 
-    private final EcosModuleTypesRepo moduleTypesRepo;
-    private final ModuleTypeService moduleTypeService;
+    private final EcosArtifactTypesRepo moduleTypesRepo;
+    private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosContentDao contentDao;
 
     private final Map<String, TypeInfo> typeInfoByTypeId = new ConcurrentHashMap<>();
@@ -50,10 +49,10 @@ public class EcosArtifactTypesService {
             try {
                 log.info("Load types for " + source + " from DB");
 
-                EcosModuleTypesEntity types = moduleTypesRepo.findFirstBySourceOrderByCreatedDateDesc(source);
+                EcosArtifactTypesEntity types = moduleTypesRepo.findFirstBySourceOrderByCreatedDateDesc(source);
                 EcosFile typesDir = ZipUtils.extractZip(types.getContent().getData());
 
-                List<TypeContext> typesCtx = moduleTypeService.getTypes(typesDir);
+                List<TypeContext> typesCtx = ecosArtifactTypesService.getTypes(typesDir);
                 for (TypeContext ctx : typesCtx) {
                     registerType(source, ctx, types.getCreatedDate());
                 }
@@ -117,16 +116,16 @@ public class EcosArtifactTypesService {
         }
 
         EcosContentEntity content = contentDao.upload(ZipUtils.writeZipAsBytes(typesDir));
-        EcosModuleTypesEntity repoTypes = moduleTypesRepo.findBySourceAndContent(appName, content);
+        EcosArtifactTypesEntity repoTypes = moduleTypesRepo.findBySourceAndContent(appName, content);
 
         if (repoTypes == null) {
-            repoTypes = new EcosModuleTypesEntity();
+            repoTypes = new EcosArtifactTypesEntity();
             repoTypes.setContent(content);
             repoTypes.setSource(appName);
             repoTypes = moduleTypesRepo.save(repoTypes);
         }
 
-        List<TypeContext> types = moduleTypeService.getTypes(typesDir);
+        List<TypeContext> types = ecosArtifactTypesService.getTypes(typesDir);
         typesByApp.put(appName, types);
         typesDirByApp.put(appName, typesDir);
 

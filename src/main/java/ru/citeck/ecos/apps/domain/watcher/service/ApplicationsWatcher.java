@@ -7,23 +7,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.EcosAppConstants;
-import ru.citeck.ecos.apps.app.EcosAppsService;
+import ru.citeck.ecos.apps.app.domain.status.AppStatus;
+import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.domain.application.service.AppModuleTypeMeta;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
 import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService;
-import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService;
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService;
-import ru.citeck.ecos.apps.app.provider.ComputedMeta;
-import ru.citeck.ecos.apps.app.remote.AppStatus;
 import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppArtifactService;
-import ru.citeck.ecos.apps.module.ModuleRef;
-import ru.citeck.ecos.apps.module.command.getmodules.GetModulesMeta;
-import ru.citeck.ecos.apps.module.local.LocalModulesService;
-import ru.citeck.ecos.apps.module.remote.EcosAppInfo;
-import ru.citeck.ecos.apps.module.remote.RemoteModulesService;
-import ru.citeck.ecos.apps.module.type.TypeContext;
 import ru.citeck.ecos.commons.data.ObjectData;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.json.Json;
@@ -38,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ArtifactsWatcher {
+public class ApplicationsWatcher {
 
     private static final long UNHEALTHY_APP_TTL = 30_000L;
     private static final long CHECK_STATUS_PERIOD = 5_000L;
@@ -49,7 +41,7 @@ public class ArtifactsWatcher {
     private final RemoteModulesService remoteModulesService;
     private final EcosAppsService ecosAppsService;
     private final LocalModulesService localModulesService;
-    private final ArtifactsService artifactsService;
+    private final EcosArtifactsService ecosArtifactsService;
     private final ArtifactPatchService artifactPatchService;
     private final EcosAppService ecosAppService;
     private final EcosAppArtifactService ecosAppArtifactService;
@@ -63,14 +55,14 @@ public class ArtifactsWatcher {
     private long errorNextPrintTime = 0L;
 
     private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
-    private final Queue<ModuleRef> artifactsToUpdate = new ConcurrentLinkedQueue<>();
+    private final Queue<ArtifactRef> artifactsToUpdate = new ConcurrentLinkedQueue<>();
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
         if (!started) {
 
-            log.info("======= ArtifactsWatcher Initialization =======");
+            log.info("======= ApplicationsWatcher Initialization =======");
 
             artifactPatchService.addListener(patch -> artifactsToUpdate.add(patch.getTarget()));
 
@@ -181,7 +173,7 @@ public class ArtifactsWatcher {
                             + "'->'" + ecosApp.getId() + "' type: '" + typeCtx.getId() + "'");
                     }
 
-                    artifactsService.uploadEcosAppArtifacts(fromApp, modules, typeCtx.getId(), null);
+                    ecosArtifactsService.uploadEcosAppArtifacts(fromApp, modules, typeCtx.getId(), null);
                 }
 
                 EcosFile computedMeta = modulesDir.getFile(EcosAppConstants.COMPUTED_META_FILE);
@@ -274,15 +266,15 @@ public class ArtifactsWatcher {
                 lastError = null;
                 errorNextPrintTime = 0L;
 
-                Set<ModuleRef> modulesToUpdateSet = new HashSet<>();
-                ModuleRef moduleToUpdate = artifactsToUpdate.poll();
+                Set<ArtifactRef> modulesToUpdateSet = new HashSet<>();
+                ArtifactRef moduleToUpdate = artifactsToUpdate.poll();
                 while (moduleToUpdate != null) {
                     modulesToUpdateSet.add(moduleToUpdate);
                     moduleToUpdate = artifactsToUpdate.poll();
                 }
 
-                for (ModuleRef moduleRef : modulesToUpdateSet) {
-                    artifactsService.updateModule(moduleRef);
+                for (ArtifactRef artifactRef : modulesToUpdateSet) {
+                    ecosArtifactsService.updateModule(artifactRef);
                 }
 
                 Thread.sleep(CHECK_STATUS_PERIOD);
@@ -312,6 +304,4 @@ public class ArtifactsWatcher {
         private AppStatus status;
         private int healthCheckProtection;
     }
-
-    public static class ComputedMetaByType extends HashMap<String, List<ComputedMeta>> {}
 }

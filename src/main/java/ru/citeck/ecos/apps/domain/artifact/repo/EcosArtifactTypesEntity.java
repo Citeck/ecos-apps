@@ -9,7 +9,7 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "ecos_module_types")
-public class EcosModuleTypesEntity extends AbstractImmutableEntity {
+public class EcosArtifactTypesEntity extends AbstractImmutableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_module_type_id_gen")

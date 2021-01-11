@@ -34,16 +34,16 @@ public class EcosModuleDepsTest {
 
         String typeId = eappsModuleService.getTypeId(TypeModule.class);
 
-        ModuleRef baseModuleRef = ModuleRef.create(typeId, baseTypeModule.getId());
-        otherTypeModule.setParent(baseModuleRef);
+        ArtifactRef baseArtifactRef = ArtifactRef.create(typeId, baseTypeModule.getId());
+        otherTypeModule.setParent(baseArtifactRef);
 
-        ModuleRef otherModuleRef = ModuleRef.create(typeId, otherTypeModule.getId());
+        ArtifactRef otherArtifactRef = ArtifactRef.create(typeId, otherTypeModule.getId());
 
         synchronized (publishedTypes) {
 
             moduleService.uploadModule("test", otherTypeModule);
 
-            assertThat(moduleService.getDeployStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
+            assertThat(moduleService.getDeployStatus(otherArtifactRef), is(PublishStatus.DEPS_WAITING));
         }
 
         assertThat(publishedTypes.size(), is(0));
@@ -52,15 +52,15 @@ public class EcosModuleDepsTest {
 
             moduleService.uploadModule("test", baseTypeModule);
 
-            assertThat(moduleService.getDeployStatus(baseModuleRef), is(PublishStatus.PUBLISHING));
-            assertThat(moduleService.getDeployStatus(otherModuleRef), is(PublishStatus.DEPS_WAITING));
+            assertThat(moduleService.getDeployStatus(baseArtifactRef), is(PublishStatus.PUBLISHING));
+            assertThat(moduleService.getDeployStatus(otherArtifactRef), is(PublishStatus.DEPS_WAITING));
         }
 
-        TestUtils.waitWhile(() -> moduleService.getDeployStatus(baseModuleRef).equals(PublishStatus.PUBLISHING), 5);
+        TestUtils.waitWhile(() -> moduleService.getDeployStatus(baseArtifactRef).equals(PublishStatus.PUBLISHING), 5);
 
-        assertThat(moduleService.getDeployStatus(baseModuleRef), is(PublishStatus.DEPLOYED));
+        assertThat(moduleService.getDeployStatus(baseArtifactRef), is(PublishStatus.DEPLOYED));
 
-        TestUtils.waitWhile(() -> !moduleService.getDeployStatus(otherModuleRef).equals(PublishStatus.DEPLOYED), 5);
+        TestUtils.waitWhile(() -> !moduleService.getDeployStatus(otherArtifactRef).equals(PublishStatus.DEPLOYED), 5);
 
         assertThat(publishedTypes.size(), is(2));
         assertThat(publishedTypes.get(0), is(baseTypeModule));

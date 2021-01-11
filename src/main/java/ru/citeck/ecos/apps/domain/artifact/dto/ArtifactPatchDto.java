@@ -1,7 +1,7 @@
 package ru.citeck.ecos.apps.domain.artifact.dto;
 
 import lombok.Data;
-import ru.citeck.ecos.apps.module.ModuleRef;
+import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.data.ObjectData;
 import ru.citeck.ecos.commons.json.Json;
@@ -12,7 +12,7 @@ public class ArtifactPatchDto {
     private String id;
     private MLText name;
     private float order;
-    private ModuleRef target;
+    private ArtifactRef target;
     private String type;
     private ObjectData config;
 

@@ -10,7 +10,7 @@ import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppArtifactEntity;
 import java.util.List;
 
 @Repository
-public interface EcosModuleRepo extends JpaRepository<EcosArtifactEntity, Long>,
+public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Long>,
                                         JpaSpecificationExecutor<EcosArtifactEntity> {
 
     List<EcosArtifactEntity> findAllByEcosApp(String ecosApp);
@@ -18,10 +18,6 @@ public interface EcosModuleRepo extends JpaRepository<EcosArtifactEntity, Long>,
     @Query("SELECT m FROM EcosArtifactEntity m " +
            "WHERE m.type = ?1 AND m.extId = ?2 AND m.deleted = false")
     EcosArtifactEntity getByExtId(String type, String extId);
-
-    @Query("SELECT m FROM EcosArtifactEntity m " +
-        "WHERE m.type = ?1 AND m.key = ?2 AND m.deleted = false")
-    EcosArtifactEntity findByTypeAndKey(String type, String key);
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
            "WHERE m.type = ?1 AND m.deleted = false")

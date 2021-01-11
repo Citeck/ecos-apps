@@ -1,18 +1,19 @@
-package ru.citeck.ecos.apps.domain.deployer.service
+package ru.citeck.ecos.apps.domain.deployer.service.loader
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService
+import ru.citeck.ecos.apps.artifact.type.TypeContext
+import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService
-import ru.citeck.ecos.apps.module.ModuleRef
-import ru.citeck.ecos.apps.module.handler.ModuleWithMeta
+import ru.citeck.ecos.apps.domain.deployer.service.consumer.ArtifactsConsumer
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
 
 @Component
-class ArtifactsDeployer(
-    val artifactsService: ArtifactsService,
-    val artifactsPatchService: ArtifactPatchService
+class ArtifactsLoader(
+    private val ecosArtifactsService: EcosArtifactsService,
+    private val artifactsPatchService: ArtifactPatchService,
+    private val ecosArtifactTypesService: EcosArtifactTypesService
 ) {
 
     companion object {
@@ -20,47 +21,37 @@ class ArtifactsDeployer(
     }
 
     private val sources = ConcurrentHashMap<String, ArtifactsSource>()
-    private val consumers = ConcurrentHashMap<String, ArtifactsConsumer>()
-
-    private val newSourcesQueue = ConcurrentLinkedQueue<String>()
-    private val newConsumersQueue = ConcurrentLinkedQueue<String>()
-
-    private var lastChangedMs = 0L
-
-    private var currentChangedVersion = 0
-    private var syncChangedVersion = 0
 
     @Synchronized
-    fun addConsumer(consumer: ArtifactsConsumer) {
-        consumers[consumer.getId()] = consumer
-        wasChanged()
-    }
+    fun addSource(source: ArtifactsSource): Set<Pair<String, String>> {
 
-    @Synchronized
-    fun addSource(source: ArtifactsSource) {
         sources[source.getId()] = source
-        wasChanged()
+
+        return loadArtifacts(source.getArtifacts(ecosArtifactTypesService.allTypesCtx))
     }
 
     @Synchronized
     fun removeSource(sourceId: String) {
         sources.remove(sourceId)
-        // additional sync (wasChanged) doesn't required when source was removed
     }
 
     @Synchronized
-    fun removeConsumer(consumerId: String) {
-        consumers.remove(consumerId)
-        // additional sync (wasChanged) doesn't required when consumer was removed
+    fun load(types: List<TypeContext>): Set<Pair<String, String>> {
+
+        val artifacts = mutableMapOf<String, MutableList<Any>>()
+        sources.values.forEach { it.getArtifacts(types).forEach {
+            (typeId, artifactsList) ->
+                artifacts.getOrPut(typeId) { ArrayList() }.addAll(artifactsList)
+            }
+        }
+
+        return loadArtifacts(artifacts)
     }
 
-    private fun wasChanged() {
-        currentChangedVersion++
-        lastChangedMs = System.currentTimeMillis()
-    }
+    private fun loadArtifacts(artifacts: Map<String, List<Any>>): Set<Pair<String, String>> {
 
-    fun getLastChangedMs(): Long {
-        return lastChangedMs
+
+
     }
 
     @Synchronized
@@ -110,19 +101,8 @@ class ArtifactsDeployer(
     }
 
     private fun deployArtifacts(source: ArtifactsSource,
-                                consumer: ArtifactsConsumer,
-                                sourcesToRemove: MutableSet<String>,
-                                consumersToRemove: MutableSet<String>) {
+                                consumer: ArtifactsConsumer) {
 
-        if (!source.isValid() || !consumer.isValid()) {
-            if (!source.isValid()) {
-                sourcesToRemove.add(source.getId())
-            }
-            if (!consumer.isValid()) {
-                consumersToRemove.add(consumer.getId())
-            }
-            return
-        }
 
         val types = consumer.getConsumedTypes()
         if (types.isEmpty()) {
@@ -145,7 +125,7 @@ class ArtifactsDeployer(
                 val artifactsToDeploy = ArrayList<ModuleWithMeta<Any>>()
 
                 artifactsToDeployBeforePatch.forEach {
-                    val ref = ModuleRef.create(type.getId(), it.meta.id)
+                    val ref = ArtifactRef.create(type.getId(), it.meta.id)
                     val patches = artifactsPatchService.getPatches(ref)
                     if (patches.isEmpty()) {
                         artifactsToDeploy.add(it)

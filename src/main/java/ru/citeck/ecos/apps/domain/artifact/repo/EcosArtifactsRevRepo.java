@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EcosArtifactRevRepo extends JpaRepository<EcosArtifactRevEntity, Long> {
+public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntity, Long> {
 
     @Query("SELECT m FROM EcosArtifactRevEntity m " +
            "JOIN m.module mm " +

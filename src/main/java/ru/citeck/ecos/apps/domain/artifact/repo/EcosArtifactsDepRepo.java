@@ -7,10 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EcosModuleDepRepo extends JpaRepository<EcosModuleDepEntity, Long> {
+public interface EcosArtifactsDepRepo extends JpaRepository<EcosArtifactDepEntity, Long> {
 
-    @Query("SELECT dep FROM EcosModuleDepEntity dep " +
+    @Query("SELECT dep FROM EcosArtifactDepEntity dep " +
            "JOIN dep.target targetModule " +
            "WHERE targetModule.id=?1")
-    List<EcosModuleDepEntity> getDepsByTarget(long targetModuleId);
+    List<EcosArtifactDepEntity> getDepsByTarget(long targetModuleId);
 }

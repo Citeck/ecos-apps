@@ -49,7 +49,7 @@ public class EcosModulePublishTest {
         String formTypeId = eappsModuleService.getTypeId(FormModule.class);
         String formId = "test";
         String source = "test";
-        ModuleRef moduleRef = ModuleRef.create(formTypeId, formId);
+        ArtifactRef moduleRef = ArtifactRef.create(formTypeId, formId);
 
         FormModule module = new FormModule();
         module.setId(formId);

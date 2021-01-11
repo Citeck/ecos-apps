@@ -2,15 +2,15 @@ package ru.citeck.ecos.apps.domain.ecosapp.service
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.artifact.type.TypeContext
 import ru.citeck.ecos.apps.domain.artifact.api.records.EcosArtifactRecords
-import ru.citeck.ecos.apps.domain.artifact.service.ArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppArtifactEntity
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppArtifactRepo
-import ru.citeck.ecos.apps.module.ModuleRef
-import ru.citeck.ecos.apps.module.type.TypeContext
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
@@ -26,7 +26,7 @@ import java.util.*
 @Service("ecosAppArtifactService")
 open class EcosAppArtifactService(
     private val ecosAppRepo: EcosAppArtifactRepo,
-    private val artifactsService: ArtifactsService,
+    private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao
 ) {
 
@@ -36,7 +36,7 @@ open class EcosAppArtifactService(
             val artifactsDirContent = it.artifactsDir
             if (artifactsDirContent != null ) {
                 val artifactsDir = ZipUtils.extractZip(artifactsDirContent.data)
-                artifactsService.uploadEcosAppArtifacts(it.extId, artifactsDir, types)
+                ecosArtifactsService.uploadEcosAppArtifacts(it.extId, artifactsDir, types)
             }
         }
     }
@@ -50,7 +50,7 @@ open class EcosAppArtifactService(
         val artifactsDir = appRoot.getDir("artifacts")
         var artifactsContentEntity: EcosContentEntity? = null
         if (artifactsDir != null) {
-            artifactsService.uploadEcosAppArtifacts(meta.id, artifactsDir)
+            ecosArtifactsService.uploadEcosAppArtifacts(meta.id, artifactsDir)
             artifactsContentEntity = ecosContentDao.upload(ZipUtils.writeZipAsBytes(artifactsDir))
         }
 
@@ -70,7 +70,7 @@ open class EcosAppArtifactService(
         app.typeRefs.forEach { artifactsSet.add(typeRefToArtifactRef(it).id) }
         app.artifacts.forEach { artifactsSet.add(it.toString()) }
 
-        artifactsService.setEcosAppFull(artifactsSet.map { ModuleRef.valueOf(it) }, app.id)
+        ecosArtifactsService.setEcosAppFull(artifactsSet.map { ArtifactRef.valueOf(it) }, app.id)
 
         val entity = dtoToEntity(app)
         entity.artifactsDir = null
@@ -89,7 +89,7 @@ open class EcosAppArtifactService(
 
     open fun delete(id: String) {
         ecosAppRepo.findFirstByExtId(id)?.let { ecosAppRepo.delete(it) }
-        artifactsService.removeEcosApp(id)
+        ecosArtifactsService.removeEcosApp(id)
     }
 
     open fun getAppForArtifacts(list: List<RecordRef>) : Map<RecordRef, RecordRef> {
@@ -116,8 +116,8 @@ open class EcosAppArtifactService(
         val artifactsDir = rootDir.createDir("artifacts")
 
         for (ref in artifacts) {
-            val moduleRef = ModuleRef.valueOf(ref.id)
-            val moduleRev = artifactsService.getLastModuleRev(moduleRef)
+            val moduleRef = ArtifactRef.valueOf(ref.id)
+            val moduleRev = ecosArtifactsService.getLastModuleRev(moduleRef)
             if (moduleRev != null) {
                 ZipUtils.extractZip(ByteArrayInputStream(moduleRev.data), artifactsDir.getOrCreateDir(moduleRef.type))
             }
