@@ -90,6 +90,10 @@ public class EcosModuleDao {
         }
 
         ModuleMeta meta = module.getMeta();
+        List<RecordRef> dependencies = meta.getDependencies();
+        if (dependencies == null) {
+            dependencies = Collections.emptyList();
+        }
 
         if (StringUtils.isBlank(meta.getId())) {
             throw new IllegalArgumentException("Module should has id value. " + meta);
@@ -134,7 +138,7 @@ public class EcosModuleDao {
             if (!userModule) {
                 moduleEntity.setDependencies(getDependenciesModules(
                     moduleEntity,
-                    new HashSet<>(meta.getDependencies())
+                    new HashSet<>(dependencies)
                 ));
                 moduleEntity = moduleRepo.save(moduleEntity);
             }
@@ -158,7 +162,7 @@ public class EcosModuleDao {
         } else {
             moduleEntity.setLastRev(lastModuleRev);
             moduleEntity.setDeployStatus(DeployStatus.DRAFT);
-            moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(meta.getDependencies())));
+            moduleEntity.setDependencies(getDependenciesModules(moduleEntity, new HashSet<>(dependencies)));
         }
 
         moduleEntity = moduleRepo.save(moduleEntity);
@@ -197,9 +201,14 @@ public class EcosModuleDao {
             entity.setPatchedRev(patchModuleRev);
 
             entity.setDeployStatus(DeployStatus.DRAFT);
+
+            List<RecordRef> dependencies = module.getMeta().getDependencies();
+            if (dependencies == null) {
+                dependencies = Collections.emptyList();
+            }
             entity.setDependencies(getDependenciesModules(
                 entity,
-                new HashSet<>(module.getMeta().getDependencies())
+                new HashSet<>(dependencies)
             ));
 
         } else {
