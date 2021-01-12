@@ -345,6 +345,11 @@
         </dependency>
 
         <dependency>
+            <groupId>ru.citeck.ecos.rabbitmq</groupId>
+            <artifactId>ecos-rabbitmq-spring</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-all</artifactId>
         </dependency>
