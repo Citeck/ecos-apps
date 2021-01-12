@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.domain.artifact.repo;
+package ru.citeck.ecos.apps.domain.artifacttype.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

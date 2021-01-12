@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.domain.application.service;
+package ru.citeck.ecos.apps.domain.artifacttype.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,11 +7,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import ru.citeck.ecos.apps.artifact.ArtifactMeta;
+import ru.citeck.ecos.apps.artifact.ArtifactRef;
+import ru.citeck.ecos.apps.artifact.ArtifactsService;
+import ru.citeck.ecos.apps.artifact.type.ArtifactTypesService;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
-import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactTypesEntity;
+import ru.citeck.ecos.apps.domain.artifacttype.dto.EcosArtifactMeta;
+import ru.citeck.ecos.apps.domain.artifacttype.repo.EcosArtifactTypesEntity;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
-import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactTypesRepo;
+import ru.citeck.ecos.apps.domain.artifacttype.repo.EcosArtifactTypesRepo;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.utils.ZipUtils;
@@ -32,7 +37,8 @@ public class EcosArtifactTypesService {
     private static final EcosFile EMPTY_DIR = new EcosMemDir();
 
     private final EcosArtifactTypesRepo moduleTypesRepo;
-    private final EcosArtifactTypesService ecosArtifactTypesService;
+    private final ArtifactTypesService artifactTypesService;
+    private final ArtifactsService artifactsService;
     private final EcosContentDao contentDao;
 
     private final Map<String, TypeInfo> typeInfoByTypeId = new ConcurrentHashMap<>();
@@ -52,7 +58,7 @@ public class EcosArtifactTypesService {
                 EcosArtifactTypesEntity types = moduleTypesRepo.findFirstBySourceOrderByCreatedDateDesc(source);
                 EcosFile typesDir = ZipUtils.extractZip(types.getContent().getData());
 
-                List<TypeContext> typesCtx = ecosArtifactTypesService.getTypes(typesDir);
+                List<TypeContext> typesCtx = artifactTypesService.loadTypes(typesDir);
                 for (TypeContext ctx : typesCtx) {
                     registerType(source, ctx, types.getCreatedDate());
                 }
@@ -77,7 +83,7 @@ public class EcosArtifactTypesService {
     public List<String> getNonInternalTypes() {
         return typeInfoByTypeId.values()
             .stream()
-            .filter(t -> !t.getTypeCtx().isInternal())
+            .filter(t -> !t.getTypeCtx().getMeta().getInternal())
             .map(t -> t.getTypeCtx().getId())
             .collect(Collectors.toList());
     }
@@ -85,7 +91,7 @@ public class EcosArtifactTypesService {
     public List<String> getTypesWithSourceId() {
         return typeInfoByTypeId.values()
             .stream()
-            .filter(t -> StringUtils.isNotBlank(t.getTypeCtx().getSourceId()))
+            .filter(t -> StringUtils.isNotBlank(t.getTypeCtx().getMeta().getSourceId()))
             .map(t -> t.getTypeCtx().getId())
             .collect(Collectors.toList());
     }
@@ -125,7 +131,7 @@ public class EcosArtifactTypesService {
             repoTypes = moduleTypesRepo.save(repoTypes);
         }
 
-        List<TypeContext> types = ecosArtifactTypesService.getTypes(typesDir);
+        List<TypeContext> types = artifactTypesService.loadTypes(typesDir);
         typesByApp.put(appName, types);
         typesDirByApp.put(appName, typesDir);
 
@@ -133,7 +139,6 @@ public class EcosArtifactTypesService {
             registerType(appName, ctx, repoTypes.getCreatedDate());
         }
     }
-
 
     private void registerType(String source, TypeContext ctx, Instant time) {
 
@@ -143,7 +148,7 @@ public class EcosArtifactTypesService {
         if (typeInfo == null || typeInfo.changed < timeMs) {
             typeInfoByTypeId.put(ctx.getId(), new TypeInfo(ctx, timeMs));
             appNameByTypeId.put(ctx.getId(), source);
-            typeBySource.put(new AppSourceKey(source, ctx.getSourceId()), ctx.getId());
+            typeBySource.put(new AppSourceKey(source, ctx.getMeta().getSourceId()), ctx.getId());
         }
     }
 
@@ -158,6 +163,39 @@ public class EcosArtifactTypesService {
     public String getAppByModuleType(String moduleType) {
         String result = appNameByTypeId.getOrDefault(moduleType, "");
         return result != null ? result : "";
+    }
+
+    public EcosArtifactMeta getArtifactMeta(String typeId, Object artifact) {
+
+        TypeContext type = artifactTypesService.getType(typeId);
+        if (type == null) {
+            throw new RuntimeException("Type is not found: " + typeId);
+        }
+        ArtifactMeta meta = artifactsService.getArtifactMeta(type, artifact);
+        if (meta == null) {
+            throw new RuntimeException("Artifact meta can't be received. Type: " + type + " Artifact: " + artifact);
+        }
+
+        ArtifactRef currentRef = ArtifactRef.create(typeId, meta.getId());
+
+        List<ArtifactRef> dependencies = meta.getDependencies()
+            .stream()
+            .map(ref -> {
+                String artifactType = getType(ref);
+                if (StringUtils.isNotBlank(artifactType)) {
+                    return ArtifactRef.create(artifactType, ref.getId());
+                }
+                return ArtifactRef.EMPTY;
+            })
+            .filter(ref -> !ref.equals(currentRef) && !ref.equals(ArtifactRef.EMPTY))
+            .collect(Collectors.toList());
+
+        return new EcosArtifactMeta(
+            meta.getId(),
+            meta.getName(),
+            dependencies,
+            meta.getTags()
+        );
     }
 
     @Data

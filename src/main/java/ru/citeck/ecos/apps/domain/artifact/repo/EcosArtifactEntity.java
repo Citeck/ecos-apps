@@ -34,10 +34,6 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Getter @Setter private EcosArtifactRevEntity lastRev;
 
     @OneToOne
-    @JoinColumn(name = "user_module_rev_id")
-    @Getter @Setter private EcosArtifactRevEntity userRev;
-
-    @OneToOne
     @JoinColumn(name = "patched_module_rev_id")
     @Getter @Setter private EcosArtifactRevEntity patchedRev;
 
@@ -52,7 +48,7 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @Getter private Set<EcosArtifactDepEntity> dependencies = new HashSet<>();
 
-    public void setDependencies(Set<EcosArtifactDepEntity> dependencies) {
-        EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosArtifactDepEntity::getTarget);
+    public boolean setDependencies(Set<EcosArtifactDepEntity> dependencies) {
+        return EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosArtifactDepEntity::getTarget);
     }
 }

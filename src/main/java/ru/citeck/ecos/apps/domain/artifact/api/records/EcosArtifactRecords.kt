@@ -3,7 +3,7 @@ package ru.citeck.ecos.apps.domain.artifact.api.records
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommand
 import ru.citeck.ecos.apps.artifact.ArtifactRef
-import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.dto.EcosArtifact
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords

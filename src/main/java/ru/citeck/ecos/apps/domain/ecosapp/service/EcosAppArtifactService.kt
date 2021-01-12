@@ -117,7 +117,7 @@ open class EcosAppArtifactService(
 
         for (ref in artifacts) {
             val moduleRef = ArtifactRef.valueOf(ref.id)
-            val moduleRev = ecosArtifactsService.getLastModuleRev(moduleRef)
+            val moduleRev = ecosArtifactsService.getLastArtifactRev(moduleRef)
             if (moduleRev != null) {
                 ZipUtils.extractZip(ByteArrayInputStream(moduleRev.data), artifactsDir.getOrCreateDir(moduleRef.type))
             }

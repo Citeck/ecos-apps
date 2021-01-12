@@ -11,7 +11,7 @@ import ru.citeck.ecos.apps.app.domain.status.AppStatus;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.domain.application.service.AppModuleTypeMeta;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
-import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService;
+import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService;
 import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;

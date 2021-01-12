@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.artifact.ArtifactMeta;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
-import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService;
+import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactRevType;
 import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus;
 import ru.citeck.ecos.apps.domain.artifact.dto.UploadStatus;
@@ -23,7 +23,6 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.artifact.repo.EcosArtifactEntity;
 import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.json.Json;
-import ru.citeck.ecos.records2.RecordRef;
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 
@@ -307,37 +306,7 @@ public class EcosArtifactDao {
 
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {
 
-        List<EcosArtifactEntity> currentArtifacts = moduleRepo.findAllByEcosApp(ecosAppId);
-        for (EcosArtifactEntity artifact : currentArtifacts) {
-            ArtifactRef currentArtifactRef = ArtifactRef.create(artifact.getType(), artifact.getExtId());
-            if (!artifacts.contains(currentArtifactRef)) {
-                artifact.setEcosApp(null);
-                moduleRepo.save(artifact);
-            }
-        }
 
-        for (ArtifactRef artifactRef : artifacts) {
-
-            EcosArtifactEntity moduleEntity = moduleRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
-
-            if (moduleEntity != null && StringUtils.isNotBlank(moduleEntity.getEcosApp())) {
-
-                if (!moduleEntity.getEcosApp().equals(ecosAppId)) {
-                    throw new IllegalArgumentException("Artifact " + artifactRef
-                        + " already included in " + moduleEntity.getEcosApp() + " application");
-                }
-            }
-
-            if (moduleEntity == null) {
-                moduleEntity = new EcosArtifactEntity();
-                moduleEntity.setExtId(artifactRef.getId());
-                moduleEntity.setType(artifactRef.getType());
-                moduleEntity = moduleRepo.save(moduleEntity);
-            }
-
-            moduleEntity.setEcosApp(ecosAppId);
-            moduleRepo.save(moduleEntity);
-        }
     }
 
     synchronized public void removeEcosApp(String ecosAppId) {
@@ -367,7 +336,7 @@ public class EcosArtifactDao {
 
         Pageable page = PageRequest.of(0, 1);
 
-        List<EcosArtifactRevEntity> rev = moduleRevRepo.getModuleRevisions(moduleRef.getType(),
+        List<EcosArtifactRevEntity> rev = moduleRevRepo.getArtifactRevisions(moduleRef.getType(),
                                                                          moduleRef.getId(),
                                                                          source, page);
 

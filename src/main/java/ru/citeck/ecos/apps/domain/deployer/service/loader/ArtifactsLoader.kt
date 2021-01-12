@@ -3,7 +3,7 @@ package ru.citeck.ecos.apps.domain.deployer.service.loader
 import mu.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.artifact.type.TypeContext
-import ru.citeck.ecos.apps.domain.application.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService
 import ru.citeck.ecos.apps.domain.deployer.service.consumer.ArtifactsConsumer

@@ -9,11 +9,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import ru.citeck.ecos.apps.artifact.ArtifactRef;
+import ru.citeck.ecos.apps.artifact.ArtifactsService;
+import ru.citeck.ecos.apps.artifact.controller.patch.ArtifactPatch;
 import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactPatchDto;
 import ru.citeck.ecos.apps.domain.artifactpatch.repo.EcosArtifactPatchEntity;
-import ru.citeck.ecos.apps.module.ArtifactRef;
-import ru.citeck.ecos.apps.module.controller.patch.ModulePatch;
-import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.domain.artifactpatch.repo.EcosArtifactPatchRepo;
 import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.data.ObjectData;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 public class ArtifactPatchService {
 
     private final EcosArtifactPatchRepo patchRepo;
-    private final LocalModulesService localModulesService;
+    private final ArtifactsService artifactsService;
 
     private final List<Consumer<ArtifactPatchDto>> changeListeners = new CopyOnWriteArrayList<>();
 
@@ -95,25 +95,25 @@ public class ArtifactPatchService {
         }
     }
 
-    public Object applyPatches(Object module, ArtifactRef moduleRef, List<ArtifactPatchDto> patches) {
+    public Object applyPatches(Object artifact, ArtifactRef artifactRef, List<ArtifactPatchDto> patches) {
 
-        List<ModulePatch> modulePatches = Json.getMapper().convert(
+        List<ArtifactPatch> modulePatches = Json.getMapper().convert(
             patches,
-            Json.getMapper().getListType(ModulePatch.class)
+            Json.getMapper().getListType(ArtifactPatch.class)
         );
 
         if (modulePatches == null || modulePatches.isEmpty()) {
-            return module;
+            return artifact;
         }
 
-        log.info("Apply " + modulePatches.size() + " patches to " + moduleRef);
+        log.info("Apply " + modulePatches.size() + " patches to " + artifactRef);
 
-        return localModulesService.applyPatches(module, moduleRef.getType(), modulePatches);
+        return artifactsService.applyPatches(artifactRef.getType(), artifact, modulePatches);
     }
 
-    public List<ArtifactPatchDto> getPatches(ArtifactRef moduleRef) {
+    public List<ArtifactPatchDto> getPatches(ArtifactRef artifactRef) {
 
-        List<EcosArtifactPatchEntity> patchEntities = patchRepo.findAllByTarget(moduleRef.toString());
+        List<EcosArtifactPatchEntity> patchEntities = patchRepo.findAllByTarget(artifactRef.toString());
         return patchEntities.stream()
                 .map(this::toDto)
                 .sorted(Comparator.comparingDouble(ArtifactPatchDto::getOrder))
