@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.domain.watcher.service;
+package ru.citeck.ecos.apps.domain.watcher;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,10 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo;
 import ru.citeck.ecos.apps.app.domain.status.AppStatus;
+import ru.citeck.ecos.apps.app.service.remote.RemoteAppService;
+import ru.citeck.ecos.apps.app.service.remote.RemoteAppStatus;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
-import ru.citeck.ecos.apps.domain.application.service.AppModuleTypeMeta;
-import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
 import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService;
@@ -38,14 +39,11 @@ public class ApplicationsWatcher {
 
     private static final int COMPUTED_ARTIFACTS_REQUEST_LIMIT = 300;
 
-    private final RemoteModulesService remoteModulesService;
-    private final EcosAppsService ecosAppsService;
-    private final LocalModulesService localModulesService;
     private final EcosArtifactsService ecosArtifactsService;
     private final ArtifactPatchService artifactPatchService;
-    private final EcosAppService ecosAppService;
     private final EcosAppArtifactService ecosAppArtifactService;
     private final EcosArtifactTypesService appsModuleTypeService;
+    private final RemoteAppService remoteAppService;
 
     private final ApplicationProperties props;
 
@@ -72,9 +70,15 @@ public class ApplicationsWatcher {
         }
     }
 
-    private void handleNewApp(AppStatus newApp) {
+    private void handleNewApp(RemoteAppStatus newApp) {
 
-        log.info("Detected new application '" + newApp.getAppName() + "' with sources: " + newApp.getEcosApps());
+        /*log.info("Detected new application '" + newApp.getAppName() + "' with sources: "
+            + newApp.getStatus()
+                .getSources()
+                .stream()
+                .map(ArtifactSourceInfo::getId)
+                .collect(Collectors.toList())
+        );
 
         EcosFile newAppModuleTypesDir = remoteModulesService.getModuleTypesDir(newApp.getAppName());
         appsModuleTypeService.registerTypes(newApp.getAppName(), newAppModuleTypesDir);
@@ -108,12 +112,12 @@ public class ApplicationsWatcher {
             ecosAppArtifactService.uploadAllArtifactsForTypes(types);
         } catch (Exception e) {
             exceptionHandler.accept(e);
-        }
+        }*/
     }
 
     private void loadModules(String fromApp, String toApp) {
 
-        if (log.isDebugEnabled()) {
+        /*if (log.isDebugEnabled()) {
             log.debug("Load modules from: " + fromApp + " to app: " + toApp);
         }
 
@@ -193,12 +197,12 @@ public class ApplicationsWatcher {
                 }
                 break;
             }
-        }
+        }*/
     }
 
     private void runWatcher() {
 
-        long initDelay = props.getModulesWatcher().getInitDelayMs();
+        /*long initDelay = props.getModulesWatcher().getInitDelayMs();
         log.info("ArtifactsWatcher init sleep: " + initDelay);
         try {
             Thread.sleep(initDelay);
@@ -210,8 +214,8 @@ public class ApplicationsWatcher {
 
             try {
 
-                List<AppStatus> remoteStatus = ecosAppsService.getRemoteAppsStatus();
-                Map<String, AppStatus> newApps = new HashMap<>();
+                List<RemoteAppStatus> remoteStatus = remoteAppService.getAppsStatus();
+                Map<String, RemoteAppStatus> newApps = new HashMap<>();
                 Set<String> missingApps = new HashSet<>(currentStatuses.keySet());
 
                 remoteStatus.forEach(it -> {
@@ -224,9 +228,9 @@ public class ApplicationsWatcher {
 
                     } else {
 
-                        List<EcosAppInfo> currentEcosApps = currentStatus.getStatus().getEcosApps();
+                        List<ArtifactSourceInfo> currentSources = currentStatus.getStatus().getSources();
 
-                        if (it.getEcosApps().size() != currentEcosApps.size()) {
+                        if (it.getStatus().getSources().size() != currentSources.size()) {
 
                             currentStatuses.remove(it.getAppName());
                             newApps.put(it.getAppName(), it);
@@ -295,7 +299,7 @@ public class ApplicationsWatcher {
                     log.error("Exception handler failed", ex);
                 }
             }
-        }
+        }*/
     }
 
     @Data

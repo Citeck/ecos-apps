@@ -7,5 +7,8 @@ data class EcosArtifact(
     val data: Any,
     val type: String,
     val name: MLText? = null,
-    val tags: List<String>
+    val tags: List<String>,
+    val deployStatus: DeployStatus,
+    val source: ArtifactsSourceInfo,
+    val revId: String
 )

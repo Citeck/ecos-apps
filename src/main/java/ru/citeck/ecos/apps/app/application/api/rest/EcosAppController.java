@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactRev;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 
@@ -16,17 +15,9 @@ import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
 public class EcosAppController {
 
     private EcosArtifactsService moduleService;
-    private EcosAppService appService;
 
-    public EcosAppController(EcosArtifactsService moduleService,
-                             EcosAppService appService) {
+    public EcosAppController(EcosArtifactsService moduleService) {
         this.moduleService = moduleService;
-        this.appService = appService;
-    }
-
-    @GetMapping("/module/rev/{moduleRevId}")
-    public HttpEntity<byte[]> downloadModule(@PathVariable String moduleRevId) {
-        return toDownloadHttpEntity(moduleService.getModuleRevision(moduleRevId));
     }
 
     @GetMapping("/module/type/{type}/{moduleId}")

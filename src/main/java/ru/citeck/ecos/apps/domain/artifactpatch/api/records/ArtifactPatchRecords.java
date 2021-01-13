@@ -31,14 +31,14 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
-@Component
-public class ArtifactPatchRecords extends LocalRecordsDao
+//@Slf4j
+//@Component
+public class ArtifactPatchRecords/* extends LocalRecordsDao
                                 implements LocalRecordsQueryWithMetaDao<ArtifactPatchRecords.PatchRecord>,
                                            LocalRecordsMetaDao<ArtifactPatchRecords.PatchRecord>,
-                                           MutableRecordsLocalDao<ArtifactPatchRecords.PatchRecord> {
+                                           MutableRecordsLocalDao<ArtifactPatchRecords.PatchRecord> */{
 
-    public static final String ID = "module-patch";
+    /*public static final String ID = "module-patch";
 
     private final ArtifactPatchService artifactPatchService;
 
@@ -105,12 +105,13 @@ public class ArtifactPatchRecords extends LocalRecordsDao
 
     @Override
     public RecordsMutResult save(List<PatchRecord> values) {
-        RecordsMutResult result = new RecordsMutResult();
+        *//*RecordsMutResult result = new RecordsMutResult();
         values.forEach(value -> {
             ArtifactPatchDto dashboardDto = artifactPatchService.save(value);
             result.addRecord(new RecordMeta(RecordRef.valueOf(dashboardDto.getId())));
-        });
-        return result;
+        });*//*
+        //return result;
+        return null;
     }
 
     public static class PatchRecord extends ArtifactPatchDto {
@@ -152,5 +153,5 @@ public class ArtifactPatchRecords extends LocalRecordsDao
         public ArtifactPatchDto toJson() {
             return new ArtifactPatchDto(this);
         }
-    }
+    }*/
 }

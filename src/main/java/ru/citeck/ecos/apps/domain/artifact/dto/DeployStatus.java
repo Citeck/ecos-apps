@@ -13,5 +13,7 @@ public enum DeployStatus {
     // an entity deployed and response is ERROR
     DEPLOY_FAILED,
     // an entity waits until dependent entities will be deployed
-    DEPS_WAITING
+    DEPS_WAITING,
+    // an entity waits until content will be uploaded
+    CONTENT_WAITING
 }

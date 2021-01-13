@@ -7,7 +7,7 @@ import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "ecos_module_dep")
+@Table(name = "ecos_artifact_dep")
 public class EcosArtifactDepEntity {
 
     @Id

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20210113000000" author="citeck">
+
+        <renameTable oldTableName="ecos_module" newTableName="ecos_artifact" />
+        <renameTable oldTableName="ecos_module_dep" newTableName="ecos_artifact_dep" />
+        <renameTable oldTableName="ecos_module_rev" newTableName="ecos_artifact_rev" />
+        <renameTable oldTableName="ecos_module_types" newTableName="ecos_artifact_types" />
+        <renameTable oldTableName="ecos_module_patch" newTableName="ecos_artifact_patch" />
+
+        <dropTable tableName="ecos_app" />
+        <dropTable tableName="ecos_app_module_type_meta" />
+        <dropTable tableName="ecos_app_modules" />
+        <dropTable tableName="ecos_app_rev" />
+        <dropTable tableName="ecos_app_rev_dep" />
+
+        <addColumn tableName="ecos_artifact_rev">
+            <column name="source_type" type="INT" />
+        </addColumn>
+
+        <addColumn tableName="ecos_artifact">
+            <column name="deploy_retry_counter" type="INT" />
+        </addColumn>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus;
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppArtifactEntity;
 
 import java.util.List;
@@ -22,6 +23,10 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
     @Query("SELECT m FROM EcosArtifactEntity m " +
            "WHERE m.type = ?1 AND m.deleted = false")
     List<EcosArtifactEntity> findAllByType(String type);
+
+    @Query("SELECT m FROM EcosArtifactEntity m " +
+        "WHERE m.type = ?1 AND m.deployStatus = ?2 AND m.deleted = false")
+    List<EcosArtifactEntity> findAllByTypeAndDeployStatus(String type, DeployStatus status);
 
     @Query("SELECT rev FROM EcosArtifactEntity module " +
            "JOIN module.lastRev rev " +

@@ -20,5 +20,13 @@ public class EcosContentEntity extends AbstractImmutableEntity {
 
     @Getter @Setter private Long size;
     @Getter @Setter private String hash;
-    @Getter @Setter private byte[] data;
+    private byte[] data;
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
 }

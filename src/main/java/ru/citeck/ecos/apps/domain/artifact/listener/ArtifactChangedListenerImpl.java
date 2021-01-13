@@ -4,8 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService;
-import ru.citeck.ecos.apps.module.handler.ModuleWithMeta;
-import ru.citeck.ecos.apps.spring.module.ModuleChangedListener;
+import ru.citeck.ecos.apps.eapps.listener.ArtifactChangedListener;
 import ru.citeck.ecos.commands.CommandsServiceFactory;
 import ru.citeck.ecos.commands.context.CommandCtxManager;
 
@@ -13,7 +12,7 @@ import javax.annotation.PostConstruct;
 
 @Component
 @RequiredArgsConstructor
-public class ArtifactChangedListenerImpl implements ModuleChangedListener {
+public class ArtifactChangedListenerImpl implements ArtifactChangedListener {
 
     private final EcosArtifactsService ecosArtifactsService;
     private final CommandsServiceFactory commandsServiceFactory;
@@ -26,7 +25,8 @@ public class ArtifactChangedListenerImpl implements ModuleChangedListener {
     }
 
     @Override
-    public void onChanged(@NotNull String type, @NotNull ModuleWithMeta<Object> module) {
-        ecosArtifactsService.uploadUserArtifact(commandCtxManager.getSourceAppName(), module, type);
+    public void onArtifactChanged(@NotNull String s, @NotNull Object o) {
+        //todo
+        //ecosArtifactsService.uploadUserArtifact(commandCtxManager.getSourceAppName(), module, type);
     }
 }

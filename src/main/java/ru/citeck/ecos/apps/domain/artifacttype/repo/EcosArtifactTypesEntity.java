@@ -8,7 +8,7 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "ecos_module_types")
+@Table(name = "ecos_artifact_types")
 public class EcosArtifactTypesEntity extends AbstractImmutableEntity {
 
     @Id

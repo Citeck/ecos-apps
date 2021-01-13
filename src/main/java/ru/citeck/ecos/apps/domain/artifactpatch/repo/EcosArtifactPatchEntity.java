@@ -7,7 +7,7 @@ import ru.citeck.ecos.apps.app.audit.repo.AbstractAuditingEntity;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "ecos_module_patch")
+@Table(name = "ecos_artifact_patch")
 public class EcosArtifactPatchEntity extends AbstractAuditingEntity {
 
     @Id

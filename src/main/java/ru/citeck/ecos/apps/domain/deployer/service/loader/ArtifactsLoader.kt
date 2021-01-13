@@ -9,13 +9,13 @@ import ru.citeck.ecos.apps.domain.artifactpatch.service.ArtifactPatchService
 import ru.citeck.ecos.apps.domain.deployer.service.consumer.ArtifactsConsumer
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
+//@Component
 class ArtifactsLoader(
     private val ecosArtifactsService: EcosArtifactsService,
     private val artifactsPatchService: ArtifactPatchService,
     private val ecosArtifactTypesService: EcosArtifactTypesService
 ) {
-
+/*
     companion object {
         private val log = KotlinLogging.logger {}
     }
@@ -145,5 +145,5 @@ class ArtifactsLoader(
                 consumer.deployArtifacts(artifacts)
             }
         }
-    }
+    }*/
 }

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactsService;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
+import ru.citeck.ecos.apps.domain.artifact.service.deploy.ArtifactDeployer;
 import ru.citeck.ecos.apps.domain.artifact.service.upload.ArtifactContext;
 import ru.citeck.ecos.apps.domain.artifact.service.upload.ArtifactRevContext;
 import ru.citeck.ecos.apps.domain.artifact.service.upload.policy.ArtifactSourcePolicy;
@@ -41,6 +42,7 @@ public class EcosArtifactsService {
 
     private final EcosContentDao contentDao;
     private final EcosArtifactsRepo artifactsRepo;
+    private final EcosArtifactsDao artifactsDao;
     private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactsRevRepo artifactsRevRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
@@ -102,6 +104,8 @@ public class EcosArtifactsService {
 
         EcosArtifactMeta meta = ecosArtifactTypesService.getArtifactMeta(artifactEntity.getType(), artifact);
         extractArtifactMeta(artifactEntity, meta);
+
+        artifactEntity.setDeployStatus(DeployStatus.DRAFT);
 
         return true;
     }
@@ -174,7 +178,9 @@ public class EcosArtifactsService {
         lastPatchedRev.setPrevRev(lastRev);
 
         lastPatchedRev = artifactsRevRepo.save(lastPatchedRev);
+
         artifactEntity.setPatchedRev(lastPatchedRev);
+        artifactEntity.setDeployStatus(DeployStatus.DRAFT);
     }
 
     synchronized public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
@@ -268,12 +274,33 @@ public class EcosArtifactsService {
         applyPatches(artifactEntity);
 
         if (!ArtifactSourceType.USER.equals(uploadDto.getSource().getType())) {
-            artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+            updateArtifactDeployStatus(artifactEntity);
         }
 
         artifactsRepo.save(artifactEntity);
 
         return true;
+    }
+
+    private boolean updateArtifactDeployStatus(EcosArtifactEntity artifact) {
+
+        DeployStatus newStatus;
+
+        if (artifact.getDependencies()
+            .stream()
+            .allMatch(dep -> DeployStatus.DEPLOYED.equals(dep.getTarget().getDeployStatus()))) {
+
+            newStatus = DeployStatus.DRAFT;
+        } else {
+            newStatus = DeployStatus.DEPS_WAITING;
+        }
+
+        if (!newStatus.equals(artifact.getDeployStatus())) {
+            artifact.setDeployStatus(newStatus);
+            artifact.setDeployRetryCounter(0);
+            return true;
+        }
+        return false;
     }
 
     private boolean extractArtifactMeta(EcosArtifactEntity artifactEntity, EcosArtifactMeta meta) {
@@ -296,11 +323,11 @@ public class EcosArtifactsService {
     }
 
     private Set<EcosArtifactDepEntity> getDependenciesArtifacts(EcosArtifactEntity baseEntity,
-                                                                Collection<ArtifactRef> artifacts) {
+                                                                Collection<ArtifactRef> dependencies) {
 
-        Set<EcosArtifactDepEntity> dependencies = new HashSet<>();
+        Set<EcosArtifactDepEntity> dependencyEntities = new HashSet<>();
 
-        Set<ArtifactRef> artifactsSet = new HashSet<>(artifacts);
+        Set<ArtifactRef> artifactsSet = new HashSet<>(dependencies);
 
         for (ArtifactRef ref : artifactsSet) {
 
@@ -309,16 +336,17 @@ public class EcosArtifactsService {
                 artifactEntity = new EcosArtifactEntity();
                 artifactEntity.setExtId(ref.getId());
                 artifactEntity.setType(ref.getType());
+                artifactEntity.setDeployStatus(DeployStatus.CONTENT_WAITING);
                 artifactEntity = artifactsRepo.save(artifactEntity);
             }
 
             EcosArtifactDepEntity depEntity = new EcosArtifactDepEntity();
             depEntity.setSource(baseEntity);
             depEntity.setTarget(artifactEntity);
-            dependencies.add(depEntity);
+            dependencyEntities.add(depEntity);
         }
 
-        return new HashSet<>(dependencies);
+        return new HashSet<>(dependencyEntities);
     }
 
     private MLText toNotNullMLText(String value) {
@@ -328,218 +356,108 @@ public class EcosArtifactsService {
         return Json.getMapper().read(value, MLText.class);
     }
 
-    public Map<String, List<String>> updateAndGetArtifactsToDeploy(List<String> types) {
-        return Collections.emptyMap();
-    }
-/*
-    public void updateModule(ArtifactRef moduleRef) {
+    synchronized public boolean deployArtifacts(ArtifactDeployer deployer) {
 
-        EcosArtifactEntity module = dao.getModule(moduleRef);
-        if (module != null) {
-
-            try {
-                EcosArtifactRevEntity lastRev = module.getLastRev();
-                byte[] lastRevData = lastRev.getContent().getData();
-                Object moduleObj = localModulesService.readFromBytes(lastRevData, moduleRef.getType());
-
-                uploadEcosAppArtifacts(
-                    "update-modules",
-                    Collections.singletonList(moduleObj),
-                    moduleRef.getType(),
-                    null
-                );
-
-            } catch (Exception e) {
-                log.error("Module can't be updated. Module: '" + moduleRef + "'", e);
-            }
-        }
-    }*/
-/*
-    synchronized public void uploadEcosAppArtifacts(String source,
-                                                    List<Object> modules,
-                                                    String type,
-                                                    @Nullable String ecosApp) {
-
-        if (log.isDebugEnabled()) {
-            log.debug("Modules to upload: " + modules.size() + " with type '" + type + "' and source '" + source + "'");
+        if (deployer.getSupportedTypes().isEmpty()) {
+            return false;
         }
 
-        if (modules.isEmpty()) {
-            return;
-        }
+        Map<Long, EcosArtifactEntity> artifactsToUpdateSourceDeps = new HashMap<>();
 
-        String app = ecosArtifactTypesService.getAppByModuleType(type);
-        if (app.isEmpty()) {
-            log.info("Application is not defined for type " + type + ". Modules can't be uploaded");
-            return;
-        }
+        int deployedCount = 0;
 
-        List<ModuleWithMeta<Object>> modulesMeta = remoteModulesService.prepareToDeploy(app, type, modules);
-        if (modules.size() != modulesMeta.size()) {
-            log.info("Modules count was changed by target app. Before: "
-                + modules.size() + " After: " + modulesMeta.size());
-        }
+        for (String type : deployer.getSupportedTypes()) {
 
-        List<Object> patchedModules = new ArrayList<>();
-
-        for (ModuleWithMeta<Object> module : modulesMeta) {
-
-            if (log.isDebugEnabled()) {
-                log.debug("Upload module " + module.getMeta());
+            List<EcosArtifactEntity> artifacts = artifactsRepo.findAllByTypeAndDeployStatus(type, DeployStatus.DRAFT);
+            if (artifacts.isEmpty()) {
+                continue;
             }
 
-            dao.uploadModule(source, type, module, false, ecosApp);
+            log.info("Found " + artifacts.size() + " modules in DRAFT status with type " + type + " to deploy");
 
-            ArtifactRef moduleRef = ArtifactRef.create(type, module.getMeta().getId());
-            List<ArtifactPatchDto> patches = artifactPatchService.getPatches(moduleRef);
-            boolean wasPatched = false;
-            if (!patches.isEmpty()) {
-                Object patchedData = artifactPatchService.applyPatches(module.getModule(), moduleRef, patches);
-                if (!Objects.equals(patchedData, module.getModule())) {
-                    patchedModules.add(patchedData);
-                    wasPatched = true;
+            int failedModulesCount = 0;
+
+            for (EcosArtifactEntity entity : artifacts) {
+
+                EcosArtifactRevEntity revToDeploy = entity.getPatchedRev();
+                if (revToDeploy == null) {
+                    revToDeploy = entity.getLastRev();
                 }
-            }
-            if (!wasPatched) {
-                dao.removePatchedRev(moduleRef);
-            }
-        }
 
-        if (!patchedModules.isEmpty()) {
+                List<DeployError> errors = deployer.deploy(type, revToDeploy.getContent().getData());
 
-            List<ModuleWithMeta<Object>> patchedMeta = remoteModulesService.prepareToDeploy(app, type, patchedModules);
-            if (patchedModules.size() != patchedMeta.size()) {
-                log.info("Patched modules count was changed by target app. Before: "
-                    + patchedModules.size() + " After: " + patchedMeta.size());
-            }
+                if (!errors.isEmpty()) {
 
-            for (ModuleWithMeta<Object> module : patchedMeta) {
-                dao.uploadPatchedModule(type, module);
-            }
-        }
+                    log.error("Artifact deploy failed: " + type + "$" + entity.getExtId());
+                    entity.setDeployStatus(DeployStatus.DEPLOY_FAILED);
+                    Integer retryCounter = entity.getDeployRetryCounter();
+                    entity.setDeployRetryCounter(retryCounter != null ? retryCounter + 1 : 1);
+                    artifactsRepo.save(entity);
+                    failedModulesCount++;
 
-        for (ModuleWithMeta<Object> module : modulesMeta) {
-
-            EcosArtifactEntity entity = dao.getModule(ArtifactRef.create(type, module.getMeta().getId()));
-
-            if (entity != null && !DeployStatus.DEPLOYED.equals(entity.getDeployStatus())) {
-                tryToDeploy(entity);
-            }
-        }
-    }*/
-/*
-    private void tryToDeploy(EcosArtifactEntity moduleEntity) {
-
-        ArtifactRef ref = ArtifactRef.create(moduleEntity.getType(), moduleEntity.getExtId());
-
-        if (moduleEntity.getDependencies()
-            .stream()
-            .map(EcosArtifactDepEntity::getTarget)
-            .anyMatch(d -> !DeployStatus.DEPLOYED.equals(d.getDeployStatus()))) {
-
-            moduleEntity.setDeployStatus(DeployStatus.DEPS_WAITING);
-            log.info("Module " + ref + " can't be deployed yet. Dependencies waiting");
-
-            dao.save(moduleEntity);
-
-        } else {
-
-            String type = moduleEntity.getType();
-            String appName = ecosArtifactTypesService.getAppByModuleType(type);
-
-            EcosArtifactRevEntity revToDeploy = moduleEntity.getPatchedRev();
-            if (revToDeploy == null) {
-                revToDeploy = moduleEntity.getLastRev();
-            }
-            if (revToDeploy != null) {
-
-                EcosContentEntity content = revToDeploy.getContent();
-
-                if (content != null) {
-
-                    Object module = localModulesService.readFromBytes(content.getData(), type);
-                    List<CommandError> errors = remoteModulesService.deployModule(appName, type, module);
-
-                    if (errors.isEmpty()) {
-
-                        moduleEntity.setDeployStatus(DeployStatus.DEPLOYED);
-                        moduleEntity.setDeployMsg("");
-
-                        dao.save(moduleEntity);
-
-                        tryToDeployDependentModules(moduleEntity);
-
-                    } else {
-
-                        String msg = errors.stream()
-                            .map(CommandError::getMessage)
-                            .collect(Collectors.joining("|"));
-
-                        log.info("Module " + ref + " deploy failed. Msg: " + msg);
-
-                        moduleEntity.setDeployStatus(DeployStatus.DEPLOY_FAILED);
-                        moduleEntity.setDeployMsg(msg);
-
-                        dao.save(moduleEntity);
-                    }
                 } else {
 
-                    log.info("Module " + ref + " can't be deployed. Content is missing");
+                    entity.setDeployRetryCounter(0);
+                    entity.setDeployStatus(DeployStatus.DEPLOYED);
+                    entity = artifactsRepo.save(entity);
+
+                    artifactsToUpdateSourceDeps.put(entity.getId(), entity);
+
+                    deployedCount++;
                 }
-            } else {
-
-                log.info("Module " + ref + " can't be deployed. Last revision is missing");
             }
+
+            log.info("Deploy of type " + type + " is finished. " +
+                "Success: " + (artifacts.size() - failedModulesCount) + " Failed: " + failedModulesCount);
         }
-    }
 
-    private void tryToDeployDependentModules(EcosArtifactEntity module) {
-
-        ArtifactRef moduleRef = ArtifactRef.create(module.getType(), module.getExtId());
-        List<EcosArtifactEntity> modules = dao.getDependentModules(moduleRef);
-
-        for (EcosArtifactEntity moduleFromDep : modules) {
-
-            DeployStatus depStatus = moduleFromDep.getDeployStatus();
-
-            if (DeployStatus.DEPS_WAITING.equals(depStatus)
-                || DeployStatus.DEPLOY_FAILED.equals(depStatus)) {
-
-                tryToDeploy(moduleFromDep);
-            }
-        }
-    }
-
-
-
-    synchronized public List<EcosArtifact> getModules(String type, int skipCount, int maxItems) {
-
-        return dao.getModulesLastRev(type, skipCount, maxItems)
+        Set<EcosArtifactEntity> entitiesToUpdate = artifactsToUpdateSourceDeps.values()
             .stream()
+            .flatMap(entity -> artifactsDepRepo.getDepsByTarget(entity.getId())
+                .stream()
+                .map(EcosArtifactDepEntity::getSource))
+            .filter(entity -> DeployStatus.DEPS_WAITING.equals(entity.getDeployStatus()))
+            .collect(Collectors.toSet());
+
+        for (EcosArtifactEntity entity : entitiesToUpdate) {
+            if (updateArtifactDeployStatus(entity)) {
+                log.info("Deploy status changed for " + entity.getExtId() + "$" + entity.getExtId()
+                    + " to " + entity.getDeployStatus());
+            }
+        }
+
+        return deployedCount > 0;
+    }
+
+    public List<EcosArtifact> getArtifactsByType(String type) {
+        return artifactsRepo.findAllByType(type).stream()
+            .map(EcosArtifactEntity::getLastRev)
             .map(this::toModule)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
     }
 
-
- */
-
-    synchronized public List<EcosArtifact> getAllArtifacts(int skipCount, int maxItems) {
-        return dao.getAllLastRevisions(skipCount, maxItems)
+    @Transactional(readOnly = true)
+    public List<EcosArtifact> getAllArtifacts(int skipCount, int maxItems) {
+        int page = skipCount / maxItems;
+        return artifactsRepo.findAll(PageRequest.of(page, maxItems))
             .stream()
+            .map(EcosArtifactEntity::getLastRev)
             .map(this::toModule)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
     }
 
-    synchronized public long getAllArtifactsCount(Predicate predicate) {
-        return dao.getCount(predicate);
+    @Transactional(readOnly = true)
+    public long getAllArtifactsCount(Predicate predicate) {
+        return artifactsDao.getCount(predicate);
     }
 
-    synchronized public List<EcosArtifact> getAllArtifacts(Predicate predicate, int skipCount, int maxItems) {
-        return dao.getAllLastRevisions(predicate, skipCount, maxItems)
+    @Transactional(readOnly = true)
+    public List<EcosArtifact> getAllArtifacts(Predicate predicate, int skipCount, int maxItems) {
+        return artifactsDao.getAllLastRevisions(predicate, skipCount, maxItems)
             .stream()
             .map(this::toModule)
             .filter(Optional::isPresent)
@@ -548,8 +466,9 @@ public class EcosArtifactsService {
     }
 
     @Nullable
+    @Transactional(readOnly = true)
     public EcosArtifact getLastArtifact(ArtifactRef moduleRef) {
-        return toModule(dao.getLastModuleRev(moduleRef)).orElse(null);
+        return toModule(artifactsDao.getLastArtifactRev(moduleRef)).orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -594,39 +513,25 @@ public class EcosArtifactsService {
     }
 
     synchronized public void removeEcosApp(String ecosAppId) {
-        dao.removeEcosApp(ecosAppId);
+        artifactsDao.removeEcosApp(ecosAppId);
     }
 
     @Nullable
-    synchronized public EcosArtifactRev getLastArtifactRev(ArtifactRef moduleRef) {
-        EcosArtifactRevEntity lastModuleRev = dao.getLastModuleRev(moduleRef);
+    public EcosArtifactRev getLastArtifactRev(ArtifactRef artifactRef) {
+        EcosArtifactRevEntity lastModuleRev = artifactsDao.getLastArtifactRev(artifactRef);
         if (lastModuleRev == null) {
             return null;
         }
         return new EcosArtifactDb(lastModuleRev);
     }
 
-    synchronized public EcosArtifactRev getLastArtifactRev(ArtifactRef moduleRef, String source) {
-        return new EcosArtifactDb(dao.getLastModuleRev(moduleRef, source));
-    }
+    public List<ArtifactRef> getDependencies(ArtifactRef artifactRef) {
 
-    synchronized public EcosArtifactRev getLastModuleRevByKey(String type, String key) {
-        EcosArtifactRevEntity rev = dao.getLastModuleRevByKey(type, key);
-        return rev != null ? new EcosArtifactDb(rev) : null;
-    }
+        EcosArtifactRevEntity lastArtifactRev = artifactsDao.getLastArtifactRev(artifactRef);
 
-    synchronized public DeployStatus getDeployStatus(ArtifactRef moduleRef) {
-        EcosArtifactEntity module = dao.getModule(moduleRef);
-        return module.getDeployStatus();
-    }
-
-    synchronized public ArtifactPublishState getDeployState(ArtifactRef moduleRef) {
-        EcosArtifactEntity module = dao.getModule(moduleRef);
-        return new ArtifactPublishState(module.getDeployStatus(), module.getDeployMsg());
-    }
-
-    synchronized public EcosArtifactRev getModuleRevision(String id) {
-        return new EcosArtifactDb(dao.getModuleRev(id));
+        return lastArtifactRev.getModule().getDependencies().stream()
+            .map( dep -> ArtifactRef.create(dep.getTarget().getType(), dep.getTarget().getExtId()))
+            .collect(Collectors.toList());
     }
 
     private Optional<EcosArtifact> toModule(EcosArtifactRevEntity entity) {
@@ -639,12 +544,23 @@ public class EcosArtifactsService {
         byte[] content = entity.getContent().getData();
 
         if (ecosArtifactTypesService.isTypeRegistered(type)) {
+
+            DeployStatus deployStatus = entity.getModule().getDeployStatus();
+            if (deployStatus == null) {
+                deployStatus = DeployStatus.CONTENT_WAITING;
+            }
             return Optional.of(new EcosArtifact(
                 entity.getModule().getExtId(),
                 artifactsService.readArtifactFromBytes(type, content),
                 type,
                 Json.getMapper().read(entity.getModule().getName(), MLText.class),
-                DataValue.create(entity.getModule().getTags()).asStrList()
+                DataValue.create(entity.getModule().getTags()).asStrList(),
+                deployStatus,
+                new ArtifactsSourceInfo(
+                    entity.getSourceId(),
+                    entity.getSourceType()
+                ),
+                entity.getExtId()
             ));
         }
         return Optional.empty();
@@ -655,12 +571,14 @@ public class EcosArtifactsService {
 
         final EcosArtifactEntity artifactEntity;
 
-        NewRevContext newRev;
-
         @NotNull
         @Override
         public String getEcosApp() {
-            return artifactEntity.getEcosApp();
+            String app = artifactEntity.getEcosApp();
+            if (StringUtils.isBlank(app)) {
+                return "";
+            }
+            return app;
         }
 
         @Nullable

@@ -9,7 +9,7 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "ecos_module_rev")
+@Table(name = "ecos_artifact_rev")
 public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @Id
@@ -23,6 +23,7 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     @JoinColumn(name = "module_id")
     @Getter @Setter private EcosArtifactEntity module;
 
+    //todo
     @Enumerated(EnumType.ORDINAL)
     @Getter @Setter private ArtifactSourceType sourceType;
 
@@ -34,8 +35,6 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @Column(name="source")
     @Getter @Setter private String sourceId;
-    //todo
-    @Getter @Setter private ArtifactSourceType sourceType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")

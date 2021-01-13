@@ -36,7 +36,7 @@ open class EcosAppArtifactService(
             val artifactsDirContent = it.artifactsDir
             if (artifactsDirContent != null ) {
                 val artifactsDir = ZipUtils.extractZip(artifactsDirContent.data)
-                ecosArtifactsService.uploadEcosAppArtifacts(it.extId, artifactsDir, types)
+                //ecosArtifactsService.uploadEcosAppArtifacts(it.extId, artifactsDir, types)
             }
         }
     }
@@ -50,7 +50,7 @@ open class EcosAppArtifactService(
         val artifactsDir = appRoot.getDir("artifacts")
         var artifactsContentEntity: EcosContentEntity? = null
         if (artifactsDir != null) {
-            ecosArtifactsService.uploadEcosAppArtifacts(meta.id, artifactsDir)
+            //ecosArtifactsService.uploadEcosAppArtifacts(meta.id, artifactsDir)
             artifactsContentEntity = ecosContentDao.upload(ZipUtils.writeZipAsBytes(artifactsDir))
         }
 

@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "ecos_module")
+@Table(name = "ecos_artifact")
 public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Id
@@ -22,7 +22,6 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Column(name="ext_id")
     @Getter @Setter private String extId;
     @Getter @Setter private String type;
-    @Getter @Setter private String key;
 
     @Getter @Setter private String name;
     @Getter @Setter private String tags;
@@ -38,10 +37,9 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Getter @Setter private EcosArtifactRevEntity patchedRev;
 
     @Enumerated(EnumType.ORDINAL)
-    @Column(name = "deploy_status")
     @Getter @Setter private DeployStatus deployStatus = DeployStatus.DRAFT;
-    @Column(name = "deploy_msg")
     @Getter @Setter private String deployMsg;
+    @Getter @Setter private Integer deployRetryCounter;
 
     @Getter @Setter private String ecosApp;
 

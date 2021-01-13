@@ -115,6 +115,12 @@ public class EcosArtifactTypesService {
         return typesDirByApp.getOrDefault(appName, EMPTY_DIR);
     }
 
+    public EcosFile getAllTypesDir() {
+        EcosMemDir result = new EcosMemDir();
+        typesDirByApp.values().forEach(result::copyFilesFrom);
+        return result;
+    }
+
     public void registerTypes(String appName, EcosFile typesDir) {
 
         if (!typesDir.isDirectory()) {

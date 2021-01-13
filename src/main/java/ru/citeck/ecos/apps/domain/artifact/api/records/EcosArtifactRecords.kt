@@ -2,7 +2,9 @@ package ru.citeck.ecos.apps.domain.artifact.api.records
 
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommand
+import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommandResponse
 import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.artifact.type.TypeContext
 import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.dto.EcosArtifact
 import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
@@ -85,7 +87,7 @@ class EcosArtifactRecords(
 
             val artifactsSet = HashSet<RecordRef>()
             results.mapNotNull {
-                it.getResultAs(GetTypeArtifactsResponse::class.java)?.artifacts
+                it.getResultAs(GetEcosTypeArtifactsCommandResponse::class.java)?.artifacts
             }.forEach {
                 artifactsSet.addAll(it)
             }
@@ -154,7 +156,7 @@ class EcosArtifactRecords(
 
             val name = MLText.getClosestValue(artifact.name, locale)
 
-            var typeName = MLText.getClosestValue(typeContext?.getName(), locale)
+            var typeName = MLText.getClosestValue(typeContext?.meta?.name, locale)
             if (typeName.isBlank()) {
                 typeName = artifact.type
             }
@@ -175,7 +177,7 @@ class EcosArtifactRecords(
         @MetaAtt(".disp")
         fun getDisplayName(): String {
             val locale = QueryContext.getCurrent<QueryContext>().locale
-            val name = MLText.getClosestValue(typeContext.getName(), locale)
+            val name = MLText.getClosestValue(typeContext.meta.name, locale)
             return if (name.isNotBlank()) {
                 name
             } else {

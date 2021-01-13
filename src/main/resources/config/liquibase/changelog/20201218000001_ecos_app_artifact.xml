@@ -31,39 +31,6 @@
 
         </createTable>
 
-<!--        <createTable tableName="ecos_app_artifact_release">
-
-            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
-                <constraints primaryKey="true" nullable="false" />
-            </column>
-
-            <column name="name" type="VARCHAR" />
-            <column name="version" type="VARCHAR" />
-            <column name="hash" type="VARCHAR" />
-
-            <column name="type_refs" type="VARCHAR" />
-            <column name="artifacts" type="VARCHAR" />
-
-            <column name="created_date" type="TIMESTAMP" />
-            <column name="created_by" type="VARCHAR(50)" />
-
-        </createTable>
-
-        <createTable tableName="ecos_app_artifact_release_artifacts">
-
-            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
-                <constraints primaryKey="true" nullable="false" />
-            </column>
-
-            <column name="release_id" type="BIGINT">
-                <constraints foreignKeyName="fk_ecos_app_artifact_release_id" references="ecos_app_artifact_release(id)" />
-            </column>
-            <column name="artifact_rev_id" type="BIGINT">
-                <constraints foreignKeyName="fk_artifact_rev_id" references="ecos_module_rev(id)" />
-            </column>
-
-        </createTable>-->
-
     </changeSet>
 
 </databaseChangeLog>
