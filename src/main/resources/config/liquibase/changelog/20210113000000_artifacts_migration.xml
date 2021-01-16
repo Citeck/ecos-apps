@@ -12,6 +12,11 @@
         <renameTable oldTableName="ecos_module_types" newTableName="ecos_artifact_types" />
         <renameTable oldTableName="ecos_module_patch" newTableName="ecos_artifact_patch" />
 
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev_dep" constraintName="fk_app_deps_target_id" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_module_type_meta" constraintName="fk_app_module_types_app_id" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev" constraintName="fk_app_ver_app" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev_dep" constraintName="fk_app_deps_source_app_rev_id" />
+
         <dropTable tableName="ecos_app" />
         <dropTable tableName="ecos_app_module_type_meta" />
         <dropTable tableName="ecos_app_modules" />

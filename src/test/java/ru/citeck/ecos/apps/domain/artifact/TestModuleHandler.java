@@ -1,7 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact;
 
 import org.jetbrains.annotations.NotNull;
-import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler;
 import ru.citeck.ecos.commons.data.ObjectData;
 

@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.type.TypeContext
-import ru.citeck.ecos.apps.domain.artifact.api.records.EcosArtifactRecords
-import ru.citeck.ecos.apps.domain.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef

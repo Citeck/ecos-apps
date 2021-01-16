@@ -7,16 +7,18 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit4.SpringRunner
 import ru.citeck.ecos.apps.EcosAppsApp
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourcesProvider
-import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypesProvider
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceProvider
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
+import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
 import ru.citeck.ecos.apps.artifact.ArtifactRef
-import ru.citeck.ecos.apps.artifact.ArtifactsService
-import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactSourceType
-import ru.citeck.ecos.apps.domain.artifact.dto.ArtifactsSourceInfo
-import ru.citeck.ecos.apps.domain.artifact.dto.DeployStatus
-import ru.citeck.ecos.apps.domain.artifact.service.deploy.ArtifactDeployer
-import ru.citeck.ecos.apps.domain.artifact.service.upload.ArtifactUploadDto
-import ru.citeck.ecos.apps.domain.artifacttype.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.artifact.ArtifactService
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.DeployError
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto
 import ru.citeck.ecos.commons.data.ObjectData
 import java.time.Instant
 
@@ -29,17 +31,17 @@ class EcosArtifactsServiceTest {
     @Autowired
     lateinit var ecosArtifactTypesService: EcosArtifactTypesService
     @Autowired
-    lateinit var artifactTypesProvider: ArtifactTypesProvider
+    lateinit var artifactTypesProvider: ArtifactTypeProvider
     @Autowired
-    lateinit var artifactSourcesProvider: ArtifactSourcesProvider
+    lateinit var artifactSourcesProvider: ArtifactSourceProvider
     @Autowired
-    lateinit var artifactsService: ArtifactsService
+    lateinit var artifactsService: ArtifactService
 
     @Test
     fun test() {
 
         val typesDir = artifactTypesProvider.getArtifactTypesDir()
-        ecosArtifactTypesService.registerTypes("eapps", typesDir)
+        ecosArtifactTypesService.registerTypes("eapps", typesDir, Instant.now())
         val allTypesCtx = ecosArtifactTypesService.allTypesCtx
 
         val artifacts = mutableMapOf<String, MutableList<Any>>()
@@ -55,9 +57,10 @@ class EcosArtifactsServiceTest {
                 val uploadDto = ArtifactUploadDto(
                     type,
                     it,
-                    ArtifactsSourceInfo(
+                    ArtifactSourceInfo(
                         "classpath",
-                        ArtifactSourceType.APPLICATION
+                        ArtifactSourceType.APPLICATION,
+                        Instant.now()
                     )
                 )
                 ecosArtifactsService.uploadArtifact(uploadDto)
@@ -92,9 +95,10 @@ class EcosArtifactsServiceTest {
                 val uploadDto = ArtifactUploadDto(
                     type,
                     it,
-                    ArtifactsSourceInfo(
+                    ArtifactSourceInfo(
                         "classpath",
-                        ArtifactSourceType.APPLICATION
+                        ArtifactSourceType.APPLICATION,
+                        Instant.now()
                     )
                 )
                 ecosArtifactsService.uploadArtifact(uploadDto)
@@ -154,9 +158,10 @@ class EcosArtifactsServiceTest {
         ecosArtifactsService.uploadArtifact(ArtifactUploadDto(
             "app/jsontest",
             firstArtifact,
-            ArtifactsSourceInfo(
+            ArtifactSourceInfo(
                 "test",
-                ArtifactSourceType.APPLICATION
+                ArtifactSourceType.APPLICATION,
+                Instant.now()
             )
         ))
 

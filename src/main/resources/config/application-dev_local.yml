@@ -16,3 +16,8 @@ emodel:
     listOfServers: localhost:8094
     NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
 
+eapps-watcher:
+  artifacts:
+    enabled: true
+    locations: './src/main/resources/eapps/artifacts'
+
