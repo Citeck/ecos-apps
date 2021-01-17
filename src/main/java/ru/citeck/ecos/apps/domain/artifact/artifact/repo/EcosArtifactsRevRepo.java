@@ -12,7 +12,7 @@ import java.util.List;
 public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntity, Long> {
 
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
-           "JOIN rev.module module " +
+           "JOIN rev.artifact module " +
            "WHERE module.type = ?1 AND module.extId = ?2 AND module.deleted = false " +
            "ORDER BY rev.createdDate DESC")
     List<EcosArtifactRevEntity> getArtifactRevisions(String type,
@@ -20,7 +20,7 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
                                                      Pageable pageable);
 
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
-           "JOIN rev.module module " +
+           "JOIN rev.artifact module " +
            "WHERE module.type = ?1 AND module.extId = ?2 " +
                 "AND rev.sourceType = ?3 " +
                 "AND module.deleted = false " +
@@ -31,7 +31,7 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
                                                      Pageable pageable);
 
     @Query("SELECT m FROM EcosArtifactRevEntity m " +
-           "JOIN m.module module " +
+           "JOIN m.artifact module " +
            "WHERE m.extId = ?1 AND module.deleted = false")
     EcosArtifactRevEntity getRevByExtId(String extId);
 }

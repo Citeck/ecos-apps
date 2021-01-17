@@ -42,7 +42,7 @@ class EcosArtifactsServiceTest {
 
         val typesDir = artifactTypesProvider.getArtifactTypesDir()
         ecosArtifactTypesService.registerTypes("eapps", typesDir, Instant.now())
-        val allTypesCtx = ecosArtifactTypesService.allTypesCtx
+        val allTypesCtx = ecosArtifactTypesService.allTypesCtx.map { it.getTypeContext() }
 
         val artifacts = mutableMapOf<String, MutableList<Any>>()
         artifactSourcesProvider.getArtifactSources().forEach {

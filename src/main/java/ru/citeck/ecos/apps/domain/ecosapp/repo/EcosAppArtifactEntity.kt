@@ -5,12 +5,12 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import javax.persistence.*
 
 @Entity
-@Table(name = "ecos_app_artifact")
+@Table(name = "ecos_app")
 open class EcosAppArtifactEntity : AbstractAuditingEntity() {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_artifact_id_gen")
-    @SequenceGenerator(name = "ecos_app_artifact_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_id_gen")
+    @SequenceGenerator(name = "ecos_app_id_gen")
     private val id: Long? = null
 
     override fun getId() = id

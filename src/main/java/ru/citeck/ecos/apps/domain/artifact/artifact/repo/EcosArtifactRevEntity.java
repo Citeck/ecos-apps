@@ -20,8 +20,8 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     @Getter @Setter private Integer modelVersion;
 
     @ManyToOne
-    @JoinColumn(name = "module_id")
-    @Getter @Setter private EcosArtifactEntity module;
+    @JoinColumn(name = "artifact_id")
+    @Getter @Setter private EcosArtifactEntity artifact;
 
     //todo
     @Enumerated(EnumType.ORDINAL)
@@ -35,6 +35,8 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @Column(name="source")
     @Getter @Setter private String sourceId;
+
+    @Getter @Setter private Long typeRevId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")

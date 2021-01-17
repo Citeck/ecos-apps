@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20210117000000" author="citeck">
+
+        <renameColumn tableName="ecos_module_rev" oldColumnName="module_id" newColumnName="artifact_id" />
+
+        <renameTable oldTableName="ecos_module" newTableName="ecos_artifact" />
+        <renameTable oldTableName="ecos_module_dep" newTableName="ecos_artifact_dep" />
+        <renameTable oldTableName="ecos_module_rev" newTableName="ecos_artifact_rev" />
+        <renameTable oldTableName="ecos_module_patch" newTableName="ecos_artifact_patch" />
+
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev_dep" constraintName="fk_app_deps_target_id" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_module_type_meta" constraintName="fk_app_module_types_app_id" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev" constraintName="fk_app_ver_app" />
+        <dropForeignKeyConstraint baseTableName="ecos_app_rev_dep" constraintName="fk_app_deps_source_app_rev_id" />
+
+        <dropTable tableName="ecos_module_types" />
+        <dropTable tableName="ecos_app" />
+        <dropTable tableName="ecos_app_module_type_meta" />
+        <dropTable tableName="ecos_app_modules" />
+        <dropTable tableName="ecos_app_rev" />
+        <dropTable tableName="ecos_app_rev_dep" />
+
+        <addColumn tableName="ecos_artifact_rev">
+            <column name="source_type" type="INT" />
+        </addColumn>
+
+        <addColumn tableName="ecos_artifact">
+            <column name="deploy_retry_counter" type="INT" />
+        </addColumn>
+
+        <createTable tableName="ecos_artifact_source_meta">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="source_id" type="VARCHAR" />
+            <column name="source_type" type="INT" />
+            <column name="last_modified" type="TIMESTAMP" />
+
+        </createTable>
+
+        <createTable tableName="ecos_artifact_type">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="ext_id" type="VARCHAR">
+                <constraints nullable="false" unique="true" />
+            </column>
+
+            <column name="app_name" type="VARCHAR" />
+            <column name="last_rev_id" type="BIGINT" />
+
+            <column name="records_source_id" type="VARCHAR">
+                <constraints nullable="false" />
+            </column>
+            <column name="internal" type="BOOLEAN">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="last_modified_by_app" type="TIMESTAMP" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <createTable tableName="ecos_artifact_type_rev">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="model_version" type="VARCHAR" />
+
+            <column name="artifact_type_id" type="BIGINT">
+                <constraints foreignKeyName="fk_artifact_type_for_rev" references="ecos_artifact_type(id)"/>
+            </column>
+
+            <column name="content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_artifact_type_content" references="ecos_content(id)"/>
+            </column>
+
+            <column name="prev_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_artifact_type_rev_prev_rev" references="ecos_artifact_type_rev(id)"/>
+            </column>
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="ecos_artifact_type"
+                                 baseColumnNames="last_rev_id"
+                                 constraintName="fk_ecos_artifact_type_last_rev"
+                                 referencedTableName="ecos_artifact_type_rev"
+                                 referencedColumnNames="id" />
+
+        <addColumn tableName="ecos_artifact">
+            <column name="deploy_errors" type="VARCHAR" />
+            <column name="type_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_ecos_artifact_type_rev"
+                             references="ecos_artifact_type_rev(id)"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="ecos_artifact_rev">
+            <column name="type_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_ecos_artifact_rev_type_rev"
+                             references="ecos_artifact_type_rev(id)"/>
+            </column>
+        </addColumn>
+
+    </changeSet>
+
+</databaseChangeLog>

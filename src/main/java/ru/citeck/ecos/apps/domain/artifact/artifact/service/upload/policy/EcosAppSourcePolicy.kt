@@ -3,6 +3,7 @@ package ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.policy
 import mu.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactContext
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactRevContext
 
@@ -29,7 +30,9 @@ class EcosAppSourcePolicy : ArtifactSourcePolicy {
             }
             return false
         }
-        return true
+        val prevContent = context.getLastRevBySourceType(ArtifactRevSourceType.ECOS_APP)
+
+        return prevContent?.getContentId() != newRev.getContentId()
     }
 
     override fun getSourceType(): ArtifactSourceType {

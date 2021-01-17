@@ -25,6 +25,7 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Getter @Setter private String name;
     @Getter @Setter private String tags;
+    @Getter @Setter private Long typeRevId;
 
     @Getter @Setter private boolean deleted;
 

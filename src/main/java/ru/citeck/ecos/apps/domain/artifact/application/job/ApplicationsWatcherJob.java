@@ -31,10 +31,7 @@ public class ApplicationsWatcherJob {
     private static final long CHECK_STATUS_PERIOD = Duration.ofSeconds(5).toMillis();
     private static final int HEALTH_CHECK_PROTECTION = (int) (UNHEALTHY_APP_TTL / CHECK_STATUS_PERIOD);
 
-    private static final long SOURCES_LAST_SYNC_MAX_TIME = Duration.ofMinutes(10).toMillis();
     private static final long SOURCES_UPDATE_THRESHOLD_TIME = Duration.ofSeconds(3).toMillis();
-
-    private static final long ARTIFACTS_LAST_DEPLOY_MAX_TIME = Duration.ofMinutes(10).toMillis();
     private static final long ARTIFACTS_DEPLOY_THRESHOLD_TIME = Duration.ofSeconds(3).toMillis();
 
     private final EcosApplicationsService ecosApplicationsService;
@@ -50,9 +47,7 @@ public class ApplicationsWatcherJob {
     private Throwable lastError;
     private long errorNextPrintTime = 0L;
 
-    private long sourcesLastSyncTime = System.currentTimeMillis();
-    private long sourcesLastModifiedTime = 0;
-    private long artifactsLastDeployTime = System.currentTimeMillis();
+    private long sourcesOrTypesLastModifiedTime = 0;
     private long artifactsLastModifiedTime = 0;
 
     private boolean forceUpdate = false;
@@ -159,32 +154,28 @@ public class ApplicationsWatcherJob {
             ecosArtifactTypesService.getLastModified().toEpochMilli()
         );
 
-        if (sourcesOrTypesLastModified > sourcesLastModifiedTime) {
+        if (sourcesOrTypesLastModified > sourcesOrTypesLastModifiedTime
+                && (withoutThreshold || (currentTime - sourcesOrTypesLastModified) > SOURCES_UPDATE_THRESHOLD_TIME)) {
 
-            if (withoutThreshold || currentTime - sourcesOrTypesLastModified > SOURCES_UPDATE_THRESHOLD_TIME) {
+            try {
                 ecosArtifactsSourcesService.uploadArtifacts();
-                sourcesLastSyncTime = currentTime;
-                sourcesLastModifiedTime = sourcesOrTypesLastModified;
+                sourcesOrTypesLastModifiedTime = sourcesOrTypesLastModified;
+            } catch (Exception e) {
+                log.error("Artifacts uploading error", e);
             }
-        } else if (currentTime - sourcesLastSyncTime > SOURCES_LAST_SYNC_MAX_TIME) {
-
-            ecosArtifactsSourcesService.uploadArtifacts();
-            sourcesLastSyncTime = currentTime;
         }
 
         long artifactsLastModified = ecosArtifactsService.getLastModifiedTime().toEpochMilli();
 
-        if (artifactsLastModified > artifactsLastModifiedTime) {
+        if (artifactsLastModified > artifactsLastModifiedTime
+                && (withoutThreshold || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
 
-            if (withoutThreshold || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME) {
+            try {
                 ecosApplicationsService.deployArtifacts();
-                artifactsLastDeployTime = currentTime;
                 artifactsLastModifiedTime = artifactsLastModified;
+            } catch (Exception e) {
+                log.error("Artifacts deployment error", e);
             }
-        } else if (currentTime - artifactsLastDeployTime > ARTIFACTS_LAST_DEPLOY_MAX_TIME) {
-
-            ecosApplicationsService.deployArtifacts();
-            artifactsLastDeployTime = currentTime;
         }
 
         ecosArtifactsService.updateFailedArtifacts();

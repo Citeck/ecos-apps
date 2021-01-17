@@ -7,5 +7,6 @@ data class EcosArtifactMeta(
     val id: String,
     val name: MLText?,
     val dependencies: List<ArtifactRef>,
-    val tags: List<String>
+    val tags: List<String>,
+    val typeRevId: Long
 )

@@ -17,12 +17,12 @@ public class EcosArtifactDb implements EcosArtifactRev {
 
     public EcosArtifactDb(EcosArtifactRevEntity entity) {
 
-        EcosArtifactEntity module = entity.getModule();
+        EcosArtifactEntity artifact = entity.getArtifact();
         EcosContentEntity content = entity.getContent();
 
-        this.id = module.getExtId();
+        this.id = artifact.getExtId();
         this.revId = entity.getExtId();
-        this.type = module.getType();
+        this.type = artifact.getType();
 
         Integer version = entity.getModelVersion();
         this.modelVersion = version != null ? version : 0;

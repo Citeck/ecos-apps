@@ -1,6 +1,5 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.repo;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -42,11 +41,11 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
     @Query("SELECT max(artifact.lastModifiedDate) FROM EcosArtifactEntity artifact")
     Instant getLastModifiedTime();
 
-    @Query("SELECT COUNT(module) FROM EcosArtifactEntity module " +
-           "WHERE module.type = ?1 AND module.deleted = false")
+    @Query("SELECT COUNT(artifact) FROM EcosArtifactEntity artifact " +
+           "WHERE artifact.type = ?1 AND artifact.deleted = false")
     long getCount(String type);
 
-    @Query("SELECT COUNT(module) FROM EcosArtifactEntity module " +
-           "WHERE module.deleted = false")
+    @Query("SELECT COUNT(artifact) FROM EcosArtifactEntity artifact " +
+           "WHERE artifact.deleted = false")
     long getCount();
 }

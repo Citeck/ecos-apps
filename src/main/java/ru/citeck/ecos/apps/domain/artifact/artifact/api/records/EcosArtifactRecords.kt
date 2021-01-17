@@ -8,6 +8,7 @@ import ru.citeck.ecos.apps.artifact.type.TypeContext
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.EcosArtifactDto
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commons.data.MLText
@@ -49,7 +50,7 @@ class EcosArtifactRecords(
             if (it == null) {
                 EmptyValue.INSTANCE
             } else {
-                EcosArtifactRecord(it, ecosArtifactTypesService.getType(it.type))
+                EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type))
             }
         }
     }
@@ -93,12 +94,12 @@ class EcosArtifactRecords(
             }
 
             result.records = artifactsSet.map {
-                val type = ecosArtifactTypesService.getType(it)
+                val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
                     val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.id))
                     if (artifact != null) {
-                        moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getType(artifact.type))
+                        moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
                     }
                 }
                 moduleRes
@@ -112,7 +113,7 @@ class EcosArtifactRecords(
                 recordsQuery.skipCount,
                 recordsQuery.maxItems
             )
-            result.records = res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getType(it.type)) }
+            result.records = res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type)) }
             result.totalCount = ecosArtifactsService.getAllArtifactsCount(predicate)
         }
 
@@ -121,7 +122,7 @@ class EcosArtifactRecords(
 
     class EcosArtifactRecord(
         val artifact: EcosArtifactDto,
-        private val typeContext: TypeContext?
+        private val typeContext: EcosArtifactTypeContext?
     ) {
 
         fun getId(): String {
@@ -156,7 +157,7 @@ class EcosArtifactRecords(
 
             val name = MLText.getClosestValue(artifact.name, locale)
 
-            var typeName = MLText.getClosestValue(typeContext?.meta?.name, locale)
+            var typeName = MLText.getClosestValue(typeContext?.getMeta()?.name, locale)
             if (typeName.isBlank()) {
                 typeName = artifact.type
             }
@@ -172,12 +173,12 @@ class EcosArtifactRecords(
         }
     }
 
-    class ArtifactTypeInfo(private val typeContext: TypeContext) {
+    class ArtifactTypeInfo(private val typeContext: EcosArtifactTypeContext) {
 
         @MetaAtt(".disp")
         fun getDisplayName(): String {
             val locale = QueryContext.getCurrent<QueryContext>().locale
-            val name = MLText.getClosestValue(typeContext.meta.name, locale)
+            val name = MLText.getClosestValue(typeContext.getMeta().name, locale)
             return if (name.isNotBlank()) {
                 name
             } else {
@@ -187,7 +188,7 @@ class EcosArtifactRecords(
 
         @MetaAtt(".str")
         fun getString(): String {
-            return typeContext.getId();
+            return typeContext.getId()
         }
     }
 }

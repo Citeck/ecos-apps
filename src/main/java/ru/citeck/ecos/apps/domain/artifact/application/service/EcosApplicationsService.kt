@@ -101,8 +101,9 @@ class EcosApplicationsService(
 
             if (!deployers.containsKey(it.appName)) {
 
-                val supportedTypes = ecosArtifactTypesService.getTypesByAppName(it.appName)
+                val supportedTypesByController = ecosArtifactTypesService.getTypesByAppName(it.appName)
                     .map { type -> type.getId() }
+                val supportedTypes = supportedTypesByController.intersect(it.status.supportedTypes).toList()
 
                 if (supportedTypes.isNotEmpty()) {
 

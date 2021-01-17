@@ -8,11 +8,9 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactService;
-import ru.citeck.ecos.apps.artifact.type.TypeContext;
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.*;
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer;
@@ -21,6 +19,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactRevCo
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.policy.ArtifactSourcePolicy;
 import ru.citeck.ecos.apps.domain.artifact.patch.dto.ArtifactPatchDto;
 import ru.citeck.ecos.apps.domain.artifact.type.dto.EcosArtifactMeta;
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
@@ -47,6 +46,8 @@ public class EcosArtifactsService {
         Duration.ofMinutes(1),
         Duration.ofMinutes(10),
         Duration.ofMinutes(60),
+        Duration.ofHours(12),
+        Duration.ofDays(2)
     };
 
     private final ArtifactService artifactsService;
@@ -138,7 +139,9 @@ public class EcosArtifactsService {
         }
 
         EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
-        ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(lastRev.getSourceType());
+        ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
+            ArtifactSourceType.valueOf(lastRev.getSourceType().toString())
+        );
 
         if (uploadPolicy == null || !uploadPolicy.isPatchingAllowed(artifactContext)) {
             removePatchedRev(artifactEntity);
@@ -193,7 +196,7 @@ public class EcosArtifactsService {
         lastPatchedRev.setSourceType(ArtifactRevSourceType.PATCH);
         lastPatchedRev.setExtId(UUID.randomUUID().toString());
         lastPatchedRev.setContent(patchedContent);
-        lastPatchedRev.setModule(artifactEntity);
+        lastPatchedRev.setArtifact(artifactEntity);
         lastPatchedRev.setPrevRev(lastRev);
 
         lastPatchedRev = artifactsRevRepo.save(lastPatchedRev);
@@ -215,7 +218,7 @@ public class EcosArtifactsService {
         String typeId = uploadDto.getType();
         Object artifact = uploadDto.getArtifact();
 
-        TypeContext typeContext = artifactsService.getType(uploadDto.getType());
+        EcosArtifactTypeContext typeContext = ecosArtifactTypesService.getTypeContext(uploadDto.getType());
 
         if (typeContext == null) {
             log.error("Type '" + uploadDto.getType() + "' is not found. " +
@@ -286,8 +289,9 @@ public class EcosArtifactsService {
         lastRev.setSourceType(revSourceType);
         lastRev.setExtId(UUID.randomUUID().toString());
         lastRev.setContent(newContent);
-        lastRev.setModule(artifactEntity);
+        lastRev.setArtifact(artifactEntity);
         lastRev.setPrevRev(artifactEntity.getLastRev());
+        lastRev.setTypeRevId(typeContext.getTypeRevId());
 
         lastRev = artifactsRevRepo.save(lastRev);
 
@@ -306,6 +310,7 @@ public class EcosArtifactsService {
 
     private boolean updateArtifactDeployStatus(EcosArtifactEntity artifact) {
 
+
         DeployStatus newStatus;
 
         if (artifact.getDependencies()
@@ -318,10 +323,16 @@ public class EcosArtifactsService {
         }
 
         if (!newStatus.equals(artifact.getDeployStatus())) {
+
+            DeployStatus deployStatusBefore = artifact.getDeployStatus();
+
             artifact.setDeployStatus(newStatus);
             artifact.setDeployRetryCounter(0);
             artifact.setDeployErrors(null);
             artifact.setDeployMsg(null);
+
+            printDeployStatusChanged(deployStatusBefore, artifact);
+
             return true;
         }
         return false;
@@ -340,6 +351,11 @@ public class EcosArtifactsService {
         List<String> currentTags = DataValue.create(artifactEntity.getTags()).asStrList();
         if (!new ArrayList<>(currentTags).equals(new ArrayList<>(meta.getTags()))) {
             artifactEntity.setTags(Json.getMapper().toString(meta.getTags()));
+            artifactWasChanged = true;
+        }
+
+        if (!Objects.equals(artifactEntity.getTypeRevId(), meta.getTypeRevId())) {
+            artifactEntity.setTypeRevId(meta.getTypeRevId());
             artifactWasChanged = true;
         }
 
@@ -395,8 +411,12 @@ public class EcosArtifactsService {
             );
 
             failedArtifacts.forEach(artifact -> {
+
+                DeployStatus deployStatusBefore = artifact.getDeployStatus();
                 artifact.setDeployStatus(DeployStatus.DRAFT);
                 artifactsDao.save(artifact);
+
+                printDeployStatusChanged(deployStatusBefore, artifact);
             });
         }
     }
@@ -430,10 +450,17 @@ public class EcosArtifactsService {
                 }
 
                 List<DeployError> errors = deployer.deploy(type, revToDeploy.getContent().getData());
+                DeployStatus deployStatusBefore = entity.getDeployStatus();
 
                 if (!errors.isEmpty()) {
 
-                    log.error("Artifact deploy failed: " + type + "$" + entity.getExtId());
+                    log.error("Artifact deploy failed: " + type + "$" + entity.getExtId() + ". Errors: \n" +
+                        errors.stream()
+                            .map(it -> Json.getMapper()
+                            .toString(it))
+                            .collect(Collectors.joining("\n"))
+                    );
+
                     entity.setDeployStatus(DeployStatus.DEPLOY_FAILED);
                     Integer retryCounter = entity.getDeployRetryCounter();
                     entity.setDeployRetryCounter(retryCounter != null ? retryCounter + 1 : 1);
@@ -446,6 +473,7 @@ public class EcosArtifactsService {
                     entity.setDeployErrors(Json.getMapper().toString(errors));
 
                     artifactsRepo.save(entity);
+
                     failedModulesCount++;
 
                 } else {
@@ -454,12 +482,15 @@ public class EcosArtifactsService {
                     entity.setDeployStatus(DeployStatus.DEPLOYED);
                     entity.setDeployMsg(null);
                     entity.setDeployErrors(null);
+
                     entity = artifactsRepo.save(entity);
 
                     artifactsToUpdateSourceDeps.put(entity.getId(), entity);
 
                     deployedCount++;
                 }
+
+                printDeployStatusChanged(deployStatusBefore, entity);
             }
 
             log.info("Deploy of type " + type + " is finished. " +
@@ -475,13 +506,18 @@ public class EcosArtifactsService {
             .collect(Collectors.toSet());
 
         for (EcosArtifactEntity entity : entitiesToUpdate) {
-            if (updateArtifactDeployStatus(entity)) {
-                log.info("Deploy status changed for " + entity.getExtId() + "$" + entity.getExtId()
-                    + " to " + entity.getDeployStatus());
-            }
+            updateArtifactDeployStatus(entity);
         }
 
         return deployedCount > 0;
+    }
+
+    private void printDeployStatusChanged(DeployStatus before, EcosArtifactEntity entity) {
+        if (!Objects.equals(before, entity.getDeployStatus())) {
+            log.info("Deploy status changed for " + entity.getType() + "$" + entity.getExtId()
+                + " from " + before
+                + " to " + entity.getDeployStatus());
+        }
     }
 
     public List<EcosArtifactDto> getArtifactsByType(String type) {
@@ -584,7 +620,7 @@ public class EcosArtifactsService {
 
         EcosArtifactRevEntity lastArtifactRev = artifactsDao.getLastArtifactRev(artifactRef);
 
-        return lastArtifactRev.getModule().getDependencies().stream()
+        return lastArtifactRev.getArtifact().getDependencies().stream()
             .map( dep -> ArtifactRef.create(dep.getTarget().getType(), dep.getTarget().getExtId()))
             .collect(Collectors.toList());
     }
@@ -595,21 +631,21 @@ public class EcosArtifactsService {
             return Optional.empty();
         }
 
-        String type = entity.getModule().getType();
+        String type = entity.getArtifact().getType();
         byte[] content = entity.getContent().getData();
 
         if (ecosArtifactTypesService.isTypeRegistered(type)) {
 
-            DeployStatus deployStatus = entity.getModule().getDeployStatus();
+            DeployStatus deployStatus = entity.getArtifact().getDeployStatus();
             if (deployStatus == null) {
                 deployStatus = DeployStatus.CONTENT_WAITING;
             }
             return Optional.of(new EcosArtifactDto(
-                entity.getModule().getExtId(),
+                entity.getArtifact().getExtId(),
                 artifactsService.readArtifactFromBytes(type, content),
                 type,
-                Json.getMapper().read(entity.getModule().getName(), MLText.class),
-                DataValue.create(entity.getModule().getTags()).asStrList(),
+                Json.getMapper().read(entity.getArtifact().getName(), MLText.class),
+                DataValue.create(entity.getArtifact().getTags()).asStrList(),
                 deployStatus,
                 new ArtifactRevSourceInfo(
                     entity.getSourceId(),
