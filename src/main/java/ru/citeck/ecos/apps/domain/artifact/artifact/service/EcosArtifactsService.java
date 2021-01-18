@@ -345,7 +345,7 @@ public class EcosArtifactsService {
 
         MLText currentName = toNotNullMLText(artifactEntity.getName());
         if (!currentName.equals(meta.getName())) {
-            artifactEntity.setName(Json.getMapper().toString(currentName));
+            artifactEntity.setName(Json.getMapper().toString(meta.getName()));
             artifactWasChanged = true;
         }
         List<String> currentTags = DataValue.create(artifactEntity.getTags()).asStrList();
