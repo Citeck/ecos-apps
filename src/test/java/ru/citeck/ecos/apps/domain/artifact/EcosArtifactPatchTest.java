@@ -15,20 +15,20 @@ import java.util.Objects;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@Slf4j
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = EcosAppsApp.class)
+//@Slf4j
+//@RunWith(SpringRunner.class)
+//@SpringBootTest(classes = EcosAppsApp.class)
 public class EcosArtifactPatchTest {
 
-    @Autowired
+    //@Autowired
     private TestModuleHandler testModules;
 
     private CommandsServiceFactory commandsServiceFactory;
 
-    @Test
+    //@Test
     public void test() throws InterruptedException {
 
-        log.info("Start EcosModulePatch test");
+        //log.info("Start EcosModulePatch test");
 
         ObjectData module = testModules.getById("test-module");
 

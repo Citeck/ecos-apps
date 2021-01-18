@@ -40,7 +40,7 @@
             <column name="version" type="VARCHAR" />
 
             <column name="ecos_app_id" type="BIGINT">
-                <constraints foreignKeyName="fk_release_artifacts_app_release_id" references="ecos_app_release(id)" />
+                <constraints foreignKeyName="fk_ecos_app_release_ecos_app_id" references="ecos_app(id)" />
             </column>
 
             <column name="type_refs" type="VARCHAR" />
@@ -63,11 +63,11 @@
             </column>
 
             <column name="ecos_app_release_id" type="BIGINT">
-                <constraints foreignKeyName="fk_release_artifacts_app_release_id" references="ecos_app_release(id)" />
+                <constraints foreignKeyName="fk_ecos_app_release_artifacts_app_release_id" references="ecos_app_release(id)" />
             </column>
 
             <column name="artifact_rev_id" type="BIGINT">
-                <constraints foreignKeyName="fk_release_artifacts_artifact_rev_id" references="ecos_artifact_rev(id)" />
+                <constraints foreignKeyName="fk_ecos_app_release_artifacts_artifact_rev_id" references="ecos_artifact_rev(id)" />
             </column>
 
         </createTable>
