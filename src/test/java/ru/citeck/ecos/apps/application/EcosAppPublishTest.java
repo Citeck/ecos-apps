@@ -1,21 +1,6 @@
 package ru.citeck.ecos.apps.application;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import ru.citeck.ecos.apps.EcosAppsApp;
-import ru.citeck.ecos.apps.TestUtils;
-import ru.citeck.ecos.apps.app.*;
-import ru.citeck.ecos.apps.app.application.EcosAppService;
-import ru.citeck.ecos.apps.app.module.*;
-import ru.citeck.ecos.commons.data.ObjectData;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -67,7 +52,7 @@ public class EcosAppPublishTest {
 
     private boolean isPublishStatus(EcosModule module, PublishStatus status) {
         String typeId = eappsModuleService.getTypeId(module.getClass());
-        return status.equals(moduleService.getDeployStatus(ModuleRef.create(typeId, module.getId())));
+        return status.equals(moduleService.getDeployStatus(ArtifactRef.create(typeId, module.getId())));
     }
 
     private boolean isPublishing(EcosApp app) {
@@ -122,7 +107,7 @@ public class EcosAppPublishTest {
         deployedModules.forEach(m -> {
 
             String typeId = eappsModuleService.getTypeId(m.getClass());
-            PublishStatus status = moduleService.getDeployStatus(ModuleRef.create(typeId, m.getId()));
+            PublishStatus status = moduleService.getDeployStatus(ArtifactRef.create(typeId, m.getId()));
 
             assertThat(status, is(PublishStatus.DEPLOYED));
         });
@@ -185,12 +170,12 @@ public class EcosAppPublishTest {
 
         DashboardModule dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-0");
-        dashboardModule.setTypeRef(ModuleRef.create("type", "type0"));
+        dashboardModule.setTypeRef(ArtifactRef.create("type", "type0"));
         modules.add(dashboardModule);
 
         dashboardModule = new DashboardModule();
         dashboardModule.setId("dashboard-1");
-        dashboardModule.setTypeRef(ModuleRef.create("type", "type2"));
+        dashboardModule.setTypeRef(ArtifactRef.create("type", "type2"));
         modules.add(dashboardModule);
 
         EcosAppImpl app = new EcosAppImpl();

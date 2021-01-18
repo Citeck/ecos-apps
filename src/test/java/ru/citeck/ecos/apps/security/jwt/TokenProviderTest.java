@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.security.jwt;
 
-import ru.citeck.ecos.apps.security.AuthoritiesConstants;
+import ru.citeck.ecos.apps.app.security.constants.AuthoritiesConstants;
 
 import java.security.Key;
 import java.util.*;
@@ -19,6 +19,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import ru.citeck.ecos.apps.app.security.service.jwt.TokenProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

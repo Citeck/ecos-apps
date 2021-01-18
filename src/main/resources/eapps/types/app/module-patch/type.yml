@@ -1,0 +1,11 @@
+
+modelVersion: "1.0"
+
+name:
+  ru: Патч для артифакта
+  en: Artifact patch
+
+source-id: ""
+
+controller:
+    type: json

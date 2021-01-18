@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20210117000001" author="citeck">
+
+        <createTable tableName="ecos_app">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="ext_id" type="VARCHAR">
+                <constraints unique="true" />
+            </column>
+
+            <column name="name" type="VARCHAR" />
+            <column name="version" type="VARCHAR" />
+            <column name="type_refs" type="VARCHAR" />
+            <column name="artifacts" type="VARCHAR" />
+            <column name="artifacts_dir_content_id" type="BIGINT">
+                <constraints foreignKeyName="fk_app_artifact_ecos_content_id" references="ecos_content(id)" />
+            </column>
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+            <column name="last_modified_date" type="TIMESTAMP" />
+            <column name="last_modified_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <createTable tableName="ecos_app_release">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="version" type="VARCHAR" />
+
+            <column name="ecos_app_id" type="BIGINT">
+                <constraints foreignKeyName="fk_release_artifacts_app_release_id" references="ecos_app_release(id)" />
+            </column>
+
+            <column name="type_refs" type="VARCHAR" />
+
+            <column name="created_date" type="TIMESTAMP" />
+            <column name="created_by" type="VARCHAR(50)" />
+
+        </createTable>
+
+        <addUniqueConstraint
+            constraintName="uniq_ecos_app_release_version"
+            tableName="ecos_app_release"
+            columnNames="ecos_app_id,version"
+        />
+
+        <createTable tableName="ecos_app_release_artifacts">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="ecos_app_release_id" type="BIGINT">
+                <constraints foreignKeyName="fk_release_artifacts_app_release_id" references="ecos_app_release(id)" />
+            </column>
+
+            <column name="artifact_rev_id" type="BIGINT">
+                <constraints foreignKeyName="fk_release_artifacts_artifact_rev_id" references="ecos_artifact_rev(id)" />
+            </column>
+
+        </createTable>
+
+        <addUniqueConstraint
+            constraintName="uniq_ecos_app_release_artifacts"
+            tableName="ecos_app_release_artifacts"
+            columnNames="ecos_app_release_id,artifact_rev_id"
+        />
+
+    </changeSet>
+
+</databaseChangeLog>

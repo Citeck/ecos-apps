@@ -1,0 +1,26 @@
+
+id: ecos-artifacts
+label: { ru: Артифакты ECOS, en: ECOS Artifacts }
+
+typeRef: emodel/type@ecos-artifact
+sourceId: eapps/artifact
+
+attributes:
+  journalsListId: global-system
+
+actions:
+  - uiserv/action@ecos-module-download
+
+columns:
+
+  - name: type
+    label: { ru: Тип, en: Type }
+
+  - name: moduleId
+    label: { ru: Идентификатор, en: Id }
+
+  - name: name
+    label: { ru: Имя, en: Name }
+
+  - name: tagsStr
+    label: { ru: Тэги, en: Tags }

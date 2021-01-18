@@ -6,6 +6,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import ru.citeck.ecos.apps.app.security.constants.AuthoritiesConstants;
+import ru.citeck.ecos.apps.app.security.service.SecurityUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;

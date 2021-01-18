@@ -1,7 +1,8 @@
 package ru.citeck.ecos.apps;
 
-import ru.citeck.ecos.apps.config.ApplicationProperties;
-import ru.citeck.ecos.apps.config.DefaultProfileUtil;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
+import ru.citeck.ecos.apps.app.application.initializer.DefaultProfileUtil;
 
 import io.github.jhipster.config.JHipsterConstants;
 
@@ -27,6 +28,11 @@ import java.util.Collection;
     ApplicationProperties.class
 })
 @EnableDiscoveryClient
+@EnableJpaRepositories({
+    "ru.citeck.ecos.apps.app.*.repo",
+    "ru.citeck.ecos.apps.domain.*.repo",
+    "ru.citeck.ecos.apps.domain.*.*.repo"
+})
 public class EcosAppsApp {
 
     private static final Logger log = LoggerFactory.getLogger(EcosAppsApp.class);

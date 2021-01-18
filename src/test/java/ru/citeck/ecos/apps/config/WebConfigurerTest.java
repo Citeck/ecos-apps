@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.xnio.OptionMap;
+import ru.citeck.ecos.apps.app.web.config.WebConfigurer;
 
 import javax.servlet.*;
 import java.util.*;
