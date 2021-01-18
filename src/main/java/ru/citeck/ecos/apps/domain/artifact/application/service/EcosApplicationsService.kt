@@ -223,6 +223,10 @@ class EcosApplicationsService(
         }
 
         override fun getId(): String {
+            return sourceInfo.id
+        }
+
+        override fun getAppName(): String {
             return appKey.appName
         }
     }

@@ -5,6 +5,8 @@ import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 
 interface ArtifactSourceMetaRepo : JpaRepository<ArtifactSourceMetaEntity, Long> {
 
-    fun findFirstBySourceTypeAndSourceId(sourceType: ArtifactSourceType, sourceId: String): ArtifactSourceMetaEntity?
+    fun findFirstByAppNameAndSourceTypeAndSourceId(appName: String,
+                                                   sourceType: ArtifactSourceType,
+                                                   sourceId: String): ArtifactSourceMetaEntity?
 }
 

@@ -32,7 +32,7 @@ open class EcosArtifactsSourcesService(
 
     init {
         artifactSourceMetaRepo.findAll().forEach {
-            sinceBySource[SourceKey(it.sourceId, it.sourceType)] = it.lastModified
+            sinceBySource[SourceKey(it.appName, it.sourceId, it.sourceType)] = it.lastModified
         }
     }
 
@@ -42,7 +42,7 @@ open class EcosArtifactsSourcesService(
 
     fun addSource(source: ArtifactsSource) {
 
-        val key = SourceKey(source.getId(), source.getSourceType())
+        val key = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
         sources[key] = source
 
         log.info { "Add artifacts source: $key" }
@@ -52,7 +52,7 @@ open class EcosArtifactsSourcesService(
 
     fun removeSource(source: ArtifactsSource) {
 
-        val key = SourceKey(source.getId(), source.getSourceType())
+        val key = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
 
         log.info { "Remove artifacts source: $key" }
 
@@ -76,7 +76,7 @@ open class EcosArtifactsSourcesService(
     @Transactional
     protected open fun uploadArtifacts(source: ArtifactsSource, typesDir: EcosFile) {
 
-        val sourceKey = SourceKey(source.getId(), source.getSourceType())
+        val sourceKey = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
 
         val sourceInfo = ArtifactSourceInfo.create {
             withId(source.getId())
@@ -112,7 +112,8 @@ open class EcosArtifactsSourcesService(
 
         if (lastModified != currentLastModified) {
 
-            val metaEntity = artifactSourceMetaRepo.findFirstBySourceTypeAndSourceId(
+            val metaEntity = artifactSourceMetaRepo.findFirstByAppNameAndSourceTypeAndSourceId(
+                source.getAppName(),
                 source.getSourceType(),
                 source.getId()
             )
@@ -120,6 +121,7 @@ open class EcosArtifactsSourcesService(
                 metaEntity
             } else {
                 val newEntity = ArtifactSourceMetaEntity()
+                newEntity.appName = source.getAppName()
                 newEntity.sourceId = source.getId()
                 newEntity.sourceType = source.getSourceType()
                 newEntity
@@ -131,6 +133,7 @@ open class EcosArtifactsSourcesService(
     }
 
     data class SourceKey(
+        val appName: String,
         val id: String,
         val type: ArtifactSourceType
     )

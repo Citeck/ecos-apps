@@ -13,4 +13,6 @@ interface ArtifactsSource {
     fun getSourceType(): ArtifactSourceType
 
     fun getId(): String
+
+    fun getAppName(): String
 }

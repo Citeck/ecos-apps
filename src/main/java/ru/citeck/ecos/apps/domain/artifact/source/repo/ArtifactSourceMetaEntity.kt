@@ -13,6 +13,7 @@ open class ArtifactSourceMetaEntity {
     @SequenceGenerator(name = "ecos_artifact_source_meta_id_gen")
     open var id: Long? = null
 
+    open lateinit var appName: String
     open lateinit var sourceId: String
     @Enumerated(EnumType.ORDINAL)
     open lateinit var sourceType: ArtifactSourceType
