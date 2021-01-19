@@ -7,9 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit4.SpringRunner
 import ru.citeck.ecos.apps.EcosAppsApp
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceProvider
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
+import ru.citeck.ecos.apps.app.domain.artifact.source.*
 import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
@@ -46,7 +44,7 @@ class EcosArtifactsServiceTest {
 
         val artifacts = mutableMapOf<String, MutableList<Any>>()
         artifactSourcesProvider.getArtifactSources().forEach {
-            artifactSourcesProvider.getArtifacts(it.id, allTypesCtx, Instant.ofEpochMilli(0))
+            artifactSourcesProvider.getArtifacts(it.key, allTypesCtx, Instant.ofEpochMilli(0))
                 .forEach { (type, typeArtifacts) ->
                     artifacts.computeIfAbsent(type) { ArrayList() }.addAll(typeArtifacts)
                 }
@@ -57,11 +55,7 @@ class EcosArtifactsServiceTest {
                 val uploadDto = ArtifactUploadDto(
                     type,
                     it,
-                    ArtifactSourceInfo(
-                        "classpath",
-                        ArtifactSourceType.APPLICATION,
-                        Instant.now()
-                    )
+                    AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
                 )
                 ecosArtifactsService.uploadArtifact(uploadDto)
                 val meta = ecosArtifactTypesService.getArtifactMeta(type, it)
@@ -95,11 +89,7 @@ class EcosArtifactsServiceTest {
                 val uploadDto = ArtifactUploadDto(
                     type,
                     it,
-                    ArtifactSourceInfo(
-                        "classpath",
-                        ArtifactSourceType.APPLICATION,
-                        Instant.now()
-                    )
+                    AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
                 )
                 ecosArtifactsService.uploadArtifact(uploadDto)
             }
@@ -158,11 +148,7 @@ class EcosArtifactsServiceTest {
         ecosArtifactsService.uploadArtifact(ArtifactUploadDto(
             "app/jsontest",
             firstArtifact,
-            ArtifactSourceInfo(
-                "test",
-                ArtifactSourceType.APPLICATION,
-                Instant.now()
-            )
+            AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
         ))
 
         val artifactRef = ArtifactRef.create("app/jsontest", firstArtifact.get("id").asText());

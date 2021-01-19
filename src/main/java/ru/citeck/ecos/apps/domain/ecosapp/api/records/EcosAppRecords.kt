@@ -3,7 +3,7 @@ package ru.citeck.ecos.apps.domain.ecosapp.api.records
 import ecos.com.fasterxml.jackson210.annotation.JsonProperty
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
-import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppArtifactService
+import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.records2.QueryContext
@@ -25,14 +25,14 @@ import java.util.regex.Pattern
 
 @Component
 class EcosAppRecords(
-    private val ecosAppArtifactService: EcosAppArtifactService
+    private val ecosAppService: EcosAppService
 ) : LocalRecordsDao(),
     LocalRecordsMetaDao<Any>,
     LocalRecordsQueryWithMetaDao<Any>,
     MutableRecordsLocalDao<EcosAppRecords.EcosAppRecord> {
 
     companion object {
-        const val ID = "ecos-app"
+        const val ID = "ecosapp"
     }
 
     init {
@@ -46,7 +46,7 @@ class EcosAppRecords(
         if (recordsQuery.language == "artifacts-app") {
 
             val query = recordsQuery.getQuery(ArtifactsAppQuery::class.java)
-            val appByArtifacts = ecosAppArtifactService.getAppForArtifacts(query.artifacts)
+            val appByArtifacts = ecosAppService.getAppForArtifacts(query.artifacts)
 
             result.records = query.artifacts.map {
                 ArtifactsAppQueryRes(it, appByArtifacts[it] ?: RecordRef.EMPTY)
@@ -54,16 +54,16 @@ class EcosAppRecords(
 
         } else {
 
-            result.records = ecosAppArtifactService.getAll().map { EcosAppRecord(it, ecosAppArtifactService) }
+            result.records = ecosAppService.getAll().map { EcosAppRecord(it, ecosAppService) }
         }
         return result
     }
 
     override fun getLocalRecordsMeta(records: List<RecordRef>, metaField: MetaField): List<Any> {
         return records.map { record ->
-            ecosAppArtifactService.getById(record.id) ?: EcosAppDef.create {}
+            ecosAppService.getById(record.id) ?: EcosAppDef.create {}
         }.map {
-            EcosAppRecord(it, ecosAppArtifactService)
+            EcosAppRecord(it, ecosAppService)
         }
     }
 
@@ -71,9 +71,9 @@ class EcosAppRecords(
         val records = values.map {
             val appData = it.appData
             RecordMeta(RecordRef.create(ID, if (appData != null) {
-                ecosAppArtifactService.upload(appData).id
+                ecosAppService.uploadZip(appData).id
             } else {
-                ecosAppArtifactService.save(it.build()).id
+                ecosAppService.save(it.build()).id
             }))
         }
         val result = RecordsMutResult()
@@ -84,9 +84,9 @@ class EcosAppRecords(
     override fun getValuesToMutate(records: List<RecordRef>): List<EcosAppRecord> {
         return records.map { record ->
             if (record.id.isBlank()) {
-                EcosAppRecord(EcosAppDef.create {}, ecosAppArtifactService)
+                EcosAppRecord(EcosAppDef.create {}, ecosAppService)
             } else {
-                EcosAppRecord(ecosAppArtifactService.getById(record.id)!!, ecosAppArtifactService)
+                EcosAppRecord(ecosAppService.getById(record.id)!!, ecosAppService)
             }
         }
     }
@@ -95,14 +95,14 @@ class EcosAppRecords(
 
         val result = RecordsDelResult()
         result.records = deletion.records.map {
-            ecosAppArtifactService.delete(it.id)
+            ecosAppService.delete(it.id)
             it
         }.map { RecordMeta(it) }
 
         return result
     }
 
-    class EcosAppRecord(private val appDef: EcosAppDef, val ecosAppArtifactService: EcosAppArtifactService) : EcosAppDef.Builder(appDef) {
+    class EcosAppRecord(private val appDef: EcosAppDef, val ecosAppService: EcosAppService) : EcosAppDef.Builder(appDef) {
 
         var appData: ByteArray? = null
 
@@ -111,7 +111,7 @@ class EcosAppRecords(
         }
 
         fun getData(): ByteArray {
-            return ecosAppArtifactService.getAppData(appDef.id)
+            return ecosAppService.getAppData(appDef.id)
         }
 
         fun getModuleId(): String {

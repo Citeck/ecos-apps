@@ -2,8 +2,8 @@ package ru.citeck.ecos.apps.domain.artifact.application.service
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppService
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppStatus
 import ru.citeck.ecos.apps.artifact.ArtifactService
@@ -11,7 +11,7 @@ import ru.citeck.ecos.apps.artifact.type.ArtifactTypeService
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.DeployError
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer
-import ru.citeck.ecos.apps.domain.artifact.source.service.ArtifactsSource
+import ru.citeck.ecos.apps.domain.artifact.source.service.AppArtifactsSource
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.commons.io.file.EcosFile
@@ -33,7 +33,7 @@ class EcosApplicationsService(
         val log = KotlinLogging.logger {}
     }
 
-    private val sources = ConcurrentHashMap<SourceKey, AppArtifactsSource>()
+    private val sources = ConcurrentHashMap<AppSourceKey, AppArtifactsSourceImpl>()
     private val typesSources = ConcurrentHashMap<String, RemoteAppStatus>()
     private val deployers = ConcurrentHashMap<String, AppArtifactsDeployer>()
 
@@ -44,7 +44,7 @@ class EcosApplicationsService(
 
         appsStatus.forEach { appsByName.computeIfAbsent(it.appName) { ArrayList() }.add(it)  }
 
-        val newSources = mutableMapOf<SourceKey, AppArtifactsSourceInfo>()
+        val newSources = mutableMapOf<AppSourceKey, AppArtifactsSourceInfo>()
         val newTypesSources = mutableMapOf<String, RemoteAppStatus>()
 
         appsByName.forEach { (appName, appStatus) ->
@@ -60,13 +60,13 @@ class EcosApplicationsService(
 
                 appInstance.status.sources.forEach { source ->
 
-                    val key = SourceKey(appName,  source.id)
-                    val currentSource = newSources[key]
+                    val appSourceKey = AppSourceKey(appName, source.key)
+                    val currentSource = newSources[appSourceKey]
 
                     if (currentSource == null) {
-                        newSources[key] = AppArtifactsSourceInfo(appInstance, source)
+                        newSources[appSourceKey] = AppArtifactsSourceInfo(appInstance, source)
                     } else if (currentSource.sourceInfo.lastModified.isBefore(source.lastModified)) {
-                        newSources[key] = AppArtifactsSourceInfo(appInstance, source)
+                        newSources[appSourceKey] = AppArtifactsSourceInfo(appInstance, source)
                     }
                 }
             }
@@ -122,7 +122,7 @@ class EcosApplicationsService(
             }
         }
 
-        val sourcesToRemove = mutableSetOf<SourceKey>()
+        val sourcesToRemove = mutableSetOf<AppSourceKey>()
 
         sources.forEach { (key, appSource) ->
             val newSource = newSources[key]
@@ -145,7 +145,7 @@ class EcosApplicationsService(
                     .isBefore(appSourceInfo.sourceInfo.lastModified)) {
 
                 val appKey = AppKey(appSourceInfo.appStatus.appName, appSourceInfo.appStatus.appInstanceId)
-                val appSource = AppArtifactsSource(
+                val appSource = AppArtifactsSourceImpl(
                     appKey,
                     appSourceInfo.sourceInfo,
                     remoteAppService,
@@ -201,16 +201,16 @@ class EcosApplicationsService(
         val sourceInfo: ArtifactSourceInfo
     )
 
-    private class AppArtifactsSource(
+    private class AppArtifactsSourceImpl(
         val appKey: AppKey,
         val sourceInfo: ArtifactSourceInfo,
         val remoteAppService: RemoteAppService,
         val artifactsService: ArtifactService,
         val artifactTypesService: ArtifactTypeService
-    ) : ArtifactsSource {
+    ) : AppArtifactsSource {
 
         override fun getArtifacts(typesDir: EcosFile, since: Instant): Map<String, List<Any>> {
-            val artifactsDir = remoteAppService.getArtifactsDir(appKey.instanceId, sourceInfo.id, typesDir, since)
+            val artifactsDir = remoteAppService.getArtifactsDir(appKey.instanceId, sourceInfo.key, typesDir, since)
             return artifactsService.readArtifacts(artifactsDir, artifactTypesService.loadTypes(typesDir))
         }
 
@@ -218,26 +218,13 @@ class EcosApplicationsService(
             return sourceInfo.lastModified
         }
 
-        override fun getSourceType(): ArtifactSourceType {
-            return sourceInfo.type
-        }
-
-        override fun getId(): String {
-            return sourceInfo.id
-        }
-
-        override fun getAppName(): String {
-            return appKey.appName
+        override fun getKey(): AppSourceKey {
+            return AppSourceKey(appKey.appName, sourceInfo.key)
         }
     }
 
     private data class AppKey(
         val appName: String,
         val instanceId: String
-    )
-
-    private data class SourceKey(
-        val appName: String,
-        val sourceId: String
     )
 }

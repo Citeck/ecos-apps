@@ -6,7 +6,7 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_app")
-open class EcosAppArtifactEntity : AbstractAuditingEntity() {
+class EcosAppEntity : AbstractAuditingEntity() {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_app_id_gen")
@@ -14,14 +14,14 @@ open class EcosAppArtifactEntity : AbstractAuditingEntity() {
     private val id: Long? = null
 
     override fun getId() = id
+    lateinit var extId: String
 
-    open var name: String? = null
-    open var extId: String? = null
-    open var version: String? = null
-    open var typeRefs: String? = null
-    open var artifacts: String? = null
+    var name: String? = null
+    var version: String? = null
+    var typeRefs: String? = null
+    var artifacts: String? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "artifacts_dir_content_id")
-    open var artifactsDir: EcosContentEntity? = null
+    var artifactsDir: EcosContentEntity? = null
 }

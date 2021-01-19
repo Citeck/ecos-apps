@@ -1,10 +1,10 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.api.records
 
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommand
-import ru.citeck.ecos.apps.app.api.GetEcosTypeArtifactsCommandResponse
+import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommand
+import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommandResponse
 import ru.citeck.ecos.apps.artifact.ArtifactRef
-import ru.citeck.ecos.apps.artifact.type.TypeContext
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.EcosArtifactDto
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
@@ -82,13 +82,13 @@ class EcosArtifactRecords(
             }
 
             val results = commandsService.executeForGroupSync {
-                body = GetEcosTypeArtifactsCommand(expandedTypes)
+                body = GetModelTypeArtifactsCommand(expandedTypes)
                 targetApp = "all"
             }
 
             val artifactsSet = HashSet<RecordRef>()
             results.mapNotNull {
-                it.getResultAs(GetEcosTypeArtifactsCommandResponse::class.java)?.artifacts
+                it.getResultAs(GetModelTypeArtifactsCommandResponse::class.java)?.artifacts
             }.forEach {
                 artifactsSet.addAll(it)
             }
@@ -166,6 +166,10 @@ class EcosArtifactRecords(
 
         fun getTagsStr(): String {
             return artifact.tags.joinToString()
+        }
+
+        fun getSourceType(): ArtifactRevSourceType {
+            return artifact.source.type
         }
 
         fun getTags(): List<String> {

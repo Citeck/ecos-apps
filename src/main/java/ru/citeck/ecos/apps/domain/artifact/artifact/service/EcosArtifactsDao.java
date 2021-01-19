@@ -96,14 +96,14 @@ public class EcosArtifactsDao {
     }
 
     public EcosArtifactRevEntity getLastArtifactRev(ArtifactRef moduleRef) {
-        EcosArtifactEntity module = getModule(moduleRef);
-        if (module == null) {
+        EcosArtifactEntity artifact = getArtifact(moduleRef);
+        if (artifact == null) {
             return null;
         }
-        return module.getLastRev();
+        return artifact.getLastRev();
     }
 
-    public EcosArtifactEntity getModule(ArtifactRef ref) {
+    public EcosArtifactEntity getArtifact(ArtifactRef ref) {
         return artifactsRepo.getByExtId(ref.getType(), ref.getId());
     }
 
@@ -129,7 +129,7 @@ public class EcosArtifactsDao {
     }
 
     public void delete(ArtifactRef ref) {
-        delete(getModule(ref));
+        delete(getArtifact(ref));
     }
 
     private Specification<EcosArtifactEntity> toSpec(Predicate predicate) {

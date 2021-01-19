@@ -3,8 +3,8 @@ package ru.citeck.ecos.apps.domain.artifact.source.service
 import mu.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
-import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
+import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey
+import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.source.repo.ArtifactSourceMetaEntity
 import ru.citeck.ecos.apps.domain.artifact.source.repo.ArtifactSourceMetaRepo
@@ -25,14 +25,14 @@ open class EcosArtifactsSourcesService(
         private val log = KotlinLogging.logger {}
     }
 
-    private val sources: MutableMap<SourceKey, ArtifactsSource> = ConcurrentHashMap()
-    private val sinceBySource: MutableMap<SourceKey, Instant> = ConcurrentHashMap()
+    private val sources: MutableMap<AppSourceKey, AppArtifactsSource> = ConcurrentHashMap()
+    private val sinceBySource: MutableMap<AppSourceKey, Instant> = ConcurrentHashMap()
 
     private var lastModified = Instant.EPOCH
 
     init {
         artifactSourceMetaRepo.findAll().forEach {
-            sinceBySource[SourceKey(it.appName, it.sourceId, it.sourceType)] = it.lastModified
+            sinceBySource[AppSourceKey(it.appName, SourceKey(it.sourceId, it.sourceType))] = it.lastModified
         }
     }
 
@@ -40,23 +40,20 @@ open class EcosArtifactsSourcesService(
         return lastModified
     }
 
-    fun addSource(source: ArtifactsSource) {
+    fun addSource(source: AppArtifactsSource) {
 
-        val key = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
-        sources[key] = source
+        sources[source.getKey()] = source
 
-        log.info { "Add artifacts source: $key" }
+        log.info { "Add artifacts source: ${source.getKey()}" }
 
         lastModified = Instant.now()
     }
 
-    fun removeSource(source: ArtifactsSource) {
+    fun removeSource(source: AppArtifactsSource) {
 
-        val key = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
+        log.info { "Remove artifacts source: ${source.getKey()}" }
 
-        log.info { "Remove artifacts source: $key" }
-
-        sources.remove(key)
+        sources.remove(source.getKey())
         lastModified = Instant.now()
     }
 
@@ -68,23 +65,18 @@ open class EcosArtifactsSourcesService(
         uploadArtifacts(sources.values, typesDir)
     }
 
-    private fun uploadArtifacts(sources: Collection<ArtifactsSource>, typesDir: EcosFile) {
+    private fun uploadArtifacts(sources: Collection<AppArtifactsSource>, typesDir: EcosFile) {
         sources.forEach { uploadArtifacts(it, typesDir) }
     }
 
     @Synchronized
     @Transactional
-    protected open fun uploadArtifacts(source: ArtifactsSource, typesDir: EcosFile) {
+    protected open fun uploadArtifacts(source: AppArtifactsSource, typesDir: EcosFile) {
 
-        val sourceKey = SourceKey(source.getAppName(), source.getId(), source.getSourceType())
-
-        val sourceInfo = ArtifactSourceInfo.create {
-            withId(source.getId())
-            withType(source.getSourceType())
-        }
+        val appSourceKey = source.getKey()
 
         val lastModified = source.getLastModified()
-        val currentLastModified = sinceBySource.computeIfAbsent(sourceKey) { Instant.EPOCH }
+        val currentLastModified = sinceBySource.computeIfAbsent(appSourceKey) { Instant.EPOCH }
 
         if (currentLastModified.toEpochMilli() > lastModified.toEpochMilli()) {
             return
@@ -93,7 +85,7 @@ open class EcosArtifactsSourcesService(
         val artifacts: Map<String, List<Any>> = try {
             source.getArtifacts(typesDir, currentLastModified)
         } catch (e: Exception) {
-            log.error(e) { "Artifacts can't be received from source: $sourceInfo" }
+            log.error(e) { "Artifacts can't be received from source: $appSourceKey" }
             emptyMap()
         }
 
@@ -101,10 +93,10 @@ open class EcosArtifactsSourcesService(
 
             for (typeArtifact in typeArtifacts) {
                 try {
-                    ecosArtifactsService.uploadArtifact(ArtifactUploadDto(type, typeArtifact, sourceInfo))
+                    ecosArtifactsService.uploadArtifact(ArtifactUploadDto(type, typeArtifact, appSourceKey))
                 } catch (e: Exception) {
                     log.error(e) {
-                        "Artifact uploading failed. Source: $sourceInfo Type: $type Artifact: $typeArtifact"
+                        "Artifact uploading failed. Source: $appSourceKey Type: $type Artifact: $typeArtifact"
                     }
                 }
             }
@@ -113,28 +105,22 @@ open class EcosArtifactsSourcesService(
         if (lastModified != currentLastModified) {
 
             val metaEntity = artifactSourceMetaRepo.findFirstByAppNameAndSourceTypeAndSourceId(
-                source.getAppName(),
-                source.getSourceType(),
-                source.getId()
+                appSourceKey.appName,
+                appSourceKey.source.type,
+                appSourceKey.source.id
             )
             val notNullMetaEntity = if (metaEntity != null) {
                 metaEntity
             } else {
                 val newEntity = ArtifactSourceMetaEntity()
-                newEntity.appName = source.getAppName()
-                newEntity.sourceId = source.getId()
-                newEntity.sourceType = source.getSourceType()
+                newEntity.appName = appSourceKey.appName
+                newEntity.sourceType = appSourceKey.source.type
+                newEntity.sourceId = appSourceKey.source.id
                 newEntity
             }
             notNullMetaEntity.lastModified = lastModified
             artifactSourceMetaRepo.save(notNullMetaEntity)
-            sinceBySource[sourceKey] = lastModified
+            sinceBySource[appSourceKey] = lastModified
         }
     }
-
-    data class SourceKey(
-        val appName: String,
-        val id: String,
-        val type: ArtifactSourceType
-    )
 }

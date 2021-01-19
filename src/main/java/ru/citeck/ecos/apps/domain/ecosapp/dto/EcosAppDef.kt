@@ -1,10 +1,15 @@
 package ru.citeck.ecos.apps.domain.ecosapp.dto
 
+import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize as JackDeserialize
+
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
 import ru.citeck.ecos.records2.RecordRef
 
+@JsonDeserialize(builder = EcosAppDef.Builder::class)
+@JackDeserialize(builder = EcosAppDef.Builder::class)
 data class EcosAppDef(
     val id: String,
     val name: MLText,
@@ -42,7 +47,7 @@ data class EcosAppDef(
 
         var id: String = ""
         var name: MLText = MLText()
-        var version: Version = Version("0")
+        var version: Version = Version("1.0")
         var typeRefs: List<RecordRef> = emptyList()
         var artifacts: List<RecordRef> = emptyList()
 

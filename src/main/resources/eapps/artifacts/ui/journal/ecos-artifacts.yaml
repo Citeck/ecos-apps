@@ -24,3 +24,7 @@ columns:
 
   - name: tagsStr
     label: { ru: Тэги, en: Tags }
+
+  - name: sourceType
+    label: { ru: Тип источника, en: Source type }
+    visible: false
