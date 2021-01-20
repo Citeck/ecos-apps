@@ -98,7 +98,7 @@ class EcosArtifactRecords(
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
                     val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.id))
-                    if (artifact != null) {
+                    if (artifact != null && !artifact.system) {
                         moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
                     }
                 }

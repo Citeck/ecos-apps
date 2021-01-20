@@ -686,6 +686,7 @@ public class EcosArtifactsService {
             DataValue.create(entity.getArtifact().getTags()).asStrList(),
             deployStatus,
             new ArtifactRevSourceInfo(sourceId, sourceType),
+            Boolean.TRUE.equals(entity.getArtifact().getSystem()),
             entity.getExtId()
         ));
     }
