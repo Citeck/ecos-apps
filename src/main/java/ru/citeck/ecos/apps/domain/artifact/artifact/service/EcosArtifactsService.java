@@ -582,21 +582,90 @@ public class EcosArtifactsService {
         return getAllArtifacts(0, 1000);
     }
 
-    public void resetDeployStatus(ArtifactRef artifactRef) {
+    public void resetUserRevision(ArtifactRef artifactRef) {
+
+        log.info("User artifact resetting: " + artifactRef);
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
-
-        if (artifact != null) {
-
-            DeployStatus statusBefore = artifact.getDeployStatus();
-            artifact.setDeployStatus(DeployStatus.DRAFT);
-            printDeployStatusChanged(statusBefore, artifact);
-
-            artifact.setDeployErrors(null);
-            artifact.setDeployMsg(null);
-            artifact.setDeployRetryCounter(0);
-            artifactsRepo.save(artifact);
+        if (artifact == null) {
+            log.warn("Artifact is not found: " + artifactRef);
+            return;
         }
+
+        if (artifact.getLastRev() == null) {
+            log.warn("Artifact without last revision. Nothing to reset. Artifact: " + artifactRef);
+            return;
+        }
+
+        EcosArtifactRevEntity lastRev = artifact.getLastRev();
+
+        if (!ArtifactRevSourceType.USER.equals(lastRev.getSourceType())) {
+            log.warn("Artifact source is not USER. Artifact: " + artifactRef);
+            return;
+        }
+
+        EcosArtifactRevEntity lastNotUserRev = lastRev;
+
+        int itCount = 100;
+        while (--itCount > 0
+                && lastNotUserRev != null
+                && ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
+
+            lastNotUserRev = lastNotUserRev.getPrevRev();
+        }
+
+        if (lastNotUserRev == null || ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
+            log.warn("Not user rev is not found");
+            return;
+        }
+
+        EcosArtifactRevEntity newLastRev = new EcosArtifactRevEntity();
+        newLastRev.setSourceId(lastNotUserRev.getSourceId());
+        newLastRev.setSourceType(lastNotUserRev.getSourceType());
+        newLastRev.setExtId(UUID.randomUUID().toString());
+        newLastRev.setContent(lastNotUserRev.getContent());
+        newLastRev.setArtifact(lastNotUserRev.getArtifact());
+        newLastRev.setPrevRev(lastRev);
+        newLastRev.setTypeRevId(lastNotUserRev.getTypeRevId());
+        newLastRev.setModelVersion(lastNotUserRev.getModelVersion());
+
+        newLastRev = artifactsRevRepo.save(newLastRev);
+
+        DeployStatus statusBefore = artifact.getDeployStatus();
+
+        artifact.setLastRev(newLastRev);
+        artifact.setDeployStatus(DeployStatus.DRAFT);
+        artifact.setDeployErrors(null);
+        artifact.setDeployMsg(null);
+        artifact.setDeployRetryCounter(0);
+
+        applyPatches(artifact);
+
+        artifactsRepo.save(artifact);
+
+        printDeployStatusChanged(statusBefore, artifact);
+
+        log.info("User artifact resetting completed: " + artifactRef);
+    }
+
+    public void resetDeployStatus(ArtifactRef artifactRef) {
+
+        log.info("Reset deploy status: " + artifactRef);
+
+        EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
+        if (artifact == null) {
+            log.warn("Artifact is not found: " + artifactRef);
+            return;
+        }
+
+        DeployStatus statusBefore = artifact.getDeployStatus();
+        artifact.setDeployStatus(DeployStatus.DRAFT);
+        printDeployStatusChanged(statusBefore, artifact);
+
+        artifact.setDeployErrors(null);
+        artifact.setDeployMsg(null);
+        artifact.setDeployRetryCounter(0);
+        artifactsRepo.save(artifact);
     }
 
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {

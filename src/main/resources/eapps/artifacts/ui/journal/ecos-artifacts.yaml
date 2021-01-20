@@ -13,6 +13,7 @@ attributes:
 actions:
   - uiserv/action@ecos-module-download
   - uiserv/action@artifact-deploy
+  - uiserv/action@artifact-reset-user-rev
 
 columns:
 

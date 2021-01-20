@@ -22,10 +22,13 @@ class ArtifactController(
 
     @PostMapping("deploy")
     fun deployArtifact(@RequestParam(required = true) ref: RecordRef) {
-
-        log.info { "Artifact deploy: $ref" }
-
         artifactService.resetDeployStatus(ArtifactRef.valueOf(ref.id))
+        applicationsWatcherJob.forceUpdate()
+    }
+
+    @PostMapping("reset-user-rev")
+    fun resetUserRevision(@RequestParam(required = true) ref: RecordRef) {
+        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.id));
         applicationsWatcherJob.forceUpdate()
     }
 }
