@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
@@ -50,7 +51,7 @@ public class EcosArtifactsDao {
     public List<EcosArtifactRevEntity> getAllLastRevisions(int skipCount, int maxItems) {
 
         int page = skipCount / maxItems;
-        return artifactsRepo.findAll(PageRequest.of(page, maxItems))
+        return artifactsRepo.findAll(PageRequest.of(page, maxItems, Sort.by(Sort.Order.desc("id"))))
             .stream()
             .map(EcosArtifactEntity::getLastRev)
             .collect(Collectors.toList());
@@ -61,7 +62,7 @@ public class EcosArtifactsDao {
         Specification<EcosArtifactEntity> spec = toSpec(predicate);
 
         int page = skipCount / maxItems;
-        return artifactsRepo.findAll(spec, PageRequest.of(page, maxItems))
+        return artifactsRepo.findAll(spec, PageRequest.of(page, maxItems, Sort.by(Sort.Order.desc("id"))))
             .stream()
             .map(EcosArtifactEntity::getLastRev)
             .collect(Collectors.toList());
