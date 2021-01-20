@@ -464,6 +464,8 @@ public class EcosArtifactsService {
                 if (revToDeploy == null) {
                     revToDeploy = entity.getLastRev();
                     if (revToDeploy == null) {
+                        entity.setDeployStatus(DeployStatus.CONTENT_WAITING);
+                        artifactsRepo.save(entity);
                         continue;
                     }
                 }
