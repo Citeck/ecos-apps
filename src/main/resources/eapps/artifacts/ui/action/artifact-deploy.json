@@ -1,7 +1,7 @@
 {
   "id": "artifact-deploy",
   "name": {
-    "ru": "Задеплоить артифакт",
+    "ru": "Задеплоить артефакт",
     "en": "Deploy artifact"
   },
   "type": "fetch",
