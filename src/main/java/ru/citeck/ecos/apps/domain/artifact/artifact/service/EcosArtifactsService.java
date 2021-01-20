@@ -639,6 +639,11 @@ public class EcosArtifactsService {
         artifact.setDeployMsg(null);
         artifact.setDeployRetryCounter(0);
 
+        EcosContentEntity newContent = newLastRev.getContent();
+        Object artifactObj = artifactsService.readArtifactFromBytes(artifact.getType(), newContent.getData());
+        EcosArtifactMeta newMeta = ecosArtifactTypesService.getArtifactMeta(artifact.getType(), artifactObj);
+
+        extractArtifactMeta(artifact, newMeta);
         applyPatches(artifact);
 
         artifactsRepo.save(artifact);

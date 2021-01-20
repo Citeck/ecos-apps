@@ -11,7 +11,7 @@
       "en": "Reset user settings"
     },
     "message": {
-      "ru": "Вы дейсвительно хотите сбросить изменения пользователей для данного артифакта и вернуть исходную версию?" ,
+      "ru": "Вы дейсвительно хотите сбросить изменения пользователей для данного артефакта и вернуть исходную версию?" ,
       "en": "Are you really want to reset user changes for this artifact and return artifact source version?"
     }
   },
