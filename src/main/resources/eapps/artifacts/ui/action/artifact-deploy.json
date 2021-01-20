@@ -6,7 +6,7 @@
   },
   "type": "fetch",
   "config": {
-    "url": "/gateway/eapps/api/artifact?ref=${recordRef}",
+    "url": "/gateway/eapps/api/artifact/deploy?ref=${recordRef}",
     "method": "POST"
   }
 }
