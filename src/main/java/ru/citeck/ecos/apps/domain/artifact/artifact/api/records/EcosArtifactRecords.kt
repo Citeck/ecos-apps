@@ -5,6 +5,7 @@ import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommand
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommandResponse
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.EcosArtifactDto
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
@@ -24,6 +25,7 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import java.time.Instant
 
 @Component
 class EcosArtifactRecords(
@@ -172,8 +174,24 @@ class EcosArtifactRecords(
             return artifact.source.type
         }
 
+        fun getSourceId(): String {
+            return artifact.source.id
+        }
+
+        fun getDeployStatus(): DeployStatus {
+            return artifact.deployStatus
+        }
+
         fun getTags(): List<String> {
             return artifact.tags
+        }
+
+        fun getModifiedIso(): String {
+            return (artifact.modified ?: Instant.EPOCH).toString()
+        }
+
+        fun getCreatedIso(): String {
+            return (artifact.created ?: Instant.EPOCH).toString()
         }
     }
 

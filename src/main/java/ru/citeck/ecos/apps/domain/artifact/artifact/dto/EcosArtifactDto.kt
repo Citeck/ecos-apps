@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.dto
 
 import ru.citeck.ecos.commons.data.MLText
+import java.time.Instant
 
 data class EcosArtifactDto(
     val id: String,
@@ -11,5 +12,7 @@ data class EcosArtifactDto(
     val deployStatus: DeployStatus,
     val source: ArtifactRevSourceInfo,
     val system: Boolean,
-    val revId: String
+    val revId: String,
+    val modified: Instant?,
+    val created: Instant?
 )

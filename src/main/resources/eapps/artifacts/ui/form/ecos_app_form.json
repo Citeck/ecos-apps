@@ -119,7 +119,7 @@
                     "label": "Artifacts",
                     "multiple": true,
                     "reorder": false,
-                    "journalId": "ecos-artifacts",
+                    "journalId": "ecos-app-artifacts",
                     "defaultValue": [],
                     "key": "artifacts",
                     "type": "selectJournal",

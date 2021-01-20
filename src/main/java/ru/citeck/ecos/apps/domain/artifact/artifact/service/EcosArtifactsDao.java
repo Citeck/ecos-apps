@@ -183,7 +183,7 @@ public class EcosArtifactsDao {
             spec = spec.and(systemSpec);
         }
 
-        return spec;
+        return spec.and((root, query, builder) -> builder.isNotNull(root.get("lastRev")));
     }
 
     @Data

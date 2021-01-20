@@ -691,7 +691,9 @@ public class EcosArtifactsService {
             deployStatus,
             new ArtifactRevSourceInfo(sourceId, sourceType),
             Boolean.TRUE.equals(entity.getArtifact().getSystem()),
-            entity.getExtId()
+            entity.getExtId(),
+            entity.getArtifact().getCreatedDate(),
+            entity.getArtifact().getLastModifiedDate()
         ));
     }
 

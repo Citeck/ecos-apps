@@ -14,11 +14,6 @@ actions:
   - uiserv/action@ecos-module-download
   - uiserv/action@artifact-deploy
 
-predicate:
-  t: eq
-  att: system
-  val: false
-
 columns:
 
   - name: type
@@ -33,6 +28,17 @@ columns:
   - name: tagsStr
     label: { ru: Тэги, en: Tags }
 
+  - name: deployStatus
+    label: { ru: Статус деплоя, en: Deploy status }
+
   - name: sourceType
     label: { ru: Тип источника, en: Source type }
-    visible: false
+
+  - name: sourceId
+    label: { ru: Идентификатор источника, en: Source ID }
+
+  - name: modifiedIso
+    label: { ru: Дата изменения, en: Modified }
+
+  - name: createdIso
+    label: { ru: Дата создания, en: Created }
