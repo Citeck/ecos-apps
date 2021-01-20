@@ -90,18 +90,6 @@ public class EcosArtifactsService {
         applyPatches(artifactEntity);
     }
 
-    public synchronized boolean removePatchedRev(ArtifactRef artifactRef) {
-        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
-        if (artifactEntity == null) {
-            return false;
-        }
-        if (removePatchedRev(artifactEntity)) {
-            artifactsRepo.save(artifactEntity);
-            return true;
-        }
-        return false;
-    }
-
     @Nullable
     private EcosArtifactEntity getArtifactEntity(ArtifactRef artifactRef) {
         return artifactsRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
@@ -127,7 +115,9 @@ public class EcosArtifactsService {
         EcosArtifactMeta meta = ecosArtifactTypesService.getArtifactMeta(artifactEntity.getType(), artifact);
         extractArtifactMeta(artifactEntity, meta);
 
+        DeployStatus statusBefore = artifactEntity.getDeployStatus();
         artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+        printDeployStatusChanged(statusBefore, artifactEntity);
 
         return true;
     }
@@ -206,7 +196,10 @@ public class EcosArtifactsService {
         lastPatchedRev = artifactsRevRepo.save(lastPatchedRev);
 
         artifactEntity.setPatchedRev(lastPatchedRev);
+
+        DeployStatus statusBefore = artifactEntity.getDeployStatus();
         artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+        printDeployStatusChanged(statusBefore, artifactEntity);
     }
 
     synchronized public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
@@ -462,7 +455,9 @@ public class EcosArtifactsService {
                 if (revToDeploy == null) {
                     revToDeploy = entity.getLastRev();
                     if (revToDeploy == null) {
+                        DeployStatus statusBefore = entity.getDeployStatus();
                         entity.setDeployStatus(DeployStatus.CONTENT_WAITING);
+                        printDeployStatusChanged(statusBefore, entity);
                         artifactsRepo.save(entity);
                         continue;
                     }
@@ -588,9 +583,15 @@ public class EcosArtifactsService {
     }
 
     public void resetDeployStatus(ArtifactRef artifactRef) {
+
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
+
         if (artifact != null) {
+
+            DeployStatus statusBefore = artifact.getDeployStatus();
             artifact.setDeployStatus(DeployStatus.DRAFT);
+            printDeployStatusChanged(statusBefore, artifact);
+
             artifact.setDeployErrors(null);
             artifact.setDeployMsg(null);
             artifact.setDeployRetryCounter(0);
