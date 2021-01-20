@@ -288,11 +288,9 @@ public class EcosArtifactsService {
             return false;
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("Create new artifact revision entity "
-                + (meta.getName() == null ? "{}" : meta.getName())
-                + "(" + typeId + "$" + meta.getId() + ")");
-        }
+        log.info("Create new artifact revision entity "
+            + (meta.getName() == null ? "{}" : meta.getName())
+            + "(" + typeId + "$" + meta.getId() + "). Source: " + sourceKey);
 
         EcosArtifactRevEntity lastRev = new EcosArtifactRevEntity();
         lastRev.setSourceId(sourceKey.getId());
