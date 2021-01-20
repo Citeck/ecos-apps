@@ -1,6 +1,7 @@
 {
   "id": "ecos-app-form",
   "formKey": "",
+  "system": true,
   "title": {
     "en": "ECOS Applications Form"
   },
@@ -28,13 +29,19 @@
                     "defaultValue": "",
                     "key": "moduleId",
                     "type": "textfield",
-                    "input": true
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
                   },
                   {
                     "label": "Name",
                     "key": "name",
                     "type": "mlText",
-                    "input": true
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
                   }
                 ],
                 "type": "column",
@@ -53,7 +60,10 @@
                     "defaultValue": "",
                     "key": "version",
                     "type": "textfield",
-                    "input": true
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
                   }
                 ]
               }
@@ -76,7 +86,7 @@
                 "components": [
                   {
                     "label": "Types",
-                    "journalId": "ecos-types",
+                    "journalId": "ecos-app-types",
                     "key": "typeRefs",
                     "type": "selectJournal",
                     "input": true,

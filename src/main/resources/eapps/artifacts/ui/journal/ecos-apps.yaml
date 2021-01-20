@@ -5,6 +5,8 @@ label: { ru: Приложения ECOS, en: ECOS Applications }
 typeRef: emodel/type@ecos-app
 sourceId: eapps/ecosapp
 
+system: true
+
 attributes:
   journalsListId: global-system
 

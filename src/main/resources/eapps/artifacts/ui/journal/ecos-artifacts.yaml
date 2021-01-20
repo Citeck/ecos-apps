@@ -2,6 +2,8 @@
 id: ecos-artifacts
 label: { ru: Артифакты ECOS, en: ECOS Artifacts }
 
+system: true
+
 typeRef: emodel/type@ecos-artifact
 sourceId: eapps/artifact
 
@@ -10,6 +12,12 @@ attributes:
 
 actions:
   - uiserv/action@ecos-module-download
+  - uiserv/action@artifact-deploy
+
+predicate:
+  t: eq
+  att: system
+  val: false
 
 columns:
 

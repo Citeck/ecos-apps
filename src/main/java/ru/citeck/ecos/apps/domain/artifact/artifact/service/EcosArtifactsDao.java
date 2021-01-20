@@ -173,6 +173,16 @@ public class EcosArtifactsDao {
             spec = sourceIdFilter;
         }
 
+        if (predicateDto.system != null) {
+            Specification<EcosArtifactEntity> systemSpec;
+            if (!predicateDto.system) {
+                systemSpec = (root, query, builder) -> builder.not(builder.equal(root.get("system"), true));
+            } else {
+                systemSpec = (root, query, builder) -> builder.equal(root.get("system"), true);
+            }
+            spec = spec.and(systemSpec);
+        }
+
         return spec;
     }
 
@@ -183,5 +193,6 @@ public class EcosArtifactsDao {
         private String tags;
         private String tagsStr;
         private String moduleId;
+        private Boolean system;
     }
 }

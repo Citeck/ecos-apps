@@ -17,15 +17,9 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     @SequenceGenerator(name = "ecos_module_rev_id_gen")
     @Getter @Setter private Long id;
 
-    @Getter @Setter private Integer modelVersion;
-
     @ManyToOne
     @JoinColumn(name = "artifact_id")
     @Getter @Setter private EcosArtifactEntity artifact;
-
-    //todo
-    @Enumerated(EnumType.ORDINAL)
-    @Getter @Setter private ArtifactRevSourceType sourceType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prev_rev_id")
@@ -35,8 +29,11 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @Column(name="source")
     @Getter @Setter private String sourceId;
+    @Enumerated(EnumType.ORDINAL)
+    @Getter @Setter private ArtifactRevSourceType sourceType;
 
     @Getter @Setter private Long typeRevId;
+    @Getter @Setter private String modelVersion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")

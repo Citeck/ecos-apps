@@ -240,7 +240,9 @@ public class EcosArtifactTypesService {
             meta.getName(),
             dependencies,
             meta.getTags(),
-            type.getTypeRevId()
+            type.getTypeRevId(),
+            type.getMeta().getModelVersion(),
+            meta.getSystem()
         );
     }
 }

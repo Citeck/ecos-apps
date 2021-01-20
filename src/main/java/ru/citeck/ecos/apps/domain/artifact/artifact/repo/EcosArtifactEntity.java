@@ -47,6 +47,8 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Getter @Setter private String ecosApp;
 
+    @Getter @Setter private Boolean system;
+
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @Getter private Set<EcosArtifactDepEntity> dependencies = new HashSet<>();
 

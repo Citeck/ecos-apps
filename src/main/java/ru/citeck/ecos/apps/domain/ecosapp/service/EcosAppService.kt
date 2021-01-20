@@ -8,6 +8,7 @@ import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.artifact.type.TypeContext
+import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
@@ -34,19 +35,9 @@ class EcosAppService(
     private val ecosAppRepo: EcosAppRepo,
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
-    private val artifactService: ArtifactService
+    private val artifactService: ArtifactService,
+    private val applicationsWatcherJob: ApplicationsWatcherJob
 ) : AdditionalSourceProvider {
-
-    fun uploadAllArtifactsForTypes(types: List<TypeContext>) {
-
-        ecosAppRepo.findAll().forEach {
-            val artifactsDirContent = it.artifactsDir
-            if (artifactsDirContent != null ) {
-                val artifactsDir = ZipUtils.extractZip(artifactsDirContent.data)
-                //ecosArtifactsService.uploadEcosAppArtifacts(it.extId, artifactsDir, types)
-            }
-        }
-    }
 
     fun uploadZip(data: ByteArray) : EcosAppDef {
 
@@ -60,10 +51,13 @@ class EcosAppService(
             artifactsContentEntity = ecosContentDao.upload(ZipUtils.writeZipAsBytes(artifactsDir))
         }
 
-        val entity = dtoToEntity(meta)
+        var entity = dtoToEntity(meta)
         entity.artifactsDir = artifactsContentEntity
+        entity = ecosAppRepo.save(entity)
 
-        return entityToDto(ecosAppRepo.save(entity))
+        applicationsWatcherJob.forceUpdate("eapps", appToSource(entity))
+
+        return entityToDto(entity)
     }
 
     fun save(app: EcosAppDef) : EcosAppDef {
@@ -178,14 +172,15 @@ class EcosAppService(
 
     // AdditionalSourceProvider
 
-    override fun getArtifactSources(): List<ArtifactSourceInfo> {
-
-        return ecosAppRepo.findAllByArtifactsDirIsNotNull().map {
-            ArtifactSourceInfo.create {
-                withKey(it.extId, ArtifactSourceType.ECOS_APP)
-                withLastModified(it.lastModifiedDate)
-            }
+    private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
+        return ArtifactSourceInfo.create {
+            withKey(app.extId, ArtifactSourceType.ECOS_APP)
+            withLastModified(app.lastModifiedDate)
         }
+    }
+
+    override fun getArtifactSources(): List<ArtifactSourceInfo> {
+        return ecosAppRepo.findAllByArtifactsDirIsNotNull().map { appToSource(it) }
     }
 
     override fun getArtifacts(source: SourceKey,

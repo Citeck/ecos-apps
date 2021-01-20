@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
@@ -201,6 +200,8 @@ public class EcosArtifactsService {
         lastPatchedRev.setContent(patchedContent);
         lastPatchedRev.setArtifact(artifactEntity);
         lastPatchedRev.setPrevRev(lastRev);
+        lastPatchedRev.setTypeRevId(patchedMeta.getTypeRevId());
+        lastPatchedRev.setModelVersion(patchedMeta.getModelVersion().toString());
 
         lastPatchedRev = artifactsRevRepo.save(lastPatchedRev);
 
@@ -301,6 +302,7 @@ public class EcosArtifactsService {
         lastRev.setArtifact(artifactEntity);
         lastRev.setPrevRev(artifactEntity.getLastRev());
         lastRev.setTypeRevId(typeContext.getTypeRevId());
+        lastRev.setModelVersion(meta.getModelVersion().toString());
 
         lastRev = artifactsRevRepo.save(lastRev);
 
@@ -365,6 +367,11 @@ public class EcosArtifactsService {
 
         if (!Objects.equals(artifactEntity.getTypeRevId(), meta.getTypeRevId())) {
             artifactEntity.setTypeRevId(meta.getTypeRevId());
+            artifactWasChanged = true;
+        }
+
+        if (!Objects.equals(artifactEntity.getSystem(), meta.getSystem())) {
+            artifactEntity.setSystem(meta.getSystem());
             artifactWasChanged = true;
         }
 
@@ -575,6 +582,17 @@ public class EcosArtifactsService {
     @Transactional(readOnly = true)
     public List<EcosArtifactDto> getAllArtifacts() {
         return getAllArtifacts(0, 1000);
+    }
+
+    public void resetDeployStatus(ArtifactRef artifactRef) {
+        EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
+        if (artifact != null) {
+            artifact.setDeployStatus(DeployStatus.DRAFT);
+            artifact.setDeployErrors(null);
+            artifact.setDeployMsg(null);
+            artifact.setDeployRetryCounter(0);
+            artifactsRepo.save(artifact);
+        }
     }
 
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {

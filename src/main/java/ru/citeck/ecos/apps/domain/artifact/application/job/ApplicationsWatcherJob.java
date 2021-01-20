@@ -48,6 +48,7 @@ public class ApplicationsWatcherJob {
     private long errorNextPrintTime = 0L;
 
     private long sourcesOrTypesLastModifiedTime = 0;
+    private long typesLastModifiedTime = 0;
     private long artifactsLastModifiedTime = 0;
 
     private boolean forceUpdate = false;
@@ -78,11 +79,11 @@ public class ApplicationsWatcherJob {
 
             try {
 
-                boolean forceUpdate = this.forceUpdate;
+                boolean forceUpdateChangedSources = this.forceUpdate;
                 this.forceUpdate = false;
 
                 updateAllApps();
-                updateArtifacts(forceUpdate);
+                updateArtifacts(forceUpdateChangedSources);
 
                 long waitingStart = System.currentTimeMillis();
                 while (!this.forceUpdate && (System.currentTimeMillis() - waitingStart) < CHECK_STATUS_PERIOD) {
@@ -106,6 +107,10 @@ public class ApplicationsWatcherJob {
                 }
             }
         }
+    }
+
+    public void forceUpdate() {
+        forceUpdate = true;
     }
 
     public void forceUpdate(String appInstanceId, ArtifactSourceInfo source) {
@@ -146,20 +151,23 @@ public class ApplicationsWatcherJob {
     }
 
     @Synchronized
-    private void updateArtifacts(boolean withoutThreshold) {
+    private void updateArtifacts(boolean forceUpdateChangedSources) {
 
         long currentTime = System.currentTimeMillis();
-        long sourcesOrTypesLastModified = Math.max(
-            ecosArtifactsSourcesService.getLastModified().toEpochMilli(),
-            ecosArtifactTypesService.getLastModified().toEpochMilli()
-        );
+        long typesChangeTime = ecosArtifactTypesService.getLastModified().toEpochMilli();
+        long sourcesChangeTime = ecosArtifactsSourcesService.getLastModified().toEpochMilli();
+
+        long sourcesOrTypesLastModified = Math.max(sourcesChangeTime, typesChangeTime);
+        boolean typesWasChanged = typesChangeTime > typesLastModifiedTime;
 
         if (sourcesOrTypesLastModified > sourcesOrTypesLastModifiedTime
-                && (withoutThreshold || (currentTime - sourcesOrTypesLastModified) > SOURCES_UPDATE_THRESHOLD_TIME)) {
+                && (forceUpdateChangedSources
+                    || (currentTime - sourcesOrTypesLastModified) > SOURCES_UPDATE_THRESHOLD_TIME)) {
 
             try {
-                ecosArtifactsSourcesService.uploadArtifacts();
+                ecosArtifactsSourcesService.uploadArtifacts(!typesWasChanged);
                 sourcesOrTypesLastModifiedTime = sourcesOrTypesLastModified;
+                typesLastModifiedTime = typesChangeTime;
             } catch (Exception e) {
                 log.error("Artifacts uploading error", e);
             }
@@ -168,7 +176,8 @@ public class ApplicationsWatcherJob {
         long artifactsLastModified = ecosArtifactsService.getLastModifiedTime().toEpochMilli();
 
         if (artifactsLastModified > artifactsLastModifiedTime
-                && (withoutThreshold || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
+                && (forceUpdateChangedSources
+                    || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
 
             try {
                 ecosApplicationsService.deployArtifacts();

@@ -15,7 +15,7 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-open class EcosArtifactsSourcesService(
+class EcosArtifactsSourcesService(
     private val artifactSourceMetaRepo: ArtifactSourceMetaRepo,
     private val ecosArtifactTypesService: EcosArtifactTypesService,
     private val ecosArtifactsService: EcosArtifactsService
@@ -54,24 +54,26 @@ open class EcosArtifactsSourcesService(
         log.info { "Remove artifacts source: ${source.getKey()}" }
 
         sources.remove(source.getKey())
-        lastModified = Instant.now()
     }
 
-    fun uploadArtifacts() {
-        uploadArtifacts(ecosArtifactTypesService.allTypesDir)
+    fun uploadArtifacts(onlyChanged: Boolean = false) {
+        uploadArtifacts(ecosArtifactTypesService.allTypesDir, onlyChanged)
     }
 
-    fun uploadArtifacts(typesDir: EcosFile) {
-        uploadArtifacts(sources.values, typesDir)
+    fun uploadArtifacts(typesDir: EcosFile, onlyChanged: Boolean = false) {
+        uploadArtifacts(sources.values, typesDir, onlyChanged)
     }
 
-    private fun uploadArtifacts(sources: Collection<AppArtifactsSource>, typesDir: EcosFile) {
-        sources.forEach { uploadArtifacts(it, typesDir) }
+    private fun uploadArtifacts(sources: Collection<AppArtifactsSource>,
+                                typesDir: EcosFile,
+                                onlyChanged: Boolean = false) {
+
+        sources.forEach { uploadArtifacts(it, typesDir, onlyChanged) }
     }
 
     @Synchronized
     @Transactional
-    protected open fun uploadArtifacts(source: AppArtifactsSource, typesDir: EcosFile) {
+    protected fun uploadArtifacts(source: AppArtifactsSource, typesDir: EcosFile, onlyChanged: Boolean = false) {
 
         val appSourceKey = source.getKey()
 
@@ -80,6 +82,14 @@ open class EcosArtifactsSourcesService(
 
         if (currentLastModified.toEpochMilli() > lastModified.toEpochMilli()) {
             return
+        }
+        if (onlyChanged && currentLastModified.toEpochMilli() == lastModified.toEpochMilli()) {
+            return
+        }
+
+        log.info {
+            "Start artifacts uploading from source ${source.getKey()}. " +
+            "New date: $lastModified Old date: $currentLastModified"
         }
 
         val artifacts: Map<String, List<Any>> = try {
