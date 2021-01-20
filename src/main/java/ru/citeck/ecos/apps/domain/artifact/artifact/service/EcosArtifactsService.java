@@ -463,6 +463,9 @@ public class EcosArtifactsService {
                 EcosArtifactRevEntity revToDeploy = entity.getPatchedRev();
                 if (revToDeploy == null) {
                     revToDeploy = entity.getLastRev();
+                    if (revToDeploy == null) {
+                        continue;
+                    }
                 }
 
                 List<DeployError> errors = deployer.deploy(type, revToDeploy.getContent().getData());
