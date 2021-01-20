@@ -11,7 +11,7 @@ attributes:
   journalsListId: global-system
 
 actions:
-  - uiserv/action@ecos-module-download
+  - uiserv/action@download-base64-data-zip
   - uiserv/action@artifact-deploy
   - uiserv/action@artifact-reset-user-rev
 

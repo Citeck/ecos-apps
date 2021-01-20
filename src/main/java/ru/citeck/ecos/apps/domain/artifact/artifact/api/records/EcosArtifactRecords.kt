@@ -29,7 +29,7 @@ import java.time.Instant
 
 @Component
 class EcosArtifactRecords(
-    private val ecosArtifactsService: EcosArtifactsService,
+    val ecosArtifactsService: EcosArtifactsService,
     private val commandsService: CommandsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService
 ) : LocalRecordsDao(),
@@ -122,7 +122,7 @@ class EcosArtifactRecords(
         return result
     }
 
-    class EcosArtifactRecord(
+    inner class EcosArtifactRecord(
         val artifact: EcosArtifactDto,
         private val typeContext: EcosArtifactTypeContext?
     ) {
@@ -133,6 +133,10 @@ class EcosArtifactRecords(
 
         fun getModuleId(): String {
             return artifact.id
+        }
+
+        fun getData(): ByteArray {
+            return ecosArtifactsService.getArtifactData(ArtifactRef.create(artifact.type, artifact.id))
         }
 
         fun getType(): Any? {

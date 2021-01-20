@@ -733,6 +733,17 @@ public class EcosArtifactsService {
             .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public byte[] getArtifactData(ArtifactRef artifactRef) {
+
+        EcosArtifactRevEntity lastArtifactRev = artifactsDao.getLastArtifactRev(artifactRef);
+        if (lastArtifactRev == null) {
+            return null;
+        }
+
+        return lastArtifactRev.getContent().getData();
+    }
+
     private Optional<EcosArtifactDto> toModule(EcosArtifactRevEntity entity) {
 
         if (entity == null) {
