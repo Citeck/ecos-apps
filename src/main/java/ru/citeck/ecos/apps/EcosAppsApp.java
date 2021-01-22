@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps;
 
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
-import ru.citeck.ecos.apps.app.application.initializer.DefaultProfileUtil;
+import ru.citeck.ecos.apps.app.application.init.DefaultProfileUtil;
 
 import io.github.jhipster.config.JHipsterConstants;
 

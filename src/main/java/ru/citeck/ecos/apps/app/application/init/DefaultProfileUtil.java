@@ -1,4 +1,4 @@
-package ru.citeck.ecos.apps.app.application.initializer;
+package ru.citeck.ecos.apps.app.application.init;
 
 import io.github.jhipster.config.JHipsterConstants;
 

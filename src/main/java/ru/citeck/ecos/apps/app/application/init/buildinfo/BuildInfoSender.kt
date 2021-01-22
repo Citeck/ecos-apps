@@ -1,4 +1,4 @@
-package ru.citeck.ecos.model.app.application.init.buildinfo
+package ru.citeck.ecos.apps.app.application.init.buildinfo
 
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Qualifier
@@ -62,7 +62,7 @@ class BuildInfoSender(
         commandsService.execute {
             targetApp = "uiserv"
             body = AddBuildInfoCommand(listOf(
-                AppBuildInfo("emodel", "ECOS Model", "", info)
+                    AppBuildInfo("emodel", "ECOS Model", "", info)
             ))
             ttl = Duration.ofHours(1)
         }
