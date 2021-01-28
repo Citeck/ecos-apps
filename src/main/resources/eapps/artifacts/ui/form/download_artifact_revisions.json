@@ -1,0 +1,85 @@
+{
+  "id": "download-artifact-revisions",
+  "formKey": "",
+  "title": {
+    "en": "Download Artifact Revisions"
+  },
+  "description": {
+    "en": ""
+  },
+  "customModule": null,
+  "typeRef": "",
+  "width": "default",
+  "i18n": {},
+  "definition": {
+    "components": [
+      {
+        "label": {
+          "ru": "From"
+        },
+        "format": "yyyy-MM-dd HH:mm",
+        "datePicker": {
+          "minDate": "",
+          "maxDate": ""
+        },
+        "timePicker": {
+          "showMeridian": false
+        },
+        "defaultDate": "moment().subtract(1, 'hours')",
+        "defaultValue": "",
+        "key": "fromTime",
+        "type": "datetime",
+        "input": true,
+        "suffix": true
+      },
+      {
+        "label": {
+          "ru": "Columns"
+        },
+        "columns": [
+          {
+            "components": [],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 0,
+            "md": 4
+          },
+          {
+            "index": 1,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "components": [],
+            "md": 4
+          },
+          {
+            "md": 4,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 2,
+            "components": [
+              {
+                "label": {
+                  "ru": "Submit"
+                },
+                "state": "",
+                "theme": "primary",
+                "block": true,
+                "disableOnInvalid": true,
+                "key": "submit",
+                "type": "button",
+                "input": true
+              }
+            ]
+          }
+        ],
+        "key": "columns3",
+        "type": "columns",
+        "input": false
+      }
+    ]
+  },
+  "attributes": {}
+}
