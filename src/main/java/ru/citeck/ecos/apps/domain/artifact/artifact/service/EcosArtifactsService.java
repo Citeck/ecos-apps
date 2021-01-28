@@ -12,6 +12,7 @@ import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactService;
+import ru.citeck.ecos.apps.artifact.type.TypeContext;
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.*;
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer;
@@ -27,7 +28,10 @@ import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto;
 import ru.citeck.ecos.commons.data.DataValue;
 import ru.citeck.ecos.commons.data.MLText;
+import ru.citeck.ecos.commons.io.file.EcosFile;
+import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.commons.utils.NameUtils;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 
 import javax.annotation.PostConstruct;
@@ -580,6 +584,44 @@ public class EcosArtifactsService {
     @Transactional(readOnly = true)
     public List<EcosArtifactDto> getAllArtifacts() {
         return getAllArtifacts(0, 1000);
+    }
+
+    public EcosFile getArtifactRevisions(ArtifactRef artifactRef, Instant fromTime) {
+
+        EcosFile resultDir = new EcosMemDir();
+
+        EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
+        if (artifact == null) {
+            return resultDir;
+        }
+
+        TypeContext type = artifactsService.getType(artifactRef.getType());
+        if (type == null) {
+            log.error("Artifact type is not found: " + artifactRef.getType());
+            return resultDir;
+        }
+
+        EcosArtifactRevEntity lastRev = artifact.getLastRev();
+        int maxRevisions = 50;
+        while (lastRev != null && maxRevisions-- > 0) {
+
+            byte[] content = lastRev.getContent().getData();
+
+            String revDirName = lastRev.getCreatedDate() + "-" + lastRev.getSourceType();
+            revDirName = revDirName.replaceAll("[^a-zA-Z\\-_\\d]", "-");
+
+            EcosFile revDir = resultDir.createDir(revDirName);
+
+            Object artifactData = artifactsService.readArtifactFromBytes(artifactRef.getType(), content);
+            artifactsService.writeArtifact(revDir, type, artifactData);
+
+            lastRev = lastRev.getPrevRev();
+            if (lastRev == null || lastRev.getCreatedDate().isBefore(fromTime)) {
+                break;
+            }
+        }
+
+        return resultDir;
     }
 
     public void resetUserRevision(ArtifactRef artifactRef) {

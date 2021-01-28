@@ -11,6 +11,7 @@ attributes:
   journalsListId: global-system
 
 actions:
+  - uiserv/action@artifact-download-revisions
   - uiserv/action@download-base64-data-zip
   - uiserv/action@artifact-deploy
   - uiserv/action@artifact-reset-user-rev

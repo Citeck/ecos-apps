@@ -1,0 +1,20 @@
+{
+  "id": "artifact-download-revisions",
+  "name": {
+    "ru": "Скачать историю артифакта",
+    "en": "Download artifact history"
+  },
+  "type": "open-url",
+  "confirm": {
+    "formRef": "uiserv/eform@download-artifact-revisions",
+    "attributesMapping": {
+      "args.fromTime": "fromTime"
+    }
+  },
+  "config": {
+    "url": "/gateway/eapps/api/artifact/download-revisions",
+    "args": {
+      "ref": "${recordRef}"
+    }
+  }
+}
