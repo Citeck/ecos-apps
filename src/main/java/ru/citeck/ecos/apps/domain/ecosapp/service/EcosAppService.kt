@@ -177,9 +177,10 @@ class EcosAppService(
     // AdditionalSourceProvider
 
     private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
+        val lastModified = app.artifactsDir?.createdDate ?: Instant.EPOCH
         return ArtifactSourceInfo.create {
             withKey(app.extId, ArtifactSourceType.ECOS_APP)
-            withLastModified(app.lastModifiedDate)
+            withLastModified(lastModified)
         }
     }
 

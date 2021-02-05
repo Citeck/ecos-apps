@@ -34,7 +34,15 @@ public abstract class AbstractImmutableEntity implements Serializable {
     @CreatedDate
     @Column(name = "created_date", updatable = false)
     @JsonIgnore
-    @Getter @Setter private Instant createdDate = Instant.now();
+    private Instant createdDate = Instant.now();
+
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
 
     @Override
     public boolean equals(Object o) {
