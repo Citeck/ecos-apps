@@ -208,7 +208,7 @@ public class EcosArtifactsService {
 
     synchronized public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
 
-        SourceKey sourceKey = uploadDto.getSource().getSource();
+        final SourceKey sourceKey = uploadDto.getSource().getSource();
 
         ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(sourceKey.getType());
         if (uploadPolicy == null) {
@@ -278,10 +278,19 @@ public class EcosArtifactsService {
         }
 
         EcosContentEntity newContent = newRevContext.getContentEntity();
-        if (artifactEntity.getLastRev() != null
-                && artifactEntity.getLastRev().getContent().getId().equals(newContent.getId())) {
 
-            // content doesn't changed
+        Long lastRevContentId = null;
+        ArtifactRevSourceType lastRevSourceType = null;
+
+        if (artifactEntity.getLastRev() != null) {
+            lastRevContentId = artifactEntity.getLastRev().getContent().getId();
+            lastRevSourceType = artifactEntity.getLastRev().getSourceType();
+        }
+
+        if (Objects.equals(lastRevContentId, newContent.getId())
+                && revSourceType.equals(lastRevSourceType)) {
+
+            // content and source doesn't changed
             return false;
         }
 

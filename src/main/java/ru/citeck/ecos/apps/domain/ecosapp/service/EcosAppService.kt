@@ -1,5 +1,8 @@
 package ru.citeck.ecos.apps.domain.ecosapp.service
 
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
@@ -81,7 +84,8 @@ class EcosAppService(
     }
 
     fun getAll() : List<EcosAppDef> {
-        return ecosAppRepo.findAll().map { entityToDto(it) }
+        val sort = Sort.by(Sort.Order.desc("createdDate"))
+        return ecosAppRepo.findAll(sort).map { entityToDto(it) }
     }
 
     fun delete(id: String) {
