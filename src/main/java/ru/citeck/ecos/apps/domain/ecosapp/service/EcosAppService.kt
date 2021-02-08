@@ -1,7 +1,5 @@
 package ru.citeck.ecos.apps.domain.ecosapp.service
 
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -162,7 +160,7 @@ class EcosAppService(
     private fun entityToDto(entity: EcosAppEntity) : EcosAppDef {
 
         return EcosAppDef.create {
-            id = entity.extId ?: ""
+            id = entity.extId
             name = Json.mapper.read(entity.name, MLText::class.java) ?: MLText()
             version = Version(entity.version ?: "1.0")
             typeRefs = DataValue.create(entity.typeRefs).asList(RecordRef::class.java)

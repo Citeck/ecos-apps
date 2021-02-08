@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -14,12 +15,13 @@ import ru.citeck.ecos.apps.app.service.remote.RemoteAppService;
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppStatus;
 import ru.citeck.ecos.apps.domain.artifact.application.service.EcosApplicationsService;
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService;
+import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchService;
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +40,7 @@ public class ApplicationsWatcherJob {
     private final EcosArtifactsSourcesService ecosArtifactsSourcesService;
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosArtifactsService ecosArtifactsService;
+    private final EcosArtifactsPatchService ecosArtifactsPatchService;
 
     private final RemoteAppService remoteAppService;
     private final ApplicationProperties props;
@@ -52,6 +55,10 @@ public class ApplicationsWatcherJob {
     private long artifactsLastModifiedTime = 0;
 
     private boolean forceUpdate = false;
+    private CompletableFuture<Boolean> nextUpdateFuture = null;
+
+    private boolean isContextClosed = false;
+    private Thread watcherThread;
 
     private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
 
@@ -59,7 +66,7 @@ public class ApplicationsWatcherJob {
     public void onApplicationEvent(ContextRefreshedEvent event) {
 
         if (!started) {
-            Thread watcherThread = new Thread(this::runWatcher, "ArtifactsWatcher");
+            watcherThread = new Thread(this::runWatcher, "ArtifactsWatcher");
             watcherThread.start();
             started = true;
         }
@@ -75,7 +82,8 @@ public class ApplicationsWatcherJob {
             log.error("Error", e);
         }
 
-        while (true) {
+        rootWhile:
+        while (!isContextClosed) {
 
             try {
 
@@ -87,7 +95,12 @@ public class ApplicationsWatcherJob {
 
                 long waitingStart = System.currentTimeMillis();
                 while (!this.forceUpdate && (System.currentTimeMillis() - waitingStart) < CHECK_STATUS_PERIOD) {
+
                     Thread.sleep(100);
+
+                    if (isContextClosed) {
+                        continue rootWhile;
+                    }
                 }
 
             } catch (Throwable e) {
@@ -109,11 +122,25 @@ public class ApplicationsWatcherJob {
         }
     }
 
-    public void forceUpdate() {
+    public synchronized void forceUpdate() {
         forceUpdate = true;
     }
 
-    public void forceUpdate(String appInstanceId, ArtifactSourceInfo source) {
+    public void forceUpdateSync() {
+        synchronized (this) {
+            if (nextUpdateFuture == null) {
+                nextUpdateFuture = new CompletableFuture<>();
+            }
+            forceUpdate = true;
+        }
+        try {
+            nextUpdateFuture.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public synchronized void forceUpdate(String appInstanceId, ArtifactSourceInfo source) {
         log.info("Force update from " + appInstanceId + " " + source);
         forceUpdate = true;
     }
@@ -165,7 +192,10 @@ public class ApplicationsWatcherJob {
                     || (currentTime - sourcesOrTypesLastModified) > SOURCES_UPDATE_THRESHOLD_TIME)) {
 
             try {
+
                 ecosArtifactsSourcesService.uploadArtifacts(!typesWasChanged);
+                ecosArtifactsPatchService.applyOutOfSyncPatches();
+
                 sourcesOrTypesLastModifiedTime = sourcesOrTypesLastModified;
                 typesLastModifiedTime = typesChangeTime;
             } catch (Exception e) {
@@ -180,14 +210,33 @@ public class ApplicationsWatcherJob {
                     || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
 
             try {
+
                 ecosApplicationsService.deployArtifacts();
+                if (ecosArtifactsPatchService.applyOutOfSyncPatches()) {
+                    ecosApplicationsService.deployArtifacts();
+                }
+
                 artifactsLastModifiedTime = artifactsLastModified;
+
             } catch (Exception e) {
                 log.error("Artifacts deployment error", e);
             }
         }
 
         ecosArtifactsService.updateFailedArtifacts();
+
+        CompletableFuture<Boolean> nextUpdateFuture = this.nextUpdateFuture;
+        this.nextUpdateFuture = null;
+        if (nextUpdateFuture != null) {
+            nextUpdateFuture.complete(true);
+        }
+    }
+
+    @EventListener
+    public void onContextClosed(ContextClosedEvent event) throws InterruptedException {
+        log.info("Context was closed and watcher will be terminated");
+        isContextClosed = true;
+        watcherThread.join();
     }
 
     @Data

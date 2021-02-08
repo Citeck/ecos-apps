@@ -1,0 +1,7 @@
+
+modelVersion: "1.0"
+
+source-id: ""
+
+controller:
+    type: json

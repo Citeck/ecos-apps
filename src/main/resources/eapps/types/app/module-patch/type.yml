@@ -2,8 +2,9 @@
 modelVersion: "1.0"
 
 name:
-  ru: Патч для артефакта
-  en: Artifact patch
+  en: Legacy artifact patch type. Please prefer to use 'app/artifact-patch' instead
+
+internal: true
 
 source-id: ""
 

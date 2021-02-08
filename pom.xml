@@ -346,6 +346,11 @@
 
         <dependency>
             <groupId>ru.citeck.ecos</groupId>
+            <artifactId>ecos-apps-lib-test</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ru.citeck.ecos</groupId>
             <artifactId>ecos-meta-repo-sql-spring</artifactId>
         </dependency>
 

@@ -1,5 +1,7 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.service;
 
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +21,6 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeplo
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactContext;
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactRevContext;
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.policy.ArtifactSourcePolicy;
-import ru.citeck.ecos.apps.domain.artifact.patch.dto.ArtifactPatchDto;
 import ru.citeck.ecos.apps.domain.artifact.type.dto.EcosArtifactMeta;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
@@ -31,13 +32,13 @@ import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
-import ru.citeck.ecos.commons.utils.NameUtils;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -63,10 +64,11 @@ public class EcosArtifactsService {
     private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactsRevRepo artifactsRevRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
-    private final EcosArtifactsPatchService artifactPatchService;
 
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
+
+    private List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -86,12 +88,30 @@ public class EcosArtifactsService {
         return lastModified;
     }
 
-    synchronized public void applyPatches(ArtifactRef artifactRef) {
+    @Nullable
+    public Object getArtifactToPatch(ArtifactRef artifactRef) {
+
         EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
         if (artifactEntity == null) {
-            return;
+            return null;
         }
-        applyPatches(artifactEntity);
+
+        EcosArtifactRevEntity lastRev = artifactEntity.getLastRev();
+        if (lastRev == null) {
+            return null;
+        }
+
+        EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
+        ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
+            ArtifactSourceType.valueOf(lastRev.getSourceType().toString())
+        );
+
+        if (uploadPolicy == null || !uploadPolicy.isPatchingAllowed(artifactContext)) {
+            return null;
+        }
+
+        String typeId = artifactEntity.getType();
+        return artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
     }
 
     @Nullable
@@ -126,63 +146,45 @@ public class EcosArtifactsService {
         return true;
     }
 
-    private void applyPatches(EcosArtifactEntity artifactEntity) {
+    public synchronized boolean setPatchedRev(ArtifactRef artifactRef, @Nullable Object artifact) {
+
+        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
+        if (artifactEntity == null || artifactEntity.getLastRev() == null) {
+            return false;
+        }
+
+        if (artifact == null) {
+            return removePatchedRev(artifactEntity);
+        }
+
+        String typeId = artifactRef.getType();
+
+        byte[] patchedArtifactBytes = artifactsService.writeArtifactAsBytes(typeId, artifact);
+        EcosContentEntity patchedContent = contentDao.upload(patchedArtifactBytes);
 
         EcosArtifactRevEntity lastRev = artifactEntity.getLastRev();
-        if (lastRev == null) {
-            removePatchedRev(artifactEntity);
-            return;
-        }
-
-        EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
-        ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
-            ArtifactSourceType.valueOf(lastRev.getSourceType().toString())
-        );
-
-        if (uploadPolicy == null || !uploadPolicy.isPatchingAllowed(artifactContext)) {
-            removePatchedRev(artifactEntity);
-            return;
-        }
-
-        String typeId = artifactEntity.getType();
-        String artifactId = artifactEntity.getExtId();
-
-        ArtifactRef artifactRef = ArtifactRef.create(typeId, artifactId);
-        List<ArtifactPatchDto> patches = artifactPatchService.getPatches(artifactRef);
-
-        if (patches.isEmpty()) {
-            removePatchedRev(artifactEntity);
-            return;
-        }
-
-        Object artifact = artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
-
-        Object patchedArtifact = artifactPatchService.applyPatches(artifact, artifactRef, patches);
-        byte[] patchedArtifactBytes = artifactsService.writeArtifactAsBytes(typeId, patchedArtifact);
-        EcosContentEntity patchedContent = contentDao.upload(patchedArtifactBytes);
 
         if (patchedContent.getId().equals(lastRev.getContent().getId())) {
             // patches changed nothing with original revision
             artifactEntity.setPatchedRev(null);
-            return;
+            return false;
         }
 
         EcosArtifactRevEntity currentPatchedRev = artifactEntity.getPatchedRev();
 
         if (currentPatchedRev != null && currentPatchedRev.getContent().getId().equals(patchedContent.getId())) {
             // patches changes are equals with current patched revision
-            return;
+            return false;
         }
 
-        EcosArtifactMeta patchedMeta = ecosArtifactTypesService.getArtifactMeta(typeId, patchedArtifact);
+        EcosArtifactMeta patchedMeta = ecosArtifactTypesService.getArtifactMeta(typeId, artifact);
 
         if (patchedMeta == null) {
             log.error(
                 "Patched artifact meta can't be received. " +
-                    "Patches won't be applied. Patches: " + patches
+                    "Patches won't be applied. Artifact: " + artifactRef
             );
-            removePatchedRev(artifactEntity);
-            return;
+            return removePatchedRev(artifactEntity);
         }
 
         extractArtifactMeta(artifactEntity, patchedMeta);
@@ -204,6 +206,8 @@ public class EcosArtifactsService {
         DeployStatus statusBefore = artifactEntity.getDeployStatus();
         artifactEntity.setDeployStatus(DeployStatus.DRAFT);
         printDeployStatusChanged(statusBefore, artifactEntity);
+
+        return true;
     }
 
     synchronized public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
@@ -311,8 +315,7 @@ public class EcosArtifactsService {
         lastRev = artifactsRevRepo.save(lastRev);
 
         artifactEntity.setLastRev(lastRev);
-
-        applyPatches(artifactEntity);
+        artifactEntity.setPatchedRev(null);
 
         if (!ArtifactRevSourceType.USER.equals(revSourceType)) {
             updateArtifactDeployStatus(artifactEntity);
@@ -320,11 +323,12 @@ public class EcosArtifactsService {
 
         artifactsRepo.save(artifactEntity);
 
+        artifactRevUpdateListeners.forEach(it -> it.invoke(ArtifactRef.create(typeId, meta.getId())));
+
         return true;
     }
 
     private boolean updateArtifactDeployStatus(EcosArtifactEntity artifact) {
-
 
         DeployStatus newStatus;
 
@@ -685,6 +689,7 @@ public class EcosArtifactsService {
         DeployStatus statusBefore = artifact.getDeployStatus();
 
         artifact.setLastRev(newLastRev);
+        artifact.setPatchedRev(null);
         artifact.setDeployStatus(DeployStatus.DRAFT);
         artifact.setDeployErrors(null);
         artifact.setDeployMsg(null);
@@ -695,11 +700,12 @@ public class EcosArtifactsService {
         EcosArtifactMeta newMeta = ecosArtifactTypesService.getArtifactMeta(artifact.getType(), artifactObj);
 
         extractArtifactMeta(artifact, newMeta);
-        applyPatches(artifact);
 
         artifactsRepo.save(artifact);
 
         printDeployStatusChanged(statusBefore, artifact);
+
+        artifactRevUpdateListeners.forEach(it -> it.invoke(artifactRef));
 
         log.info("User artifact resetting completed: " + artifactRef);
     }
@@ -831,6 +837,10 @@ public class EcosArtifactsService {
             entity.getArtifact().getCreatedDate(),
             entity.getArtifact().getLastModifiedDate()
         ));
+    }
+
+    public void addArtifactRevUpdateListener(Function1<ArtifactRef, Unit> listener) {
+        artifactRevUpdateListeners.add(listener);
     }
 
     @RequiredArgsConstructor

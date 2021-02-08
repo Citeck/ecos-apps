@@ -53,7 +53,7 @@ data class EcosAppDef(
 
         constructor(base: EcosAppDef) : this() {
             id = base.id
-            name = MLText.copy(base.name) ?: MLText()
+            name = base.name
             version = base.version
             typeRefs = DataValue.create(base.typeRefs).asList(RecordRef::class.java)
             artifacts = DataValue.create(base.artifacts).asList(RecordRef::class.java)

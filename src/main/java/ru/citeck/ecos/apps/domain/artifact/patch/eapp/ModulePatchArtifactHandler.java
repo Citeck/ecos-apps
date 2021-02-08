@@ -10,10 +10,16 @@ import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchServi
 
 import java.util.function.Consumer;
 
+/**
+ * @deprecated artifact handler to support legacy
+ *             artifacts with type 'app/module-patch'.
+ *             New type: 'app/artifact-patch'
+ */
 @Slf4j
 @Component
+@Deprecated
 @RequiredArgsConstructor
-public class ArtifactPatchModuleHandler implements EcosArtifactHandler<ArtifactPatchDto> {
+public class ModulePatchArtifactHandler implements EcosArtifactHandler<ArtifactPatchDto> {
 
     private final EcosArtifactsPatchService service;
 
@@ -25,11 +31,9 @@ public class ArtifactPatchModuleHandler implements EcosArtifactHandler<ArtifactP
     @NotNull
     @Override
     public String getArtifactType() {
-        return "app/artifact-patch";
+        return "app/module-patch";
     }
 
     @Override
-    public void listenChanges(@NotNull Consumer<ArtifactPatchDto> consumer) {
-        service.addListener(consumer);
-    }
+    public void listenChanges(@NotNull Consumer<ArtifactPatchDto> consumer) {}
 }
