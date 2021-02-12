@@ -4,9 +4,6 @@ label: { ru: Патчи модулей, en: Module patches }
 
 system: true
 
-typeRef: emodel/type@ecos-module-patch
-sourceId: eapps/module-patch
-
 attributes:
   journalsListId: global-system
 

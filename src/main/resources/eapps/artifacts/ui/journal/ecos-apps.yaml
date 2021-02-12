@@ -2,13 +2,7 @@
 id: ecos-apps
 label: { ru: Приложения ECOS, en: ECOS Applications }
 
-typeRef: emodel/type@ecos-app
-sourceId: eapps/ecosapp
-
 system: true
-
-attributes:
-  journalsListId: global-system
 
 actions:
   - uiserv/action@download-base64-data-zip

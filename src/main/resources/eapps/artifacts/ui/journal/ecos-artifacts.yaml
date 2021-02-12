@@ -4,12 +4,6 @@ label: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
 
-typeRef: emodel/type@ecos-artifact
-sourceId: eapps/artifact
-
-attributes:
-  journalsListId: global-system
-
 actions:
   - uiserv/action@artifact-download-revisions
   - uiserv/action@download-base64-data-zip

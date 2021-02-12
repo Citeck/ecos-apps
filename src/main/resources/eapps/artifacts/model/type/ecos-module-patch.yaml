@@ -7,15 +7,14 @@ name:
 
 system: true
 
+sourceId: eapps/module-patch
 journalRef: uiserv/journal@ecos-module-patches
 
 createVariants:
 
   - id: create-ecos-module-patch
     name: { ru: Создать патч, en: Create patch }
-    recordRef: eapps/module-patch@
 
   - id: upload-ecos-module-patch
     name: { ru: Загрузить патч, en: Upload patch }
-    recordRef: eapps/module-patch@
     formRef: uiserv/eform@ecos-module-upload

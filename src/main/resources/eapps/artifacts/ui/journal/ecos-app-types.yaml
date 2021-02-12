@@ -2,10 +2,6 @@
 id: ecos-app-types
 label: { ru: Типы данных, en: Data types }
 
-sourceId: emodel/type
-
-typeRef: emodel/type@type
-
 system: true
 
 predicate:
@@ -16,13 +12,13 @@ predicate:
 columns:
 
   - name: moduleId
-    type: text
+    type: TEXT
     label: { ru: Идентификатор, en: Id }
 
   - name: name
-    type: text
+    type: TEXT
     label: { ru: Имя, en: Name }
 
   - name: description
-    type: text
+    type: TEXT
     label: { ru: Описание, en: Description }

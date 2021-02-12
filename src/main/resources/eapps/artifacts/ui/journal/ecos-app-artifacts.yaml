@@ -4,9 +4,6 @@ label: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
 
-typeRef: emodel/type@ecos-artifact
-sourceId: eapps/artifact
-
 actions:
   - uiserv/action@ecos-module-download
   - uiserv/action@artifact-deploy
