@@ -1,6 +1,6 @@
-
+---
 id: ecos-artifacts
-label: { ru: Артефакты ECOS, en: ECOS Artifacts }
+name: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
 
@@ -12,29 +12,29 @@ actions:
 
 columns:
 
-  - name: type
-    label: { ru: Тип, en: Type }
+  - id: type
+    name: { ru: Тип, en: Type }
 
-  - name: moduleId
-    label: { ru: Идентификатор, en: Id }
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
 
-  - name: name
-    label: { ru: Имя, en: Name }
+  - id: name
+    name: { ru: Имя, en: Name }
 
-  - name: tagsStr
-    label: { ru: Тэги, en: Tags }
+  - id: tagsStr
+    name: { ru: Тэги, en: Tags }
 
-  - name: deployStatus
-    label: { ru: Статус деплоя, en: Deploy status }
+  - id: deployStatus
+    name: { ru: Статус деплоя, en: Deploy status }
 
-  - name: sourceType
-    label: { ru: Тип источника, en: Source type }
+  - id: sourceType
+    name: { ru: Тип источника, en: Source type }
 
-  - name: sourceId
-    label: { ru: Идентификатор источника, en: Source ID }
+  - id: sourceId
+    name: { ru: Идентификатор источника, en: Source ID }
 
-  - name: modifiedIso
-    label: { ru: Дата изменения, en: Modified }
+  - id: modifiedIso
+    name: { ru: Дата изменения, en: Modified }
 
-  - name: createdIso
-    label: { ru: Дата создания, en: Created }
+  - id: createdIso
+    name: { ru: Дата создания, en: Created }

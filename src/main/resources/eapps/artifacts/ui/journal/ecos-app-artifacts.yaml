@@ -1,6 +1,6 @@
-
+---
 id: ecos-app-artifacts
-label: { ru: Артефакты ECOS, en: ECOS Artifacts }
+name: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
 
@@ -15,14 +15,14 @@ predicate:
 
 columns:
 
-  - name: type
-    label: { ru: Тип, en: Type }
+  - id: type
+    name: { ru: Тип, en: Type }
 
-  - name: moduleId
-    label: { ru: Идентификатор, en: Id }
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
 
-  - name: name
-    label: { ru: Имя, en: Name }
+  - id: name
+    name: { ru: Имя, en: Name }
 
-  - name: tagsStr
-    label: { ru: Тэги, en: Tags }
+  - id: tagsStr
+    name: { ru: Тэги, en: Tags }

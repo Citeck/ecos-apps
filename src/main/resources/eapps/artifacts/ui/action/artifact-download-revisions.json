@@ -6,7 +6,7 @@
   },
   "type": "open-url",
   "confirm": {
-    "formRef": "uiserv/eform@download-artifact-revisions",
+    "formRef": "uiserv/form@download-artifact-revisions",
     "attributesMapping": {
       "args.fromTime": "fromTime"
     }

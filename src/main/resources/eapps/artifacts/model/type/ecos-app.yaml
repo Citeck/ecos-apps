@@ -1,4 +1,4 @@
-
+---
 id: ecos-app
 
 name:
@@ -9,7 +9,7 @@ system: true
 
 sourceId: eapps/ecosapp
 
-formRef: uiserv/eform@ecos-app-form
+formRef: uiserv/form@ecos-app-form
 journalRef: uiserv/journal@ecos-apps
 
 createVariants:
@@ -19,4 +19,4 @@ createVariants:
 
   - id: upload
     name: { ru: Загрузить приложение, en: Upload application }
-    formRef: uiserv/eform@ecos-module-upload
+    formRef: uiserv/form@ecos-module-upload

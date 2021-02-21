@@ -1,4 +1,4 @@
-
+---
 id: ecos-module-patch
 
 name:
@@ -17,4 +17,4 @@ createVariants:
 
   - id: upload-ecos-module-patch
     name: { ru: Загрузить патч, en: Upload patch }
-    formRef: uiserv/eform@ecos-module-upload
+    formRef: uiserv/form@ecos-module-upload

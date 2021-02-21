@@ -1,6 +1,6 @@
-
+---
 id: ecos-apps
-label: { ru: Приложения ECOS, en: ECOS Applications }
+name: { ru: Приложения ECOS, en: ECOS Applications }
 
 system: true
 
@@ -11,11 +11,11 @@ actions:
 
 columns:
 
-  - name: moduleId
-    label: { ru: Идентификатор, en: Id }
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
 
-  - name: name
-    label: { ru: Имя, en: Name }
+  - id: name
+    name: { ru: Имя, en: Name }
 
-  - name: version
-    label: { ru: Версия, en: Version }
+  - id: version
+    name: { ru: Версия, en: Version }

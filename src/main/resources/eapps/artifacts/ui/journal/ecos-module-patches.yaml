@@ -1,11 +1,8 @@
-
+---
 id: ecos-module-patches
-label: { ru: Патчи модулей, en: Module patches }
+name: { ru: Патчи модулей, en: Module patches }
 
 system: true
-
-attributes:
-  journalsListId: global-system
 
 actions:
   - uiserv/action@ecos-module-download
@@ -14,14 +11,14 @@ actions:
 
 columns:
 
-  - name: moduleId
-    label: { ru: Идентификатор, en: Id }
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
 
-  - name: name
-    label: { ru: Имя, en: Name }
+  - id: name
+    name: { ru: Имя, en: Name }
 
-  - name: target
-    label: { ru: Цель патча, en: Patch target }
+  - id: target
+    name: { ru: Цель патча, en: Patch target }
 
-  - name: order
-    label: { ru: Порядок, en: Order }
+  - id: order
+    name: { ru: Порядок, en: Order }
