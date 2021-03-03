@@ -4,6 +4,8 @@ name: { ru: Типы данных, en: Data types }
 
 system: true
 
+typeRef: emodel/type@type
+
 predicate:
   t: eq
   att: system
