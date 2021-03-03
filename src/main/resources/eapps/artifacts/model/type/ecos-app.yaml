@@ -12,6 +12,8 @@ sourceId: eapps/ecosapp
 formRef: uiserv/form@ecos-app-form
 journalRef: uiserv/journal@ecos-apps
 
+defaultCreateVariant: false
+
 createVariants:
 
   - id: create
