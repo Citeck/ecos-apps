@@ -64,38 +64,10 @@ class EcosArtifactRecords(
         if (recordsQuery.language == "type-artifacts") {
 
             val typeArtifactsQuery = recordsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
-            if (typeArtifactsQuery.typeRefs.isEmpty()) {
-                return RecordsQueryResult()
-            }
+            val artifacts = getArtifactsForTypes(typeArtifactsQuery.typeRefs, HashSet())
+            artifacts.removeAll(typeArtifactsQuery.typeRefs);
 
-            val expandTypesQuery = RecordsQuery().apply {
-
-                this.sourceId = "emodel/type"
-                this.language = "expand-types"
-
-                val query = HashMap<String, Any>()
-                query["typeRefs"] = typeArtifactsQuery.typeRefs
-                this.query = query
-            }
-
-            val expandedTypes = recordsService.queryRecords(expandTypesQuery).records
-            if (expandedTypes.isEmpty()) {
-                return RecordsQueryResult()
-            }
-
-            val results = commandsService.executeForGroupSync {
-                body = GetModelTypeArtifactsCommand(expandedTypes)
-                targetApp = "all"
-            }
-
-            val artifactsSet = HashSet<RecordRef>()
-            results.mapNotNull {
-                it.getResultAs(GetModelTypeArtifactsCommandResponse::class.java)?.artifacts
-            }.forEach {
-                artifactsSet.addAll(it)
-            }
-
-            result.records = artifactsSet.map {
+            result.records = artifacts.map {
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
@@ -120,6 +92,56 @@ class EcosArtifactRecords(
         }
 
         return result
+    }
+
+    private fun getArtifactsForTypes(typeRefs: Collection<RecordRef>,
+                                     checkedTypes: MutableSet<RecordRef>): MutableSet<RecordRef> {
+
+        if (typeRefs.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        checkedTypes.addAll(typeRefs)
+
+        val expandTypesQuery = RecordsQuery().apply {
+
+            this.sourceId = "emodel/type"
+            this.language = "expand-types"
+
+            val query = HashMap<String, Any>()
+            query["typeRefs"] = typeRefs
+            this.query = query
+        }
+
+        val expandedTypes = recordsService.queryRecords(expandTypesQuery).records
+        if (expandedTypes.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        val artifactsSet = HashSet<RecordRef>()
+        val newTypes = HashSet<RecordRef>()
+
+        val results = commandsService.executeForGroupSync {
+            body = GetModelTypeArtifactsCommand(expandedTypes)
+            targetApp = "all"
+        }
+
+        results.mapNotNull {
+            it.getResultAs(GetModelTypeArtifactsCommandResponse::class.java)?.artifacts
+        }.forEach {
+            artifactsSet.addAll(it)
+            it.forEach { ref ->
+                if (ref.appName == "emodel" && ref.sourceId == "type" && checkedTypes.add(ref)) {
+                    newTypes.add(ref);
+                }
+            }
+        }
+
+        if (newTypes.isNotEmpty()) {
+            artifactsSet.addAll(getArtifactsForTypes(newTypes, checkedTypes))
+        }
+
+        return artifactsSet
     }
 
     inner class EcosArtifactRecord(
