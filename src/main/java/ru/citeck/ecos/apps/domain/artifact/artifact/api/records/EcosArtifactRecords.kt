@@ -161,7 +161,10 @@ class EcosArtifactRecords(
 
             val locale = QueryContext.getCurrent<QueryContext>().locale
 
-            val name = MLText.getClosestValue(artifact.name, locale)
+            var name = MLText.getClosestValue(artifact.name, locale)
+            if (name.isBlank()) {
+                name = artifact.id
+            }
 
             var typeName = MLText.getClosestValue(typeContext?.getMeta()?.name, locale)
             if (typeName.isBlank()) {
