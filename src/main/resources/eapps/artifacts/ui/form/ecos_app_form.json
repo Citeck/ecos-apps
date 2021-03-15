@@ -5,9 +5,7 @@
   "title": {
     "en": "ECOS Applications Form"
   },
-  "description": {
-    "en": ""
-  },
+  "description": {},
   "customModule": null,
   "typeRef": "emodel/type@ecos-app",
   "width": "default",
@@ -93,11 +91,14 @@
                     "multiple": true
                   },
                   {
-                    "label": "Load artifacts for selected types",
+                    "label": {
+                      "ru": "Загрузить артефакты для выбранных типов",
+                      "en": "Load artifacts for selected types"
+                    },
                     "action": "custom",
                     "state": "",
                     "showValidations": false,
-                    "custom": "var types = data.typeRefs || [];\nvar form = form;\n\nif (window.types_artifacts_loading) {\n  return;\n}\n\nif (types.length) {\n\n  window.types_artifacts_loading = true;\n  \n\tCiteck.Records.query({\n\t    \n\t    sourceId: 'eapps/artifact',\n\t    query: {\n\t        typeRefs: types\n\t    },\n\t    language: \"type-artifacts\"\n\n\t}).then(function(res) {\n\n\t\tvar newArtifacts = res.records;\n\t\tif (newArtifacts) {\n\t\t  var resultArtifacts = [];\n\t\t  for (var idx in data.artifacts) {\n\t\t    resultArtifacts.push(data.artifacts[idx]);\n\t\t  }\n\t\t  for (var idx in newArtifacts) {\n\t\t    var artifact = newArtifacts[idx];\n\t\t    if (resultArtifacts.indexOf(artifact) === -1) {\n\t\t      resultArtifacts.push(artifact);\n\t\t    }\n\t\t  }\n\t\t  var newSubmission = Object.assign({}, form.submission, {\n\t\t\t\tdata: Object.assign({}, form.submission.data, {\n\t\t\t\t\t\"artifacts\": resultArtifacts\n\t\t\t\t})\n\t\t\t});\n\t\t\tform.submission = newSubmission;\n\t\t}\t\n\t}).then(function() {  \n    window.types_artifacts_loading = false;\n\t}).catch(function(e) {\n    window.types_artifacts_loading = false;\n\t  throw e;\n\t});\n}",
+                    "custom": "var types = data.typeRefs || [];\nvar form = form;\n\nif (window.types_artifacts_loading) {\n  return;\n}\n\nif (types.length) {\n\n  window.types_artifacts_loading = true;\n  \n\tCiteck.Records.query({\n\t    \n\t    sourceId: 'eapps/artifact',\n\t    query: {\n\t        typeRefs: types\n\t    },\n\t    language: \"type-artifacts\"\n\n\t}).then(function(res) {\n\n\t\tvar newArtifacts = res.records;\n\t\tif (!newArtifacts || !newArtifacts.length) {\n\t\t  Citeck.NotificationManager.warning(\"Подходящих артефактов не найдено\");\n\t\t  return null;\n\t\t}\n\t\t\n\t  var resultArtifacts = [];\n\t  for (var idx in data.artifacts) {\n\t    resultArtifacts.push(data.artifacts[idx]);\n\t  }\n\t  var artifactsSizeBefore = resultArtifacts.length; \n\t  for (var idx in newArtifacts) {\n\t    var artifact = newArtifacts[idx];\n\t    if (resultArtifacts.indexOf(artifact) === -1) {\n\t      resultArtifacts.push(artifact);\n\t    }\n\t  }\n\t  var newArtifactsCount = resultArtifacts.length - artifactsSizeBefore; \n\t  if (newArtifactsCount) {\n  \t  var newSubmission = Object.assign({}, form.submission, {\n  \t\t\tdata: Object.assign({}, form.submission.data, {\n  \t\t\t\t\"artifacts\": resultArtifacts\n  \t\t\t})\n  \t\t});\n  \t\tform.submission = newSubmission;\n  \t\tCiteck.NotificationManager.success(\"Артефакты успешно добавлены. Количество: \" + newArtifactsCount);\n\t  } else {\n\t    Citeck.NotificationManager.success(\"Все найденные артефакты уже добавлены\");\n\t  }\n\t}).then(function() {  \n    window.types_artifacts_loading = false;\n\t}).catch(function(e) {\n    window.types_artifacts_loading = false;\n    Citeck.NotificationManager.error(\"Произошла ошибка при загрузке артефактов\");\n\t  throw e;\n\t});\n} else {\n    Citeck.NotificationManager.warning(\"Вы должны выбрать один или несколько типов для использования автоматической загрузки артефактов\");\n}",
                     "block": true,
                     "key": "submit3",
                     "type": "button",
