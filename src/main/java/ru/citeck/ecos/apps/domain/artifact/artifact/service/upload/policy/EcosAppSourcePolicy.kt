@@ -15,7 +15,7 @@ class EcosAppSourcePolicy : ArtifactSourcePolicy {
     }
 
     override fun isPatchingAllowed(context: ArtifactContext): Boolean {
-        return true
+        return false
     }
 
     override fun isUploadAllowed(context: ArtifactContext, newRev: ArtifactRevContext): Boolean {
