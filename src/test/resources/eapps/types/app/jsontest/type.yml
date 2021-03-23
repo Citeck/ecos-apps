@@ -1,0 +1,10 @@
+
+modelVersion: "1.0"
+
+source-id: "test-source"
+
+controller:
+  type: json
+  config:
+    metaFields:
+      dependencies: [ 'dependencies[]' ]

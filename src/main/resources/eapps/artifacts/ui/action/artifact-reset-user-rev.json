@@ -1,0 +1,26 @@
+{
+  "id": "artifact-reset-user-rev",
+  "name": {
+    "ru": "Сбросить пользовательские настройки",
+    "en": "Reset user settings"
+  },
+  "icon": "icon-reload",
+  "confirm": {
+    "title": {
+      "ru": "Сбросить пользовательские настройки",
+      "en": "Reset user settings"
+    },
+    "message": {
+      "ru": "Вы дейсвительно хотите сбросить изменения пользователей для данного артефакта и вернуть исходную версию?" ,
+      "en": "Are you really want to reset user changes for this artifact and return artifact source version?"
+    }
+  },
+  "type": "fetch",
+  "config": {
+    "url": "/gateway/eapps/api/artifact/reset-user-rev",
+    "args": {
+      "ref": "${recordRef}"
+    },
+    "method": "POST"
+  }
+}

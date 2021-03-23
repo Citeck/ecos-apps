@@ -1,0 +1,7 @@
+{
+  "id": "test-artifact2",
+  "someprops": {
+    "aa": "bb"
+  },
+  "dependencies": "eapps/test-source@test-artifact"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "test-artifact",
+  "someprops": {
+    "aa": "bb"
+  }
+}

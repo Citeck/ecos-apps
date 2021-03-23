@@ -1,0 +1,27 @@
+
+id: ecos-apps
+label: { ru: Приложения ECOS, en: ECOS Applications }
+
+typeRef: emodel/type@ecos-app
+sourceId: eapps/ecosapp
+
+system: true
+
+attributes:
+  journalsListId: global-system
+
+actions:
+  - uiserv/action@download-base64-data-zip
+  - uiserv/action@delete
+  - uiserv/action@edit
+
+columns:
+
+  - name: moduleId
+    label: { ru: Идентификатор, en: Id }
+
+  - name: name
+    label: { ru: Имя, en: Name }
+
+  - name: version
+    label: { ru: Версия, en: Version }

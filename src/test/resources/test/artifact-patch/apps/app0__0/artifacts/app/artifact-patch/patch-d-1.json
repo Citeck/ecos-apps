@@ -1,0 +1,24 @@
+{
+  "id": "patch1",
+  "name": {
+    "ru": "Disable income package task form",
+    "en": "Disable income package task form"
+  },
+  "order": 1,
+  "target": "ui/form2$test-form",
+  "type": "json",
+  "config": {
+    "operations": [
+      {
+        "op": "set",
+        "path": "formKey",
+        "value": "patched-by-patch-1"
+      },
+      {
+        "op": "set",
+        "path": "patch-1-applied",
+        "value": true
+      }
+    ]
+  }
+}

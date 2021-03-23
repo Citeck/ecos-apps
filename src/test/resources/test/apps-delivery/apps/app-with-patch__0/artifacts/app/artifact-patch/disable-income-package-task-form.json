@@ -1,0 +1,24 @@
+{
+  "id": "disable-income-package-task-form",
+  "name": {
+    "ru": "Disable income package task form",
+    "en": "Disable income package task form"
+  },
+  "order": 0,
+  "target": "ui/form2$second-form",
+  "type": "json",
+  "config": {
+    "operations": [
+      {
+        "op": "set",
+        "path": "formKey",
+        "value": "alf_samwf:incomePackageTask_disabled_by_patch"
+      },
+      {
+        "op": "set",
+        "path": "description",
+        "value": "Форма отключена патчем"
+      }
+    ]
+  }
+}

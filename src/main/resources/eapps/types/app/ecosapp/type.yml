@@ -1,0 +1,15 @@
+
+model-version: '1.0'
+
+name:
+  ru: ECOS Приложение
+  en: ECOS Application
+
+source-id: ""
+
+internal: true
+
+controller:
+  type: script
+  config:
+    script: EcosAppController.groovy

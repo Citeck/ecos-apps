@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
+import ru.citeck.ecos.apps.app.application.api.rest.errors.CustomParameterizedException;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;

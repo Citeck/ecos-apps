@@ -3,7 +3,6 @@ package ru.citeck.ecos.apps.config;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
-import ru.citeck.ecos.apps.app.EcosApp;
 
 import java.io.File;
 

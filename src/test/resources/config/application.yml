@@ -124,8 +124,3 @@ ecosapps:
         authentication:
             username: admin
             password: admin
-
-    application:
-        deployUrl:
-            #todo: rename model to module
-            bpm_process: http://localhost:8080/alfresco/service/citeck/ecos/bpm/process/model/deploy

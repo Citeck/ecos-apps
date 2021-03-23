@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20210120000000" author="citeck">
+
+        <addColumn tableName="ecos_artifact">
+            <column name="system" type="BOOLEAN" />
+        </addColumn>
+
+        <modifyDataType tableName="ecos_artifact_rev"
+                        columnName="model_version"
+                        newDataType="VARCHAR" />
+
+        <dropColumn tableName="ecos_artifact_rev" columnName="is_user_rev" />
+        <dropColumn tableName="ecos_artifact_rev" columnName="rev_type" />
+
+    </changeSet>
+
+</databaseChangeLog>

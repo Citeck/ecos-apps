@@ -1,0 +1,11 @@
+
+id: ecos-artifact
+
+name:
+  en: ECOS Artifact
+  ru: Артефакт ECOS
+
+system: true
+
+journalRef: uiserv/journal@ecos-artifacts
+

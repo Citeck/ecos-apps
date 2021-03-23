@@ -1,0 +1,202 @@
+{
+  "id": "ecos-app-form",
+  "formKey": "",
+  "system": true,
+  "title": {
+    "en": "ECOS Applications Form"
+  },
+  "description": {
+    "en": ""
+  },
+  "customModule": null,
+  "typeRef": "emodel/type@ecos-app",
+  "width": "default",
+  "i18n": {},
+  "definition": {
+    "components": [
+      {
+        "title": "Main",
+        "key": "panel2",
+        "type": "panel",
+        "input": false,
+        "components": [
+          {
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Id",
+                    "defaultValue": "",
+                    "key": "moduleId",
+                    "type": "textfield",
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
+                  },
+                  {
+                    "label": "Name",
+                    "key": "name",
+                    "type": "mlText",
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
+                  }
+                ],
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "index": 0
+              },
+              {
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "index": 1,
+                "components": [
+                  {
+                    "label": "Version",
+                    "defaultValue": "",
+                    "key": "version",
+                    "type": "textfield",
+                    "input": true,
+                    "validate": {
+                      "required": true
+                    }
+                  }
+                ]
+              }
+            ],
+            "key": "columns",
+            "type": "columns",
+            "input": false
+          }
+        ]
+      },
+      {
+        "title": "Artifacts",
+        "key": "panel3",
+        "type": "panel",
+        "input": false,
+        "components": [
+          {
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": "Types",
+                    "journalId": "ecos-app-types",
+                    "key": "typeRefs",
+                    "type": "selectJournal",
+                    "input": true,
+                    "multiple": true
+                  },
+                  {
+                    "label": "Load artifacts for selected types",
+                    "action": "custom",
+                    "state": "",
+                    "showValidations": false,
+                    "custom": "var types = data.typeRefs || [];\nvar form = form;\n\nif (window.types_artifacts_loading) {\n  return;\n}\n\nif (types.length) {\n\n  window.types_artifacts_loading = true;\n  \n\tCiteck.Records.query({\n\t    \n\t    sourceId: 'eapps/artifact',\n\t    query: {\n\t        typeRefs: types\n\t    },\n\t    language: \"type-artifacts\"\n\n\t}).then(function(res) {\n\n\t\tvar newArtifacts = res.records;\n\t\tif (newArtifacts) {\n\t\t  var resultArtifacts = [];\n\t\t  for (var idx in data.artifacts) {\n\t\t    resultArtifacts.push(data.artifacts[idx]);\n\t\t  }\n\t\t  for (var idx in newArtifacts) {\n\t\t    var artifact = newArtifacts[idx];\n\t\t    if (resultArtifacts.indexOf(artifact) === -1) {\n\t\t      resultArtifacts.push(artifact);\n\t\t    }\n\t\t  }\n\t\t  var newSubmission = Object.assign({}, form.submission, {\n\t\t\t\tdata: Object.assign({}, form.submission.data, {\n\t\t\t\t\t\"artifacts\": resultArtifacts\n\t\t\t\t})\n\t\t\t});\n\t\t\tform.submission = newSubmission;\n\t\t}\t\n\t}).then(function() {  \n    window.types_artifacts_loading = false;\n\t}).catch(function(e) {\n    window.types_artifacts_loading = false;\n\t  throw e;\n\t});\n}",
+                    "block": true,
+                    "key": "submit3",
+                    "type": "button",
+                    "input": true
+                  }
+                ],
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "index": 0
+              },
+              {
+                "index": 1,
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "components": [
+                  {
+                    "label": "Artifacts",
+                    "multiple": true,
+                    "reorder": false,
+                    "journalId": "ecos-app-artifacts",
+                    "defaultValue": [],
+                    "key": "artifacts",
+                    "type": "selectJournal",
+                    "input": true
+                  }
+                ]
+              }
+            ],
+            "key": "columns2",
+            "type": "columns",
+            "input": false
+          }
+        ]
+      },
+      {
+        "columns": [
+          {
+            "components": [],
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 0
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 1,
+            "components": []
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 2,
+            "components": [
+              {
+                "label": "Cancel",
+                "action": "event",
+                "state": "",
+                "showValidations": false,
+                "event": "cancel",
+                "block": true,
+                "key": "submit2",
+                "type": "button",
+                "input": true
+              }
+            ]
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 3,
+            "components": [
+              {
+                "label": "Save",
+                "state": "",
+                "theme": "primary",
+                "block": true,
+                "disableOnInvalid": true,
+                "key": "submit",
+                "type": "button",
+                "input": true
+              }
+            ]
+          }
+        ],
+        "key": "columns3",
+        "type": "columns",
+        "input": false
+      }
+    ]
+  },
+  "attributes": {}
+}
