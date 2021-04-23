@@ -131,10 +131,10 @@ class EcosAppRecords(
         @JsonProperty("_content")
         fun setContent(content: List<ObjectData>) {
 
-            val base64Content = content[0].get("url", "")
+            val base64Content = content[0].get("url")
             //val filename = content[0].get("originalName", "")
             val pattern = Pattern.compile("^data:(.+?);base64,(.+)$")
-            val matcher = pattern.matcher(base64Content)
+            val matcher = pattern.matcher(base64Content.asText())
 
             check(matcher.find()) { "Incorrect content: $base64Content" }
 

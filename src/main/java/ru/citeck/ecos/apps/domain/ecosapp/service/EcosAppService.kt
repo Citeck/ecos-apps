@@ -69,7 +69,7 @@ class EcosAppService(
 
         val artifactsSet = HashSet<String>()
         app.typeRefs.forEach { artifactsSet.add(typeRefToArtifactRef(it).id) }
-        app.artifacts.forEach { artifactsSet.add(it.toString()) }
+        app.artifacts.forEach { artifactsSet.add(it.id) }
 
         ecosArtifactsService.setEcosAppFull(artifactsSet.map { ArtifactRef.valueOf(it) }, app.id)
 

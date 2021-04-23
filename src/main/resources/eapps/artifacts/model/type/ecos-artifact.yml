@@ -1,4 +1,4 @@
-
+---
 id: ecos-artifact
 
 name:
@@ -6,6 +6,8 @@ name:
   ru: Артефакт ECOS
 
 system: true
+
+sourceId: eapps/artifact
 
 journalRef: uiserv/journal@ecos-artifacts
 

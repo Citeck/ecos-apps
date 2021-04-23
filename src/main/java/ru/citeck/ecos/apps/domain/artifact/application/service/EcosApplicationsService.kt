@@ -33,6 +33,8 @@ class EcosApplicationsService(
         val log = KotlinLogging.logger {}
     }
 
+    private var appsStatusByName: Map<String, List<RemoteAppStatus>> = emptyMap()
+
     private val sources = ConcurrentHashMap<AppSourceKey, AppArtifactsSourceImpl>()
     private val typesSources = ConcurrentHashMap<String, RemoteAppStatus>()
     private val deployers = ConcurrentHashMap<String, AppArtifactsDeployer>()
@@ -159,6 +161,12 @@ class EcosApplicationsService(
                 ecosArtifactsSourcesService.addSource(appSource)
             }
         }
+
+        this.appsStatusByName = appsByName
+    }
+
+    fun getAppsStatus(): Map<String, List<RemoteAppStatus>> {
+        return appsStatusByName
     }
 
     fun deployArtifacts() {

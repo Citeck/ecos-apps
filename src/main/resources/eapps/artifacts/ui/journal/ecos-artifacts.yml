@@ -1,0 +1,40 @@
+---
+id: ecos-artifacts
+name: { ru: Артефакты ECOS, en: ECOS Artifacts }
+
+system: true
+
+actions:
+  - uiserv/action@artifact-download-revisions
+  - uiserv/action@download-base64-data-zip
+  - uiserv/action@artifact-deploy
+  - uiserv/action@artifact-reset-user-rev
+
+columns:
+
+  - id: type
+    name: { ru: Тип, en: Type }
+
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    name: { ru: Имя, en: Name }
+
+  - id: tagsStr
+    name: { ru: Тэги, en: Tags }
+
+  - id: deployStatus
+    name: { ru: Статус деплоя, en: Deploy status }
+
+  - id: sourceType
+    name: { ru: Тип источника, en: Source type }
+
+  - id: sourceId
+    name: { ru: Идентификатор источника, en: Source ID }
+
+  - id: modifiedIso
+    name: { ru: Дата изменения, en: Modified }
+
+  - id: createdIso
+    name: { ru: Дата создания, en: Created }

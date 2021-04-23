@@ -1,0 +1,29 @@
+---
+id: ecos-app-artifacts
+name: { ru: Артефакты ECOS, en: ECOS Artifacts }
+
+system: true
+typeRef: emodel/type@ecos-artifact
+
+actions:
+  - uiserv/action@ecos-module-download
+  - uiserv/action@artifact-deploy
+
+predicate:
+  t: eq
+  att: system
+  val: false
+
+columns:
+
+  - id: type
+    name: { ru: Тип, en: Type }
+
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    name: { ru: Имя, en: Name }
+
+  - id: tagsStr
+    name: { ru: Тэги, en: Tags }

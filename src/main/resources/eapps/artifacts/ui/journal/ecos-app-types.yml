@@ -1,0 +1,26 @@
+---
+id: ecos-app-types
+name: { ru: Типы данных, en: Data types }
+
+system: true
+
+typeRef: emodel/type@type
+
+predicate:
+  t: eq
+  att: system
+  val: false
+
+columns:
+
+  - id: moduleId
+    type: TEXT
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    type: TEXT
+    name: { ru: Имя, en: Name }
+
+  - id: description
+    type: TEXT
+    name: { ru: Описание, en: Description }

@@ -1,0 +1,24 @@
+---
+id: ecos-module-patches
+name: { ru: Патчи модулей, en: Module patches }
+
+system: true
+
+actions:
+  - uiserv/action@ecos-module-download
+  - uiserv/action@delete
+  - uiserv/action@edit
+
+columns:
+
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    name: { ru: Имя, en: Name }
+
+  - id: target
+    name: { ru: Цель патча, en: Patch target }
+
+  - id: order
+    name: { ru: Порядок, en: Order }

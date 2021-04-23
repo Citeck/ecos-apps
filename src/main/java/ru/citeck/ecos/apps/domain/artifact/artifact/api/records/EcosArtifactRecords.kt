@@ -1,9 +1,11 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.api.records
 
+import mu.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommand
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommandResponse
 import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.domain.artifact.application.service.EcosApplicationsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
@@ -12,6 +14,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.commands.CommandsService
+import ru.citeck.ecos.commands.dto.CommandResult
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.records2.QueryContext
 import ru.citeck.ecos.records2.RecordRef
@@ -26,18 +29,23 @@ import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
 import java.time.Instant
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @Component
 class EcosArtifactRecords(
     val ecosArtifactsService: EcosArtifactsService,
     private val commandsService: CommandsService,
-    private val ecosArtifactTypesService: EcosArtifactTypesService
+    private val ecosArtifactTypesService: EcosArtifactTypesService,
+    private val applicationsService: EcosApplicationsService
 ) : LocalRecordsDao(),
     LocalRecordsMetaDao<Any>,
     LocalRecordsQueryWithMetaDao<Any> {
 
     companion object {
         const val ID = "artifact"
+
+        private val log = KotlinLogging.logger {}
     }
 
     init {
@@ -64,38 +72,10 @@ class EcosArtifactRecords(
         if (recordsQuery.language == "type-artifacts") {
 
             val typeArtifactsQuery = recordsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
-            if (typeArtifactsQuery.typeRefs.isEmpty()) {
-                return RecordsQueryResult()
-            }
+            val artifacts = getArtifactsForTypes(typeArtifactsQuery.typeRefs, HashSet())
+            artifacts.removeAll(typeArtifactsQuery.typeRefs);
 
-            val expandTypesQuery = RecordsQuery().apply {
-
-                this.sourceId = "emodel/type"
-                this.language = "expand-types"
-
-                val query = HashMap<String, Any>()
-                query["typeRefs"] = typeArtifactsQuery.typeRefs
-                this.query = query
-            }
-
-            val expandedTypes = recordsService.queryRecords(expandTypesQuery).records
-            if (expandedTypes.isEmpty()) {
-                return RecordsQueryResult()
-            }
-
-            val results = commandsService.executeForGroupSync {
-                body = GetModelTypeArtifactsCommand(expandedTypes)
-                targetApp = "all"
-            }
-
-            val artifactsSet = HashSet<RecordRef>()
-            results.mapNotNull {
-                it.getResultAs(GetModelTypeArtifactsCommandResponse::class.java)?.artifacts
-            }.forEach {
-                artifactsSet.addAll(it)
-            }
-
-            result.records = artifactsSet.map {
+            result.records = artifacts.map {
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
@@ -120,6 +100,70 @@ class EcosArtifactRecords(
         }
 
         return result
+    }
+
+    private fun getArtifactsForTypes(typeRefs: Collection<RecordRef>,
+                                     checkedTypes: MutableSet<RecordRef>): MutableSet<RecordRef> {
+
+        if (typeRefs.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        checkedTypes.addAll(typeRefs)
+
+        val expandTypesQuery = RecordsQuery().apply {
+
+            this.sourceId = "emodel/type"
+            this.language = "expand-types"
+
+            val query = HashMap<String, Any>()
+            query["typeRefs"] = typeRefs
+            this.query = query
+        }
+
+        val expandedTypes = recordsService.queryRecords(expandTypesQuery).records
+        if (expandedTypes.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        val artifactsSet = HashSet<RecordRef>()
+        val newTypes = HashSet<RecordRef>()
+
+        val appNames = applicationsService.getAppsStatus().keys.toList()
+        val resultFutures = appNames.map {
+            commandsService.execute {
+                body = GetModelTypeArtifactsCommand(expandedTypes)
+                targetApp = it
+            }
+        }
+
+        val results = mutableListOf<CommandResult>()
+        for (future in resultFutures.withIndex()) {
+            try {
+                results.add(future.value.get(2, TimeUnit.SECONDS))
+            } catch (e: TimeoutException) {
+                log.warn("Service doesn't respond in 2 seconds: '${appNames[future.index]}'")
+            } catch (e: Exception) {
+                log.error(e) { "Exception while future waiting for app: '${appNames[future.index]}'" }
+            }
+        }
+
+        results.mapNotNull {
+            it.getResultAs(GetModelTypeArtifactsCommandResponse::class.java)?.artifacts
+        }.forEach {
+            artifactsSet.addAll(it)
+            it.forEach { ref ->
+                if (ref.appName == "emodel" && ref.sourceId == "type" && checkedTypes.add(ref)) {
+                    newTypes.add(ref);
+                }
+            }
+        }
+
+        if (newTypes.isNotEmpty()) {
+            artifactsSet.addAll(getArtifactsForTypes(newTypes, checkedTypes))
+        }
+
+        return artifactsSet
     }
 
     inner class EcosArtifactRecord(
@@ -161,7 +205,10 @@ class EcosArtifactRecords(
 
             val locale = QueryContext.getCurrent<QueryContext>().locale
 
-            val name = MLText.getClosestValue(artifact.name, locale)
+            var name = MLText.getClosestValue(artifact.name, locale)
+            if (name.isBlank()) {
+                name = artifact.id
+            }
 
             var typeName = MLText.getClosestValue(typeContext?.getMeta()?.name, locale)
             if (typeName.isBlank()) {

@@ -1,0 +1,21 @@
+---
+id: ecos-apps
+name: { ru: Приложения ECOS, en: ECOS Applications }
+
+system: true
+
+actions:
+  - uiserv/action@download-base64-data-zip
+  - uiserv/action@delete
+  - uiserv/action@edit
+
+columns:
+
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    name: { ru: Имя, en: Name }
+
+  - id: version
+    name: { ru: Версия, en: Version }
