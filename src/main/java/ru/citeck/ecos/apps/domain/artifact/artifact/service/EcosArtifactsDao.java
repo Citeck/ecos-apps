@@ -42,14 +42,16 @@ public class EcosArtifactsDao {
 
     public List<EcosArtifactRevEntity> getArtifactsLastRev(String type, int skipCount, int maxItems) {
         int page = skipCount / maxItems;
-        return artifactsRepo.getModulesLastRev(type, PageRequest.of(page, maxItems));
+        return artifactsRepo.getArtifactsLastRev(type, PageRequest.of(page, maxItems));
     }
 
     public List<EcosArtifactRevEntity> getAllLastRevisions(int skipCount, int maxItems) {
 
         int page = skipCount / maxItems;
-        return artifactsRepo.findAll(PageRequest.of(page, maxItems, Sort.by(Sort.Order.desc("id"))))
-            .stream()
+        return artifactsRepo.findAll(
+            getNonDeletedWithLastRevSpec(),
+            PageRequest.of(page, maxItems, Sort.by(Sort.Order.desc("id")))
+        ).stream()
             .map(EcosArtifactEntity::getLastRev)
             .collect(Collectors.toList());
     }
@@ -139,6 +141,12 @@ public class EcosArtifactsDao {
         delete(getArtifact(ref));
     }
 
+    private Specification<EcosArtifactEntity> getNonDeletedWithLastRevSpec() {
+        Specification<EcosArtifactEntity> spec = (root, query, builder) -> builder.isNotNull(root.get("lastRev"));
+        spec = spec.and((root, query, builder) -> builder.notEqual(root.get("deleted"), true));
+        return spec;
+    }
+
     private Specification<EcosArtifactEntity> toSpec(Predicate predicate) {
 
         PredicateDto predicateDto = PredicateUtils.convertToDto(predicate, PredicateDto.class);
@@ -190,8 +198,7 @@ public class EcosArtifactsDao {
             spec = spec.and(systemSpec);
         }
 
-        return spec.and((root, query, builder) -> builder.isNotNull(root.get("lastRev")))
-            .and((root, query, builder) -> builder.notEqual(root.get("deleted"), true));
+        return spec.and(getNonDeletedWithLastRevSpec());
     }
 
     @Data
