@@ -68,7 +68,7 @@ public class EcosArtifactsService {
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
 
-    private List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
+    private final List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -604,7 +604,7 @@ public class EcosArtifactsService {
         EcosFile resultDir = new EcosMemDir();
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
-        if (artifact == null) {
+        if (artifact == null || artifact.getLastRev() == null) {
             return resultDir;
         }
 
@@ -614,49 +614,99 @@ public class EcosArtifactsService {
             return resultDir;
         }
 
-        EcosArtifactRevEntity lastRev = artifact.getLastRev();
-        int maxRevisions = 50;
-        while (lastRev != null && maxRevisions-- > 0) {
+        List<EcosArtifactRevEntity> revisions = artifactsDao.getArtifactRevisionsSince(
+            artifactRef,
+            fromTime,
+            0,
+            50
+        );
+        if (revisions.isEmpty()) {
+            revisions = artifactsDao.getArtifactRevisionsSince(
+                artifactRef,
+                Instant.EPOCH,
+                0,
+                1
+            );
+        }
 
-            byte[] content = lastRev.getContent().getData();
+        long lastRevId = artifact.getLastRev().getId();
 
-            String revDirName = lastRev.getCreatedDate() + "-" + lastRev.getSourceType();
+        for (EcosArtifactRevEntity revEntity : revisions) {
+
+            byte[] content = revEntity.getContent().getData();
+
+            String sourceType;
+            if (revEntity.getSourceType() == null) {
+                sourceType = "UNKNOWN";
+            } else {
+                sourceType = String.valueOf(revEntity.getSourceType());
+            }
+            String revDirName = revEntity.getCreatedDate() + "-" + sourceType;
+            if (revEntity.getId() == lastRevId) {
+                revDirName = revDirName + "-ACTIVE";
+            }
             revDirName = revDirName.replaceAll("[^a-zA-Z\\-_\\d]", "-");
 
             EcosFile revDir = resultDir.createDir(revDirName);
 
             Object artifactData = artifactsService.readArtifactFromBytes(artifactRef.getType(), content);
             artifactsService.writeArtifact(revDir, type, artifactData);
-
-            lastRev = lastRev.getPrevRev();
-            if (lastRev == null || lastRev.getCreatedDate().isBefore(fromTime)) {
-                break;
-            }
         }
 
         return resultDir;
     }
 
-    public void resetUserRevision(ArtifactRef artifactRef) {
+    public AllUserRevisionsResetStatus resetAllUserRevisions() {
 
-        log.info("User artifact resetting: " + artifactRef);
+        log.info("========= User all artifacts resetting started =========");
+
+        int pageSize = 10;
+        int page = 0;
+
+        long changedCounter = 0;
+        long processedCounter = 0;
+
+        List<EcosArtifactRevEntity> revisions = artifactsDao.getAllLastRevisions(0, pageSize);
+        try {
+            while (!revisions.isEmpty()) {
+                for (EcosArtifactRevEntity rev : revisions) {
+                    if (resetUserRevision(rev.getArtifact())) {
+                        changedCounter++;
+                    }
+                    processedCounter++;
+                }
+                revisions = artifactsDao.getAllLastRevisions((++page) * pageSize, pageSize);
+            }
+        } finally {
+            log.info("========= User all artifacts resetting completed. "
+                + "Artifacts was changed: " + changedCounter
+                + " Processed: " + processedCounter + " =========");
+        }
+
+        return new AllUserRevisionsResetStatus(changedCounter, processedCounter);
+    }
+
+    public boolean resetUserRevision(ArtifactRef artifactRef) {
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
         if (artifact == null) {
             log.warn("Artifact is not found: " + artifactRef);
-            return;
+            return false;
         }
 
+        return resetUserRevision(artifact);
+    }
+
+    public boolean resetUserRevision(EcosArtifactEntity artifact) {
+
         if (artifact.getLastRev() == null) {
-            log.warn("Artifact without last revision. Nothing to reset. Artifact: " + artifactRef);
-            return;
+            return false;
         }
 
         EcosArtifactRevEntity lastRev = artifact.getLastRev();
 
         if (!ArtifactRevSourceType.USER.equals(lastRev.getSourceType())) {
-            log.warn("Artifact source is not USER. Artifact: " + artifactRef);
-            return;
+            return false;
         }
 
         EcosArtifactRevEntity lastNotUserRev = lastRev;
@@ -670,9 +720,12 @@ public class EcosArtifactsService {
         }
 
         if (lastNotUserRev == null || ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
-            log.warn("Not user rev is not found");
-            return;
+            return false;
         }
+
+        ArtifactRef artifactRef = ArtifactRef.create(artifact.getType(), artifact.getExtId());
+
+        log.info("User artifact resetting: " + artifactRef);
 
         EcosArtifactRevEntity newLastRev = new EcosArtifactRevEntity();
         newLastRev.setSourceId(lastNotUserRev.getSourceId());
@@ -708,6 +761,8 @@ public class EcosArtifactsService {
         artifactRevUpdateListeners.forEach(it -> it.invoke(artifactRef));
 
         log.info("User artifact resetting completed: " + artifactRef);
+
+        return true;
     }
 
     public void resetDeployStatus(ArtifactRef artifactRef) {

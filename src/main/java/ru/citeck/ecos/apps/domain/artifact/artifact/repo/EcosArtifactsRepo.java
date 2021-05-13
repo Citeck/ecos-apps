@@ -36,7 +36,7 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
            "JOIN module.lastRev rev " +
            "WHERE module.type = ?1 AND module.deleted = false " +
            "ORDER BY module.id DESC")
-    List<EcosArtifactRevEntity> getModulesLastRev(String type, Pageable pageable);
+    List<EcosArtifactRevEntity> getArtifactsLastRev(String type, Pageable pageable);
 
     @Query("SELECT max(artifact.lastModifiedDate) FROM EcosArtifactEntity artifact")
     Instant getLastModifiedTime();
