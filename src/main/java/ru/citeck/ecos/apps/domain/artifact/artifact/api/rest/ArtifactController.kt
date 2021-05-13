@@ -4,10 +4,12 @@ import mu.KotlinLogging
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.AllUserRevisionsResetStatus
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.commons.utils.ZipUtils
 import ru.citeck.ecos.records2.RecordRef
@@ -37,6 +39,12 @@ class ArtifactController(
         applicationsWatcherJob.forceUpdate()
     }
 
+    @PostMapping("reset-all-user-revs", produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    fun resetAllUserRevisions(): AllUserRevisionsResetStatus {
+        return artifactService.resetAllUserRevisions()
+        applicationsWatcherJob.forceUpdate()
+    }
+
     @GetMapping("download-revisions")
     fun downloadRevisions(@RequestParam(required = true) ref: RecordRef,
                           @RequestParam(required = true) fromTime: String) : HttpEntity<ByteArray> {
@@ -47,7 +55,7 @@ class ArtifactController(
         val dir = artifactService.getArtifactRevisions(artifactRef, fromTimeInstant)
         val resultBytes = ZipUtils.writeZipAsBytes(dir)
 
-        val headers = HttpHeaders();
+        val headers = HttpHeaders()
         headers.contentDisposition = ContentDisposition.builder("attachment")
                 .filename(artifactRef.id.replace("[^a-zA-Z\\-\\d_]".toRegex(), "_") + ".zip")
                 .build();

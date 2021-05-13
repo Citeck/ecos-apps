@@ -14,6 +14,7 @@ import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,8 +24,8 @@ import java.util.stream.Collectors;
 public class EcosArtifactsDao {
 
     private final EcosArtifactsRepo artifactsRepo;
-    private final EcosArtifactsRevRepo moduleRevRepo;
-    private final EcosArtifactsDepRepo moduleDepRepo;
+    private final EcosArtifactsRevRepo artifactsRevRepo;
+    private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
 
     public int getArtifactsCount() {
@@ -37,10 +38,6 @@ public class EcosArtifactsDao {
 
     public List<EcosArtifactEntity> getArtifactsByType(String type) {
         return artifactsRepo.findAllByType(type);
-    }
-
-    public List<EcosArtifactEntity> getAllArtifacts() {
-        return artifactsRepo.findAll();
     }
 
     public List<EcosArtifactRevEntity> getArtifactsLastRev(String type, int skipCount, int maxItems) {
@@ -85,7 +82,7 @@ public class EcosArtifactsDao {
     public List<EcosArtifactEntity> getDependentModules(ArtifactRef targetRef) {
 
         EcosArtifactEntity moduleEntity = artifactsRepo.getByExtId(targetRef.getType(), targetRef.getId());
-        List<EcosArtifactDepEntity> depsByTarget = moduleDepRepo.getDepsByTarget(moduleEntity.getId());
+        List<EcosArtifactDepEntity> depsByTarget = artifactsDepRepo.getDepsByTarget(moduleEntity.getId());
 
         return depsByTarget.stream()
             .map(EcosArtifactDepEntity::getSource)
@@ -108,8 +105,17 @@ public class EcosArtifactsDao {
         return artifactsRepo.getByExtId(ref.getType(), ref.getId());
     }
 
-    public EcosArtifactRevEntity getModuleRev(String revId) {
-        return moduleRevRepo.getRevByExtId(revId);
+    public List<EcosArtifactRevEntity> getArtifactRevisionsSince(ArtifactRef ref, Instant since, int skip, int max) {
+        if (max <= 0) {
+            return Collections.emptyList();
+        }
+        int page = skip / max;
+        return artifactsRevRepo.getArtifactRevisionsSince(
+            ref.getType(),
+            ref.getId(),
+            since,
+            PageRequest.of(page, max)
+        );
     }
 
     public EcosArtifactEntity save(EcosArtifactEntity entity) {
@@ -117,7 +123,7 @@ public class EcosArtifactsDao {
     }
 
     public EcosArtifactRevEntity save(EcosArtifactRevEntity entity) {
-        return moduleRevRepo.save(entity);
+        return artifactsRevRepo.save(entity);
     }
 
     public void delete(EcosArtifactEntity module) {

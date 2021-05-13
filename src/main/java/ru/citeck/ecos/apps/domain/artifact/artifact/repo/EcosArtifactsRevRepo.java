@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -18,6 +19,15 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
     List<EcosArtifactRevEntity> getArtifactRevisions(String type,
                                                      String artifactId,
                                                      Pageable pageable);
+
+    @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
+           "JOIN rev.artifact module " +
+           "WHERE module.type = ?1 AND module.extId = ?2 AND module.deleted = false AND rev.createdDate > ?3 " +
+           "ORDER BY rev.createdDate DESC")
+    List<EcosArtifactRevEntity> getArtifactRevisionsSince(String type,
+                                                          String artifactId,
+                                                          Instant since,
+                                                          Pageable pageable);
 
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
            "JOIN rev.artifact module " +
