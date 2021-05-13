@@ -13,39 +13,51 @@ import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 
 @Component
-class DevModuleRecords(
+class DevModuleActionRecords(
     val service: DevModulesService
 ) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao {
 
-    override fun getRecordAtts(recordId: String): Any? {
-        return service.getById(recordId)?.let { Record(it, emptyList()) }
+    override fun getRecordAtts(recordId: String): Any {
+
+        val actionId = recordId.substringAfterLast("$")
+        val actionRef = RecordRef.create("uiserv", "action", actionId)
+
+        val name = recordsService.getAtt(actionRef, "name").asText()
+
+        return Record(recordId, name, actionRef)
     }
 
     override fun queryRecords(recsQuery: RecordsQuery): Any? {
-        return service.findAll().map { Record(it, emptyList()) }
+        return service.findAll().flatMap { toRecords(it) }
+    }
+
+    private fun toRecords(module: DevModuleDef): List<Any> {
+
+        val names = recordsService.getAtts(module.actions, listOf("name")).map {
+            it.getAtt("name").asText()
+        }
+        val result = mutableListOf<Any>()
+        for (idx in module.actions.indices) {
+            val action = module.actions[idx]
+            result.add(Record(module.id + "$" + action.id, names[idx], action))
+        }
+        return result
     }
 
     override fun getId(): String {
-        return "dev-module"
+        return "dev-module-actions"
     }
 
     @Data
     @RequiredArgsConstructor
     class Record(
-        @AttName("...")
-        val def: DevModuleDef,
-        val customActions: List<Any>
+        val id: String,
+        val name: String,
+        val actionRef: RecordRef
     ) {
         @AttName("?type")
         fun getType(): RecordRef {
-            return RecordRef.valueOf("emodel/type@dev-module")
-        }
-
-        fun getActions(): List<Any> {
-            val result = arrayListOf<Any>()
-            result.addAll(def.actions)
-            result.addAll(customActions)
-            return result
+            return RecordRef.valueOf("emodel/type@dev-module-action")
         }
     }
 }

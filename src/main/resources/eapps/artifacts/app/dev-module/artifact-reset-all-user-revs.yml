@@ -1,8 +1,0 @@
-id: artifact-reset-all-user-revs
-
-name:
-  ru: Сбросить все пользовательские настройки
-  en: Reset all user settings
-
-actions:
-  - uiserv/action@artifact-reset-all-user-revs

@@ -16,7 +16,6 @@ class DevModuleEntity : AbstractAuditingEntity() {
     lateinit var extId: String
 
     var name: String? = null
-    var description: String? = null
     var actions: String? = null
 
     override fun getId(): Long? = id

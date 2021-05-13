@@ -6,5 +6,5 @@ name:
 
 type: attribute-actions
 config:
-  attribute: actions
+  attribute: actionRef
 

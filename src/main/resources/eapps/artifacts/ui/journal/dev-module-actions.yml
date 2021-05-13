@@ -1,8 +1,8 @@
 ---
-id: dev-modules
+id: dev-module-actions
 name:
-  ru: Dev modules
-  en: Dev modules
+  ru: Dev actions
+  en: Dev actions
 
 system: true
 

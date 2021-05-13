@@ -11,7 +11,6 @@
 
             <column name="ext_id" type="VARCHAR" />
             <column name="name" type="VARCHAR" />
-            <column name="description" type="VARCHAR" />
             <column name="actions" type="VARCHAR" />
 
             <column name="created_date" type="TIMESTAMP" />

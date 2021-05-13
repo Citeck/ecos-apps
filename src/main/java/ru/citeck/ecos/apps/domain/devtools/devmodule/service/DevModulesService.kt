@@ -31,7 +31,6 @@ class DevModulesService(
             .withId(entity.extId)
             .withActions(DataValue.create(entity.actions).asList(RecordRef::class.java))
             .withName(Json.mapper.read(entity.name, MLText::class.java))
-            .withDescription(Json.mapper.read(entity.description, MLText::class.java))
             .build()
     }
 

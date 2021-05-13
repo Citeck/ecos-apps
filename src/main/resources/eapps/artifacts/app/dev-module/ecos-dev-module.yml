@@ -1,0 +1,10 @@
+id: ecos-dev-module
+
+name:
+  ru: ECOS
+  en: ECOS
+
+actions:
+  - uiserv/action@alf-reset-webscripts-repo
+  - uiserv/action@alf-reset-webscripts-share
+  - uiserv/action@artifact-reset-all-user-revs

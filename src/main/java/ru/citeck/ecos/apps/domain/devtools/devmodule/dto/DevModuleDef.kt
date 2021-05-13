@@ -10,7 +10,6 @@ import ru.citeck.ecos.records2.RecordRef
 data class DevModuleDef(
     val id: String,
     val name: MLText,
-    val description: MLText,
     val actions: List<RecordRef>
 ) {
 
@@ -33,13 +32,11 @@ data class DevModuleDef(
 
         var id: String = ""
         var name: MLText = MLText.EMPTY
-        var description: MLText = MLText.EMPTY
         var actions: List<RecordRef> = emptyList()
 
         constructor(base: DevModuleDef) : this() {
             this.id = base.id
             this.name = base.name
-            this.description = base.description
             this.actions = base.actions
         }
 
@@ -53,18 +50,13 @@ data class DevModuleDef(
             return this
         }
 
-        fun withDescription(description: MLText?): Builder {
-            this.description = description ?: MLText.EMPTY
-            return this
-        }
-
         fun withActions(actions: List<RecordRef>?): Builder {
             this.actions = actions ?: emptyList()
             return this
         }
 
         fun build(): DevModuleDef {
-            return DevModuleDef(id, name, description, actions)
+            return DevModuleDef(id, name, actions)
         }
     }
 }
