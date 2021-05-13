@@ -1,7 +1,7 @@
 {
   "id": "artifact-download-revisions",
   "name": {
-    "ru": "Скачать историю артифакта",
+    "ru": "Скачать историю артефакта",
     "en": "Download artifact history"
   },
   "type": "open-url",
