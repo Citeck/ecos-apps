@@ -1,4 +1,3 @@
-
 modelVersion: "1.0"
 
 name:
@@ -9,4 +8,4 @@ internal: true
 source-id: ""
 
 controller:
-    type: json
+  type: json

@@ -1,0 +1,10 @@
+---
+id: dev-module-actions
+name:
+  ru: Действия модуля разработки
+  en: Dev module actions
+
+type: attribute-actions
+config:
+  attribute: actions
+

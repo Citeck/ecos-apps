@@ -1,0 +1,14 @@
+---
+id: dev-module
+name:
+  en: Dev module
+  ru: Dev module
+
+system: true
+
+sourceId: eapps/dev-module
+
+journalRef: uiserv/journal@dev-modules
+
+actions:
+  - uiserv/action@dev-module-actions

@@ -1,0 +1,21 @@
+---
+id: dev-modules
+name:
+  ru: Dev modules
+  en: Dev modules
+
+system: true
+
+actions:
+  - uiserv/action@dev-module-actions
+
+columns:
+
+  - id: name
+    name: { ru: Заголовок, en: Label }
+    type: TEXT
+
+  - id: description
+    name: { ru: Описание, en: Description }
+    type: TEXT
+

@@ -1,0 +1,12 @@
+modelVersion: "1.0"
+
+name:
+  ru: Модуль разработки
+  en: Dev module
+
+source-id: ""
+
+internal: true
+
+controller:
+  type: json

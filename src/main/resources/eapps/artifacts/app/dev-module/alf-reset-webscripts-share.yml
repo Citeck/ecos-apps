@@ -1,0 +1,8 @@
+id: alf-reset-webscripts-share
+
+name:
+  ru: Обновить SHARE вебскрипты
+  en: Refresh SHARE webscripts
+
+actions:
+  - uiserv/action@alf-reset-webscripts-share
