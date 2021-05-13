@@ -251,7 +251,11 @@ public class EcosArtifactsService {
             artifactEntity = new EcosArtifactEntity();
             artifactEntity.setExtId(meta.getId());
             artifactEntity.setType(typeId);
-            artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+            if (ArtifactRevSourceType.USER.equals(revSourceType)) {
+                artifactEntity.setDeployStatus(DeployStatus.DEPLOYED);
+            } else {
+                artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+            }
             artifactEntity = artifactsRepo.save(artifactEntity);
         }
 
