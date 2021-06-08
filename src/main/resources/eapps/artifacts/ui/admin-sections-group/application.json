@@ -28,12 +28,6 @@
     {
       "type": "JOURNAL",
       "config": {
-        "journalId": "ecos-module-patches"
-      }
-    },
-    {
-      "type": "JOURNAL",
-      "config": {
         "journalId": "ecosConfig"
       }
     }
