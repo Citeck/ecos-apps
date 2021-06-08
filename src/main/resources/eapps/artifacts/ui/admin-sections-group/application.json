@@ -1,0 +1,41 @@
+{
+  "id": "application",
+  "name": {
+    "en": "System management",
+    "ru": "Управление системой"
+  },
+  "order": 0,
+  "sections": [
+    {
+      "name": {
+        "en": "Developer tools",
+        "ru": "Инструменты разработчика"
+      },
+      "type": "DEV_TOOLS"
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecos-apps"
+      }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecos-artifacts"
+      }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecos-module-patches"
+      }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecosConfig"
+      }
+    }
+  ]
+}
