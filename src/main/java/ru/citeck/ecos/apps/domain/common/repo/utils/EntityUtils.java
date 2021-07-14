@@ -8,6 +8,9 @@ import java.util.function.Function;
 
 public class EntityUtils {
 
+    private EntityUtils() {
+    }
+
     public static <K, V> boolean changeHibernateSet(Set<V> currentVal, Set<V> newVal, Function<V, K> valToKey) {
 
         Map<K, V> currentKeysMap = new HashMap<>();

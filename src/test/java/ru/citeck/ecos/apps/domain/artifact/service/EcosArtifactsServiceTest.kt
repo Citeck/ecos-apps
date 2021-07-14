@@ -150,16 +150,17 @@ class EcosArtifactsServiceTest {
             assertEquals(artifacts[type], typeArtifacts)
         }
 
-        val firstArtifact = artifacts["app/jsontest"]?.get(0) as ObjectData
+        val jsonTestTypeId = "app/jsontest"
+        val firstArtifact = artifacts[jsonTestTypeId]?.get(0) as ObjectData
         firstArtifact.set("newField", "newValue")
 
         ecosArtifactsService.uploadArtifact(ArtifactUploadDto(
-            "app/jsontest",
+            jsonTestTypeId,
             firstArtifact,
             AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
         ))
 
-        val artifactRef = ArtifactRef.create("app/jsontest", firstArtifact.get("id").asText());
+        val artifactRef = ArtifactRef.create(jsonTestTypeId, firstArtifact.get("id").asText());
         val updatedArtifact = ecosArtifactsService.getLastArtifact(artifactRef)!!
 
         assertFalse(revIdByArtifact[artifactRef].isNullOrBlank())
@@ -167,6 +168,6 @@ class EcosArtifactsServiceTest {
         assertEquals(DeployStatus.DRAFT, updatedArtifact.deployStatus)
 
         assertTrue(ecosArtifactsService.deployArtifacts(deployer))
-        assertEquals(deployedArtifacts["app/jsontest"]!!.last(), firstArtifact)
+        assertEquals(deployedArtifacts[jsonTestTypeId]!!.last(), firstArtifact)
     }
 }

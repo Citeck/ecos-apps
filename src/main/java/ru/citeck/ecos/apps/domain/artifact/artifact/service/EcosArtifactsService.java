@@ -210,7 +210,7 @@ public class EcosArtifactsService {
         return true;
     }
 
-    synchronized public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
+    public synchronized boolean uploadArtifact(ArtifactUploadDto uploadDto) {
 
         final SourceKey sourceKey = uploadDto.getSource().getSource();
 
@@ -424,7 +424,7 @@ public class EcosArtifactsService {
         return Json.getMapper().read(value, MLText.class);
     }
 
-    synchronized public void updateFailedArtifacts() {
+    public synchronized void updateFailedArtifacts() {
 
         Instant now = Instant.now();
 
@@ -449,7 +449,7 @@ public class EcosArtifactsService {
         }
     }
 
-    synchronized public boolean deployArtifacts(ArtifactDeployer deployer) {
+    public synchronized boolean deployArtifacts(ArtifactDeployer deployer) {
 
         if (deployer.getSupportedTypes().isEmpty()) {
             return false;

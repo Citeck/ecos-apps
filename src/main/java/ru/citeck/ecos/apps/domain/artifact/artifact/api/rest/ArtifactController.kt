@@ -41,8 +41,9 @@ class ArtifactController(
 
     @PostMapping("reset-all-user-revs", produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun resetAllUserRevisions(): AllUserRevisionsResetStatus {
-        return artifactService.resetAllUserRevisions()
+        val status = artifactService.resetAllUserRevisions()
         applicationsWatcherJob.forceUpdate()
+        return status
     }
 
     @GetMapping("download-revisions")

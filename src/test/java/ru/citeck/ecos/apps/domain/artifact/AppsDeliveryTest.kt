@@ -74,7 +74,8 @@ class AppsDeliveryTest {
 
         assertArrayEquals(app2Imgs["app0-image.png"]!!.data, app0ImgBytes)
 
-        val firstFormRef = ArtifactRef.create("ui/form2", "first-form")
+        val formTypeId = "ui/form2"
+        val firstFormRef = ArtifactRef.create(formTypeId, "first-form")
         val firstFormArtifact = ecosArtifactsService.getLastArtifact(firstFormRef)!!
 
         assertEquals(DeployStatus.DEPLOYED, firstFormArtifact.deployStatus)
@@ -87,7 +88,7 @@ class AppsDeliveryTest {
             }
         """.trimIndent())
 
-        appByName["app1"]!!.addArtifactChangedByUser("ui/form2", newFirstForm)
+        appByName["app1"]!!.addArtifactChangedByUser(formTypeId, newFirstForm)
 
         var firstFormArtifact2 = ecosArtifactsService.getLastArtifact(firstFormRef)!!
         var counter = 10
@@ -100,20 +101,20 @@ class AppsDeliveryTest {
 
         val firstFormData = ecosArtifactsService.getArtifactData(firstFormRef)
         val firstFormDataFromDb = Json.mapper.convert(
-            artifactsService.readArtifactFromBytes("ui/form2", firstFormData),
+            artifactsService.readArtifactFromBytes(formTypeId, firstFormData),
             ObjectData::class.java
         )!!
         assertEquals("user-value", firstFormDataFromDb.get("user-prop").asText())
 
         // patches test
 
-        val secondOrigForm = appByName["app1"]!!.getDeployedArtifacts("ui/form2", ObjectData::class.java)["second-form"]!!
+        val secondOrigForm = appByName["app1"]!!.getDeployedArtifacts(formTypeId, ObjectData::class.java)["second-form"]!!
         assertEquals("abcdef", secondOrigForm.get("formKey").asText())
 
         readApp("app-with-patch__0")
         repeat(2) { watcherJob.forceUpdateSync() }
 
-        val secondPatchedForm = appByName["app1"]!!.getDeployedArtifacts("ui/form2", ObjectData::class.java)["second-form"]!!
+        val secondPatchedForm = appByName["app1"]!!.getDeployedArtifacts(formTypeId, ObjectData::class.java)["second-form"]!!
         assertEquals("alf_samwf:incomePackageTask_disabled_by_patch", secondPatchedForm.get("formKey").asText())
     }
 

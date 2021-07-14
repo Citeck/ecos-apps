@@ -18,6 +18,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchService;
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
+import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
 import java.time.Duration;
 import java.util.*;
@@ -136,7 +137,7 @@ public class ApplicationsWatcherJob {
         try {
             nextUpdateFuture.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            ExceptionUtils.throwException(e);
         }
     }
 
