@@ -1,6 +1,8 @@
 package ru.citeck.ecos.apps;
 
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
+import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -9,19 +11,14 @@ import java.util.function.Supplier;
 @Component
 public class TestUtils {
 
+    @SneakyThrows
     public static void assertTrueWhile(Supplier<Boolean> condition, int seconds) {
 
         long time = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(seconds);
         boolean conditionResult = condition.get();
 
         while (conditionResult && System.currentTimeMillis() < time) {
-
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
+            Thread.sleep(100);
             conditionResult = condition.get();
         }
 
@@ -30,19 +27,14 @@ public class TestUtils {
         }
     }
 
+    @SneakyThrows
     public static void waitWhile(Supplier<Boolean> condition, int timeoutSec) {
 
         long time = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(timeoutSec);
         boolean conditionResult = condition.get();
 
         while (conditionResult && System.currentTimeMillis() < time) {
-
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
+            Thread.sleep(100);
             conditionResult = condition.get();
         }
 

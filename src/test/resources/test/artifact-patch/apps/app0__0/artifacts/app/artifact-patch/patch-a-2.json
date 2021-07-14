@@ -4,7 +4,7 @@
     "ru": "Disable income package task form",
     "en": "Disable income package task form"
   },
-  "order": 1,
+  "order": 2,
   "target": "ui/form2$test-form",
   "type": "json",
   "config": {

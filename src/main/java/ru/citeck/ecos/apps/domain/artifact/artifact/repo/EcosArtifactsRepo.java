@@ -26,7 +26,7 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
         "WHERE m.type = ?1 AND m.deployStatus = ?2 AND m.deleted = false")
-    List<EcosArtifactEntity> findAllByTypeAndDeployStatus(String type, DeployStatus status);
+    List<EcosArtifactEntity> findAllByTypeAndDeployStatus(String type, DeployStatus status, Pageable page);
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
         "WHERE m.deployStatus = ?1 AND m.deployRetryCounter <= ?2 AND m.lastModifiedDate < ?3 AND m.deleted = false")

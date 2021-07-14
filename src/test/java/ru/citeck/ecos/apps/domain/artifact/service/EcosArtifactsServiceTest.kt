@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.service
 
+import org.assertj.core.api.Assertions
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -147,7 +148,7 @@ class EcosArtifactsServiceTest {
 
         deployedArtifacts.forEach { (type, typeArtifacts) ->
             assertEquals(artifacts[type]!!.size, typeArtifacts.size)
-            assertEquals(artifacts[type], typeArtifacts)
+            Assertions.assertThat(typeArtifacts).containsExactlyInAnyOrderElementsOf(artifacts[type])
         }
 
         val jsonTestTypeId = "app/jsontest"

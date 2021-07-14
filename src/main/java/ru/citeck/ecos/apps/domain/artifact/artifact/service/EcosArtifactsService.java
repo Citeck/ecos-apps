@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
@@ -461,7 +463,12 @@ public class EcosArtifactsService {
 
         for (String type : deployer.getSupportedTypes()) {
 
-            List<EcosArtifactEntity> artifacts = artifactsRepo.findAllByTypeAndDeployStatus(type, DeployStatus.DRAFT);
+            Pageable page = PageRequest.of(0, 100, Sort.by(Sort.Order.asc("lastModifiedDate")));
+            List<EcosArtifactEntity> artifacts = artifactsRepo.findAllByTypeAndDeployStatus(
+                type,
+                DeployStatus.DRAFT,
+                page
+            );
             if (artifacts.isEmpty()) {
                 continue;
             }
