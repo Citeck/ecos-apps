@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.domain.watcher.service;
 
+import kotlin.Unit;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -9,9 +10,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.EcosAppConstants;
 import ru.citeck.ecos.apps.app.EcosAppsService;
+import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommand;
+import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommandResp;
 import ru.citeck.ecos.apps.domain.application.service.AppModuleTypeMeta;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppService;
 import ru.citeck.ecos.apps.domain.application.service.EcosAppsModuleTypeService;
+import ru.citeck.ecos.apps.domain.buildinfo.api.records.BuildInfoRecords;
 import ru.citeck.ecos.apps.domain.module.service.EcosModuleService;
 import ru.citeck.ecos.apps.domain.modulepatch.service.ModulePatchService;
 import ru.citeck.ecos.apps.app.provider.ComputedMeta;
@@ -23,14 +27,19 @@ import ru.citeck.ecos.apps.module.local.LocalModulesService;
 import ru.citeck.ecos.apps.module.remote.EcosAppInfo;
 import ru.citeck.ecos.apps.module.remote.RemoteModulesService;
 import ru.citeck.ecos.apps.module.type.TypeContext;
+import ru.citeck.ecos.commands.CommandsService;
+import ru.citeck.ecos.commands.dto.CommandResult;
+import ru.citeck.ecos.commands.utils.CommandUtils;
 import ru.citeck.ecos.commons.data.ObjectData;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.json.Json;
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,6 +62,9 @@ public class ModulesWatcher {
     private final EcosAppsModuleTypeService appsModuleTypeService;
 
     private final ApplicationProperties props;
+
+    private final BuildInfoRecords buildInfoRecords;
+    private final CommandsService commandsService;
 
     private boolean started = false;
 
@@ -84,6 +96,7 @@ public class ModulesWatcher {
         EcosFile newAppModuleTypesDir = remoteModulesService.getModuleTypesDir(newApp.getAppName());
         appsModuleTypeService.registerTypes(newApp.getAppName(), newAppModuleTypesDir);
 
+
         // get modules by new from all
 
         for (AppStatusInfo registeredApp : currentStatuses.values()) {
@@ -102,6 +115,39 @@ public class ModulesWatcher {
             // Something went wrong. Forget new app and wait until watcher find it again
             currentStatuses.remove(newApp.getAppName());
             ExceptionUtils.throwException(e);
+        }
+
+        String appFullName = newApp.getAppName() + " (" + newApp.getAppInstanceId() + ")";
+        try {
+
+            log.info("Send build info request to " + appFullName);
+
+            CommandResult result = commandsService.execute(commandsService.buildCommand(b -> {
+                b.setTargetApp(CommandUtils.INSTANCE.getTargetAppByAppInstanceId(newApp.getAppInstanceId()));
+                b.setBody(new GetAppBuildInfoCommand(Instant.EPOCH));
+                return Unit.INSTANCE;
+            })).get(10, TimeUnit.SECONDS);
+            result.throwPrimaryErrorIfNotNull();
+
+            GetAppBuildInfoCommandResp resp = result.getResultAs(GetAppBuildInfoCommandResp.class);
+
+            if (resp != null) {
+
+                String info = "[" + resp.getBuildInfo().stream().map(b ->
+                    "version: " + b.getVersion() +
+                        " branch: " + b.getBranch() +
+                        " buildDate: " + b.getBuildDate())
+                    .collect(Collectors.joining(", ")) + "]";
+                log.info("Register new build info for app " + appFullName + " " + info);
+
+                buildInfoRecords.register(newApp, resp.getBuildInfo());
+
+            } else {
+                log.error("Build info is null for app " + appFullName);
+            }
+
+        } catch (Exception e) {
+            log.error("Error in build info request for app " + appFullName, e);
         }
     }
 
