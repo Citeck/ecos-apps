@@ -16,10 +16,10 @@ timestamps {
         ])
       }
       def project_version = readMavenPom().getVersion().toLowerCase()
-      if ((env.BRANCH_NAME != "master") && (!project_version.contains('snapshot')))  {
+      if ((env.BRANCH_NAME != "master") (env.BRANCH_NAME != "master-1") && (!project_version.contains('snapshot')))  {
         echo "Assembly of release artifacts is allowed only from the master branch!"
-        //currentBuild.result = 'SUCCESS'
-        //return
+        currentBuild.result = 'SUCCESS'
+        return
       }
       stage('Build project artifacts') {
         withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
