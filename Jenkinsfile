@@ -1,10 +1,27 @@
 properties([
-    buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '7')),
+    buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '3')),
 ])
 timestamps {
   node {
+
+    def repoUrl = "git@bitbucket.org:citeck/ecos-apps.git"
+
+    stage('Checkout Script Tools SCM') {
+      dir('jenkins-script-tools') {
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "script-tools"]],
+          doGenerateSubmoduleConfigurations: false,
+          extensions: [],
+          submoduleCfg: [],
+          userRemoteConfigs: [[credentialsId: 'bc074014-bab1-4fb0-b5a4-4cfa9ded5e66', url: 'git@bitbucket.org:citeck/pipelines.git']]
+        ])
+      }
+    }
+    currentBuild.changeSets.clear()
+    def buildTools = load "jenkins-script-tools/scripts/build-tools.groovy"
+
     try {
-      mattermostSend endpoint: 'https://mm.citeck.ru/hooks/9ytch3uox3retkfypuq7xi3yyr', channel: "build_notifications", color: 'good', message: " :arrow_forward: Build info - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
       stage('Checkout SCM') {
         checkout([
           $class: 'GitSCM',
@@ -12,18 +29,26 @@ timestamps {
           doGenerateSubmoduleConfigurations: false,
           extensions: [],
           submoduleCfg: [],
-          userRemoteConfigs: [[credentialsId: 'bc074014-bab1-4fb0-b5a4-4cfa9ded5e66',url: 'git@bitbucket.org:citeck/ecos-apps.git']]
+          userRemoteConfigs: [[credentialsId: 'bc074014-bab1-4fb0-b5a4-4cfa9ded5e66', url: repoUrl]]
         ])
       }
       def project_version = readMavenPom().getVersion().toLowerCase()
-      if ((env.BRANCH_NAME != "master") && (env.BRANCH_NAME != "master-1") && (!project_version.contains('snapshot')))  {
+      if ((env.BRANCH_NAME != "master" && env.BRANCH_NAME != "master-1") && (!project_version.contains('snapshot')))  {
         echo "Assembly of release artifacts is allowed only from the master branch!"
         currentBuild.result = 'SUCCESS'
         return
       }
+      buildTools.notifyBuildStarted(repoUrl, project_version, env)
       stage('Build project artifacts') {
         withMaven(mavenLocalRepo: '/opt/jenkins/.m2/repository', tempBinDir: '') {
-          sh "mvn clean package -Dskip.npm -Pprod -Djib.docker.image.tag=${project_version} jib:dockerBuild"
+          sh "mvn clean package -Dskip.npm -Pprod"
+          // build-info
+          def buildData = buildTools.getBuildInfo(repoUrl, "${env.BRANCH_NAME}", project_version)
+          dir('target/classes/build-info') {
+              buildTools.writeBuildInfoToFiles(buildData)
+          }
+          // /build-info
+          sh "mvn jib:dockerBuild -Dskip.npm -Pprod -Djib.docker.image.tag=${project_version}"
         }
         junit '**/target/surefire-reports/*.xml'
       }
@@ -34,18 +59,16 @@ timestamps {
           current_microserviceImage.push()
         }
       }
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       currentBuild.result = 'FAILURE'
       error_message = e.getMessage()
       echo error_message
     }
-    script{
-      if(currentBuild.result != 'FAILURE'){
-        mattermostSend endpoint: 'https://mm.citeck.ru/hooks/9ytch3uox3retkfypuq7xi3yyr', channel: "build_notifications", color: 'good', message: " :white_check_mark: Build complete - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-      }
-      else{
-        mattermostSend endpoint: 'https://mm.citeck.ru/hooks/9ytch3uox3retkfypuq7xi3yyr', channel: "build_notifications", color: 'danger', message: " @channel :exclamation: Build failure - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>) :\n${error_message}"
+    script {
+      if (currentBuild.result != 'FAILURE') {
+        buildTools.notifyBuildSuccess(repoUrl, env)
+      } else {
+        buildTools.notifyBuildFailed(repoUrl, error_message, env)
       }
     }
   }
