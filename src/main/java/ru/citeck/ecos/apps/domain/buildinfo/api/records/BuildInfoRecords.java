@@ -68,8 +68,21 @@ public class BuildInfoRecords extends LocalRecordsDao
     @Data
     @RequiredArgsConstructor
     public static class Record {
+
         private final String id;
         private final AppStatus app;
         private final BuildInfo info;
+
+        public String getLabel() {
+            String label = info.getRepo();
+            int slashIdx = label.indexOf('/');
+            if (slashIdx != -1 && slashIdx < label.length() - 1) {
+                label = label.substring(slashIdx + 1);
+            }
+            if (label.endsWith(".git")) {
+                label = label.substring(0, label.length() - 4);
+            }
+            return label;
+        }
     }
 }
