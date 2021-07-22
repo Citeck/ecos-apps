@@ -22,6 +22,10 @@ class DevModulesService(
         repo.save(toEntity(def))
     }
 
+    fun delete(id: String) {
+        repo.findByExtId(id)?.let { repo.delete(it) }
+    }
+
     fun findAll(): List<DevModuleDef> {
         return repo.findAll().map { toDto(it) }
     }

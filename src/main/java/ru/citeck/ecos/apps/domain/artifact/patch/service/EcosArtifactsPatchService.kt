@@ -180,7 +180,9 @@ class EcosArtifactsPatchService(
 
     private fun getPatchesForArtifact(artifactRef: ArtifactRef): List<ArtifactPatchDto> {
         val patchEntities = patchRepo.findAllByTarget(artifactRef.toString())
-        return patchEntities.mapNotNull { toDto(it) }.sortedBy { it.order }
+        return patchEntities.mapNotNull { toDto(it) }
+            .sortedByDescending { it.id }
+            .sortedBy { it.order }
     }
 
     fun addListener(listener: Consumer<ArtifactPatchDto?>) {

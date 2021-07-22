@@ -29,6 +29,11 @@ public class ArtifactPatchModuleHandler implements EcosArtifactHandler<ArtifactP
     }
 
     @Override
+    public void deleteArtifact(@NotNull String s) {
+        service.delete(s);
+    }
+
+    @Override
     public void listenChanges(@NotNull Consumer<ArtifactPatchDto> consumer) {
         service.addListener(consumer);
     }

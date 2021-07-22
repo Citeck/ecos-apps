@@ -29,6 +29,11 @@ public class TestModuleHandler implements EcosArtifactHandler<ObjectData> {
     }
 
     @Override
+    public void deleteArtifact(@NotNull String s) {
+        dataById.remove(s);
+    }
+
+    @Override
     public void listenChanges(@NotNull Consumer<ObjectData> consumer) {
     }
 }

@@ -2,6 +2,8 @@ package ru.citeck.ecos.apps.domain.artifact.application.service
 
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommand
+import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommandResp
 import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppService
@@ -14,10 +16,18 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeplo
 import ru.citeck.ecos.apps.domain.artifact.source.service.AppArtifactsSource
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.domain.devtools.buildinfo.api.records.BuildInfoRecords
+import ru.citeck.ecos.commands.CommandsService
+import ru.citeck.ecos.commands.dto.CommandResult
+import ru.citeck.ecos.commands.utils.CommandUtils.getTargetAppByAppInstanceId
+import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.io.file.EcosFile
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 @Service
 class EcosApplicationsService(
@@ -26,7 +36,9 @@ class EcosApplicationsService(
     private val ecosArtifactsService: EcosArtifactsService,
     private val artifactTypeService: ArtifactTypeService,
     private val remoteAppService: RemoteAppService,
-    private val artifactService: ArtifactService
+    private val artifactService: ArtifactService,
+    private val commandsService: CommandsService,
+    private val buildInfoRecords: BuildInfoRecords
 ) {
 
     companion object {
@@ -34,6 +46,7 @@ class EcosApplicationsService(
     }
 
     private var appsStatusByName: Map<String, List<RemoteAppStatus>> = emptyMap()
+    private var buildInfoLastTimeByAppName: MutableMap<String, Instant> = mutableMapOf()
 
     private val sources = ConcurrentHashMap<AppSourceKey, AppArtifactsSourceImpl>()
     private val typesSources = ConcurrentHashMap<String, RemoteAppStatus>()
@@ -46,18 +59,36 @@ class EcosApplicationsService(
 
         appsStatus.forEach { appsByName.computeIfAbsent(it.appName) { ArrayList() }.add(it)  }
 
+        for ((appName, statuses) in appsByName) {
+
+            val lastStatus = statuses.maxBy { it.status.startTime } ?: continue
+            val lastUpdateTime = buildInfoLastTimeByAppName[appName] ?: Instant.EPOCH
+
+            if (lastStatus.status.startTime.isAfter(lastUpdateTime)) {
+
+                buildInfoLastTimeByAppName[appName] = lastStatus.status.startTime
+
+                val appFullName = "$appName (${lastStatus.appInstanceId})"
+                try {
+                    loadBuildInfo(appFullName, lastStatus)
+                } catch (e: Exception) {
+                    log.error("Error in build info request for app $appFullName", e)
+                }
+            }
+        }
+
         val newSources = mutableMapOf<AppSourceKey, AppArtifactsSourceInfo>()
-        val newTypesSources = mutableMapOf<String, RemoteAppStatus>()
+        val typesSourcesByAppName = mutableMapOf<String, RemoteAppStatus>()
 
         appsByName.forEach { (appName, appStatus) ->
 
             appStatus.forEach { appInstance ->
 
-                val typesSource = newTypesSources[appInstance.appName]
+                val typesSource = typesSourcesByAppName[appInstance.appName]
                 if (typesSource == null
                     || appInstance.status.typesLastModified.isAfter(typesSource.status.typesLastModified)) {
 
-                    newTypesSources[appInstance.appName] = appInstance
+                    typesSourcesByAppName[appInstance.appName] = appInstance
                 }
 
                 appInstance.status.sources.forEach { source ->
@@ -76,47 +107,51 @@ class EcosApplicationsService(
 
         val deployersToRemove = mutableListOf<String>()
         deployers.keys.forEach { appName ->
-            if (!newTypesSources.containsKey(appName)) {
+            if (!typesSourcesByAppName.containsKey(appName)) {
                 deployersToRemove.add(appName)
             }
         }
         deployersToRemove.forEach { deployers.remove(it) }
 
-        newTypesSources.values.forEach {
+        typesSourcesByAppName.values.forEach { appStatus ->
 
-            val currentSource = typesSources[it.appName]
+            val currentSource = typesSources[appStatus.appName]
 
             if (currentSource == null
-                    || currentSource.status.typesLastModified.isBefore(it.status.typesLastModified)) {
+                    || currentSource.status.typesLastModified.isBefore(appStatus.status.typesLastModified)) {
 
                 try {
-                    val typesDir = remoteAppService.getArtifactTypesDir(it.appInstanceId)
-                    ecosArtifactTypesService.registerTypes(it.appName, typesDir, it.status.typesLastModified)
+                    val typesDir = remoteAppService.getArtifactTypesDir(appStatus.appInstanceId)
+                    ecosArtifactTypesService.registerTypes(
+                        appStatus.appName,
+                        typesDir,
+                        appStatus.status.typesLastModified
+                    )
 
-                    deployers.remove(it.appName)
-                    typesSources[it.appName] = it
+                    deployers.remove(appStatus.appName)
+                    typesSources[appStatus.appName] = appStatus
 
                 } catch (e: Exception) {
-                    log.error(e) { "Types dir loading error. App: $it" }
+                    log.error(e) { "Types dir loading error. App: $appStatus" }
                 }
             }
 
-            if (!deployers.containsKey(it.appName)) {
+            if (!deployers.containsKey(appStatus.appName)) {
 
-                val supportedTypesByController = ecosArtifactTypesService.getTypesByAppName(it.appName)
+                val supportedTypesByController = ecosArtifactTypesService.getTypesByAppName(appStatus.appName)
                     .map { type -> type.getId() }
-                val supportedTypes = supportedTypesByController.intersect(it.status.supportedTypes).toList()
+                val supportedTypes = supportedTypesByController.intersect(appStatus.status.supportedTypes).toList()
 
                 if (supportedTypes.isNotEmpty()) {
 
                     log.info {
-                        "Register deployer for ${it.appName} " +
-                            "- ${it.appInstanceId} with supported types: $supportedTypes"
+                        "Register deployer for ${appStatus.appName} " +
+                            "- ${appStatus.appInstanceId} with supported types: $supportedTypes"
                     }
 
-                    deployers[it.appName] = AppArtifactsDeployer(
-                        it.appName,
-                        it.appInstanceId,
+                    deployers[appStatus.appName] = AppArtifactsDeployer(
+                        appStatus.appName,
+                        appStatus.appInstanceId,
                         supportedTypes,
                         remoteAppService
                     )
@@ -163,6 +198,33 @@ class EcosApplicationsService(
         }
 
         this.appsStatusByName = appsByName
+    }
+
+    private fun loadBuildInfo(appFullName: String, app: RemoteAppStatus) {
+
+        log.info("Send build info request to $appFullName")
+
+        val comRes: CommandResult = commandsService.execute(commandsService.buildCommand {
+            this.targetApp = getTargetAppByAppInstanceId(app.appInstanceId)
+            this.body = GetAppBuildInfoCommand(Instant.EPOCH)
+        }).get(10, TimeUnit.SECONDS)
+
+        comRes.throwPrimaryErrorIfNotNull()
+
+        val resp = comRes.getResultAs(GetAppBuildInfoCommandResp::class.java)
+        if (resp != null) {
+            val info = "[" + resp.buildInfo.joinToString { info ->
+                "\"name\": \"${MLText.getClosestValue(info.name, null)}\", " +
+                    "\"repo\": \"${info.repo}\", " +
+                    "\"version\": \"${info.version}\", " +
+                    "\"branch\": \"${info.branch}\", " +
+                    "\"buildDate\": \"${info.buildDate}\""
+            } + "]"
+            log.info("Register new build info for app $appFullName $info")
+            buildInfoRecords.register(app, resp.buildInfo)
+        } else {
+            log.error("Build info is null for app $appFullName")
+        }
     }
 
     fun getAppsStatus(): Map<String, List<RemoteAppStatus>> {

@@ -33,6 +33,10 @@ class EcosAppArtifactHandler(
         // do nothing
     }
 
+    override fun deleteArtifact(artifactId: String) {
+        ecosAppService.delete(artifactId)
+    }
+
     class EcosAppArtifact(
         val metaContent: ByteArray,
         val artifactsDir: ByteArray

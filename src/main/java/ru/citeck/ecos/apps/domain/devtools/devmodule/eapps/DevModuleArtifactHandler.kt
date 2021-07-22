@@ -19,5 +19,9 @@ class DevModuleArtifactHandler(val service: DevModulesService) : EcosArtifactHan
 
     override fun listenChanges(listener: Consumer<DevModuleDef>) {
     }
+
+    override fun deleteArtifact(artifactId: String) {
+        service.delete(artifactId)
+    }
 }
 
