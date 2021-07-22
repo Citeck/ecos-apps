@@ -37,6 +37,10 @@ class BuildInfoRecords : AbstractRecordsDao(), RecordsQueryDao, RecordsAttsDao {
         }
     }
 
+    fun getAll(): List<Record> {
+        return fullBuildInfo.values.toList()
+    }
+
     class Record(
         val id: String,
         val app: RemoteAppStatus,
