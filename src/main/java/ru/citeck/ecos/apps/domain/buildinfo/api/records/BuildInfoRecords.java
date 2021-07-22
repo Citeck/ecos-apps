@@ -65,6 +65,10 @@ public class BuildInfoRecords extends LocalRecordsDao
         return ID;
     }
 
+    public List<Record> getAll() {
+        return fullBuildInfo.values().stream().collect(Collectors.toList());
+    }
+
     @Data
     @RequiredArgsConstructor
     public static class Record {
