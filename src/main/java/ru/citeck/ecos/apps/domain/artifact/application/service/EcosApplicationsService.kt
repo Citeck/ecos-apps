@@ -61,7 +61,7 @@ class EcosApplicationsService(
 
         for ((appName, statuses) in appsByName) {
 
-            val lastStatus = statuses.maxBy { it.status.startTime } ?: continue
+            val lastStatus = statuses.maxByOrNull { it.status.startTime } ?: continue
             val lastUpdateTime = buildInfoLastTimeByAppName[appName] ?: Instant.EPOCH
 
             if (lastStatus.status.startTime.isAfter(lastUpdateTime)) {

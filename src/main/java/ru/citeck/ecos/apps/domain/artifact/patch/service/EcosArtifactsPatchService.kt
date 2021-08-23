@@ -109,12 +109,12 @@ class EcosArtifactsPatchService(
     }
 
     private fun updateSyncEntity(artifactRef: ArtifactRef, action: (ArtifactPatchSyncEntity) -> Unit) {
-        val syncEntity = patchSyncRepo.findByArtifact(artifactRef.type, artifactRef.id) ?: {
+        val syncEntity = patchSyncRepo.findByArtifact(artifactRef.type, artifactRef.id) ?: run {
             val newEntity = ArtifactPatchSyncEntity()
             newEntity.artifactType = artifactRef.type
             newEntity.artifactExtId = artifactRef.id
             newEntity
-        }()
+        }
         action.invoke(syncEntity)
         patchSyncRepo.save(syncEntity)
     }
@@ -234,7 +234,7 @@ class EcosArtifactsPatchService(
             spec = Specification {
                 root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
                     builder.like(
-                        builder.lower(root.get("name")), "%" + name.toLowerCase() + "%"
+                        builder.lower(root.get("name")), "%" + name.lowercase() + "%"
                     )
             }
         }
@@ -243,7 +243,7 @@ class EcosArtifactsPatchService(
             val idSpec = Specification {
                 root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
                     builder.like(
-                        builder.lower(root.get("extId")), "%" + artifactId.toLowerCase() + "%"
+                        builder.lower(root.get("extId")), "%" + artifactId.lowercase() + "%"
                     )
             }
             spec = spec?.or(idSpec) ?: idSpec

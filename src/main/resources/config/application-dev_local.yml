@@ -17,4 +17,6 @@ emodel:
     listOfServers: localhost:8094
     NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
 
-
+ecos:
+  zookeeper:
+    host: localhost

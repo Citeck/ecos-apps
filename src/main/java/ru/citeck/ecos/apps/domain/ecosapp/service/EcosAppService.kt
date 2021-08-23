@@ -7,7 +7,6 @@ import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
 import ru.citeck.ecos.apps.artifact.ArtifactRef
-import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.artifact.type.TypeContext
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords
@@ -17,10 +16,10 @@ import ru.citeck.ecos.apps.domain.content.service.EcosContentDao
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo
-import ru.citeck.ecos.apps.spring.app.AdditionalSourceProvider
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
+import ru.citeck.ecos.commons.io.file.EcosFile
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
@@ -36,9 +35,9 @@ class EcosAppService(
     private val ecosAppRepo: EcosAppRepo,
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
-    private val artifactService: ArtifactService,
     private val applicationsWatcherJob: ApplicationsWatcherJob
-) : AdditionalSourceProvider {
+) {
+
 
     fun uploadZip(data: ByteArray) : EcosAppDef {
 
@@ -182,19 +181,19 @@ class EcosAppService(
         }
     }
 
-    override fun getArtifactSources(): List<ArtifactSourceInfo> {
+    fun getArtifactSources(): List<ArtifactSourceInfo> {
         return ecosAppRepo.findAllByArtifactsDirIsNotNull().map { appToSource(it) }
     }
 
-    override fun getArtifacts(source: SourceKey,
-                              types: List<TypeContext>,
-                              since: Instant): Map<String, List<Any>> {
+    fun getArtifactsDir(
+        source: SourceKey,
+        types: List<TypeContext>,
+        since: Instant
+    ): EcosFile {
 
-        val appEntity = ecosAppRepo.findFirstByExtId(source.id) ?: return emptyMap()
-        val artifactsDirContent = appEntity.artifactsDir ?: return emptyMap()
+        val appEntity = ecosAppRepo.findFirstByExtId(source.id) ?: return EcosMemDir()
+        val artifactsDirContent = appEntity.artifactsDir ?: return EcosMemDir()
 
-        val artifactsDir = ZipUtils.extractZip(artifactsDirContent.data)
-
-        return artifactService.readArtifacts(artifactsDir, types)
+        return ZipUtils.extractZip(artifactsDirContent.data)
     }
 }
