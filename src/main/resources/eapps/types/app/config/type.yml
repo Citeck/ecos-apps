@@ -1,0 +1,14 @@
+modelVersion: "1.0"
+
+name:
+  ru: Конфигурация
+  en: Config
+
+source-id: ""
+
+controller:
+  type: json
+  config:
+    idTemplate: ${scope!$appName{?str|presuf('app/','/')}}${id}
+    attsValues:
+      scope: "${scope!$appName{?str|presuf('app/')}}"

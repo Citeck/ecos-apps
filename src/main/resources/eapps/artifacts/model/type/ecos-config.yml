@@ -1,0 +1,46 @@
+
+id: ecos-config
+
+journalRef: uiserv/journal@ecos-configs
+
+model:
+  attributes:
+    - id: configId
+      name:
+        ru: Идентификатор
+    - id: scope
+      name:
+        ru: Область
+        en: Scope
+      type: TEXT
+    - id: name
+      name:
+        ru: Имя
+        en: Name
+      type: MLTEXT
+    - id: value
+      name:
+        ru: Значение
+        en: Value
+      type: JSON
+    - id: valueDef
+      name:
+        ru: Конфигурация типа значения
+        en: Config type config
+      type: TEXT
+    - id: version
+      name:
+        ru: Версия
+        en: Version
+      type: NUMBER
+    - id: tags
+      name:
+        ru: Тэги
+        en: Tags
+      multiple: true
+      type: TEXT
+    - id: permissions
+      name:
+        ru: Права
+        en: Permissions
+      type: JSON

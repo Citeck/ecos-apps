@@ -30,6 +30,12 @@
       "config": {
         "journalId": "ecosConfig"
       }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecos-configs"
+      }
     }
   ]
 }

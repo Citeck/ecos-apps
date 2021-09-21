@@ -23,6 +23,8 @@ eureka:
 spring:
     application:
         name: eapps
+    profiles:
+      active: test
     cache:
         type: simple
     datasource:

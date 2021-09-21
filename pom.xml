@@ -11,7 +11,7 @@
     <parent>
         <groupId>ru.citeck.ecos</groupId>
         <artifactId>ecos-micro-base</artifactId>
-        <version>3.27.0</version>
+        <version>3.32.2</version>
     </parent>
 
     <repositories>
@@ -361,6 +361,11 @@
         </dependency>
 
         <dependency>
+            <groupId>ru.citeck.ecos.data</groupId>
+            <artifactId>ecos-data-sql-pg</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>ru.citeck.ecos.rabbitmq</groupId>
             <artifactId>ecos-rabbitmq-spring</artifactId>
         </dependency>
@@ -373,6 +378,11 @@
         <dependency>
             <groupId>ru.citeck.ecos</groupId>
             <artifactId>ecos-curator-framework</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ru.citeck.ecos</groupId>
+            <artifactId>ecos-curator-test</artifactId>
         </dependency>
 
         <dependency>

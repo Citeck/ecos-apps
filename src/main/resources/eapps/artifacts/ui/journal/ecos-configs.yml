@@ -1,0 +1,26 @@
+---
+id: ecos-configs
+name: { ru: Конфигурация ECOS, en: ECOS Configuration }
+
+system: true
+
+sourceId: eapps/config
+
+actions:
+  - uiserv/action@edit
+
+editable: true
+
+columns:
+
+  - id: configId
+  - id: name
+  - id: _value
+    name:
+      ru: Значение
+      en: Value
+    editable: true
+    sortable: false
+    type: TEXT
+  - id: tags
+    multiple: true
