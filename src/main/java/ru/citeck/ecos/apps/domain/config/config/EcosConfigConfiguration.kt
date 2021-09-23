@@ -53,7 +53,7 @@ class EcosConfigConfiguration(
             DbEntity::class.java,
             DbDataServiceConfig.create {
                 withAuthEnabled(false)
-                withTableRef(DbTableRef("ecos_data", "ecos_config"))
+                withTableRef(DbTableRef("public", "ecos_config"))
                 withTransactional(true)
                 withStoreTableMeta(true)
                 withMaxItemsToAllowSchemaMigration(1000)
