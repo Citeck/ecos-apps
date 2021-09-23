@@ -29,6 +29,7 @@ class SearchRecordsDao(
 
         private const val GROUP_TYPE_PEOPLE = "PEOPLE"
         private const val GROUP_TYPE_DOCUMENTS = "DOCUMENTS"
+        private const val GROUP_TYPE_TASKS = "TASKS"
 
         private const val MAX_ITEMS_FOR_TYPE = 50
     }
@@ -49,6 +50,7 @@ class SearchRecordsDao(
             when (type) {
                 GROUP_TYPE_PEOPLE -> records.addAll(queryPersons(query.text, maxItemsForType))
                 GROUP_TYPE_DOCUMENTS -> records.addAll(queryDocuments(query.text, maxItemsForType))
+                GROUP_TYPE_TASKS -> records.addAll(queryTasks(query.text, maxItemsForType))
             }
             if (maxItems >= 0 && records.size >= maxItems) {
                 break
@@ -60,6 +62,40 @@ class SearchRecordsDao(
         } else {
             records
         }
+    }
+
+    private fun queryTasks(text: String, maxItems: Int): List<SearchRecord> {
+
+        val query = RecordsQuery.create()
+            .withSourceId("alfresco/")
+            .withQuery(Predicates.and(
+                Predicates.eq("TYPE", "bpm:task"),
+                Predicates.eq("_actors", "\$CURRENT"),
+                Predicates.empty("bpm:completionDate"),
+                Predicates.not(
+                    Predicates.eq("samwf:processingStatus", "FULLY_PROCESSED")
+                ),
+                Predicates.contains("cm:title", text)
+            ))
+            .withMaxItems(maxItems)
+            .withConsistency(Consistency.EVENTUAL)
+            .build()
+
+        val taskIdAlias = "taskId"
+        val tasks = recordsService.query(query, mapOf(
+            taskIdAlias to "cm:name"
+        ))
+        val taskRecords = tasks.getRecords().mapNotNull {
+            val taskId = it.getAtt(taskIdAlias).asText()
+            if (taskId.isBlank()) {
+                null
+            } else {
+                RecordRef.create("alfresco", "wftask", taskId)
+            }
+        }
+        val tasksAtts = recordsService.getAtts(taskRecords, getAttsToRequest())
+
+        return tasksAtts.map { createSearchRecord(it, GROUP_TYPE_TASKS) }
     }
 
     private fun queryDocuments(text: String, maxItems: Int): List<SearchRecord> {
@@ -99,26 +135,31 @@ class SearchRecordsDao(
             .withSourceId(sourceId)
             .build()
 
-        val results = recordsService.query(
-            recsQuery,
-            mapOf(
-                DISP_NAME_ALIAS to ScalarType.DISP.schema,
-                ECOS_TYPE_ALIAS to RecordConstants.ATT_TYPE + ScalarType.ID.schema,
-                CREATED_ALIAS to RecordConstants.ATT_CREATED,
-                MODIFIED_ALIAS to RecordConstants.ATT_MODIFIED
-            )
-        )
+        val results = recordsService.query(recsQuery, getAttsToRequest())
 
         return results.getRecords().map {
-            SearchRecord(
-                it.getId(),
-                it.getAtt(DISP_NAME_ALIAS).asText(),
-                groupType,
-                RecordRef.valueOf(it.getAtt(ECOS_TYPE_ALIAS).asText()),
-                getInstant(it, MODIFIED_ALIAS),
-                getInstant(it, CREATED_ALIAS)
-            )
+            createSearchRecord(it, groupType)
         }
+    }
+
+    private fun getAttsToRequest(): Map<String, String> {
+        return mapOf(
+            DISP_NAME_ALIAS to ScalarType.DISP.schema,
+            ECOS_TYPE_ALIAS to RecordConstants.ATT_TYPE + ScalarType.ID.schema,
+            CREATED_ALIAS to RecordConstants.ATT_CREATED,
+            MODIFIED_ALIAS to RecordConstants.ATT_MODIFIED
+        )
+    }
+
+    private fun createSearchRecord(rec: RecordAtts, groupType: String): SearchRecord {
+        return SearchRecord(
+            rec.getId(),
+            rec.getAtt(DISP_NAME_ALIAS).asText(),
+            groupType,
+            RecordRef.valueOf(rec.getAtt(ECOS_TYPE_ALIAS).asText()),
+            getInstant(rec, MODIFIED_ALIAS),
+            getInstant(rec, CREATED_ALIAS)
+        )
     }
 
     private fun getInstant(atts: RecordAtts, name: String): Instant {
