@@ -54,7 +54,7 @@ class EcosConfigConfiguration(
             DbDataServiceConfig.create {
                 withAuthEnabled(false)
                 withTableRef(DbTableRef("public", "ecos_config"))
-                withTransactional(true)
+                withTransactional(false)
                 withStoreTableMeta(true)
                 withMaxItemsToAllowSchemaMigration(1000)
             },
