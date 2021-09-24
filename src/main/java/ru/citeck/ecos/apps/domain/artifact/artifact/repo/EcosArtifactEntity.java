@@ -29,10 +29,16 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Getter @Setter private boolean deleted;
 
+    /**
+     * Last revision without patches
+     */
     @OneToOne
     @JoinColumn(name = "last_rev_id")
     @Getter @Setter private EcosArtifactRevEntity lastRev;
 
+    /**
+     * Patched revision has a higher priority
+     */
     @OneToOne
     @JoinColumn(name = "patched_module_rev_id")
     @Getter @Setter private EcosArtifactRevEntity patchedRev;

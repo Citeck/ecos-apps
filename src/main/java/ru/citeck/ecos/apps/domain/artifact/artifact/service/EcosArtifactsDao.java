@@ -91,14 +91,14 @@ public class EcosArtifactsDao {
             .collect(Collectors.toList());
     }
 
-    public EcosArtifactRevEntity getLastArtifactRev(String type, String id) {
-        return getLastArtifactRev(ArtifactRef.create(type, id));
-    }
-
     public EcosArtifactRevEntity getLastArtifactRev(ArtifactRef moduleRef) {
         EcosArtifactEntity artifact = getArtifact(moduleRef);
         if (artifact == null) {
             return null;
+        }
+        EcosArtifactRevEntity patchedRev = artifact.getPatchedRev();
+        if (patchedRev != null) {
+            return patchedRev;
         }
         return artifact.getLastRev();
     }
