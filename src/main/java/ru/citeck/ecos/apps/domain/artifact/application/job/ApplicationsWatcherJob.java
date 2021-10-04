@@ -23,6 +23,7 @@ import ru.citeck.ecos.commons.utils.ExceptionUtils;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,7 +59,7 @@ public class ApplicationsWatcherJob {
     private boolean forceUpdate = false;
     private CompletableFuture<Boolean> nextUpdateFuture = null;
 
-    private boolean isContextClosed = false;
+    private AtomicBoolean isContextClosed = new AtomicBoolean(false);
     private Thread watcherThread;
 
     private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
@@ -84,7 +85,7 @@ public class ApplicationsWatcherJob {
         }
 
         rootWhile:
-        while (!isContextClosed) {
+        while (!isContextClosed.get()) {
 
             try {
 
@@ -92,18 +93,27 @@ public class ApplicationsWatcherJob {
                 this.forceUpdate = false;
 
                 updateAllApps();
+                if (isContextClosed.get()) {
+                    continue;
+                }
                 updateArtifacts(forceUpdateChangedSources);
+                if (isContextClosed.get()) {
+                    continue;
+                }
 
                 long waitingStart = System.currentTimeMillis();
                 while (!this.forceUpdate && (System.currentTimeMillis() - waitingStart) < CHECK_STATUS_PERIOD) {
 
                     Thread.sleep(100);
 
-                    if (isContextClosed) {
+                    if (isContextClosed.get()) {
                         continue rootWhile;
                     }
                 }
 
+            } catch (InterruptedException e) {
+                log.info("Watcher thread was interrupted");
+                break;
             } catch (Throwable e) {
                 try {
                     if (lastError == null || !Arrays.equals(lastError.getStackTrace(), e.getStackTrace())) {
@@ -236,7 +246,8 @@ public class ApplicationsWatcherJob {
     @EventListener
     public void onContextClosed(ContextClosedEvent event) throws InterruptedException {
         log.info("Context was closed and watcher will be terminated");
-        isContextClosed = true;
+        isContextClosed.set(true);
+        watcherThread.interrupt();
         watcherThread.join();
     }
 

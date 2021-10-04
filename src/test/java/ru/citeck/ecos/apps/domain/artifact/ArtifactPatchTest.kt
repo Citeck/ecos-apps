@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
 @RunWith(SpringRunner::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class ArtifactPatchTest {
 
     @Autowired

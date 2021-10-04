@@ -7,15 +7,12 @@ import ru.citeck.ecos.apps.domain.config.api.records.ConfigFormMixin
 import ru.citeck.ecos.apps.domain.config.api.records.ConfigValueMixin
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.DataValue
-import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.data.sql.datasource.DbDataSourceImpl
 import ru.citeck.ecos.data.sql.dto.DbTableRef
-import ru.citeck.ecos.data.sql.ecostype.DbEcosTypeInfo
-import ru.citeck.ecos.data.sql.ecostype.DbEcosTypeRepo
 import ru.citeck.ecos.data.sql.pg.PgDataServiceFactory
 import ru.citeck.ecos.data.sql.records.DbRecordsDao
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
@@ -24,7 +21,9 @@ import ru.citeck.ecos.data.sql.repo.entity.DbEntity
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
 import ru.citeck.ecos.data.sql.service.DbDataServiceImpl
 import ru.citeck.ecos.model.lib.attributes.dto.AttributeDef
+import ru.citeck.ecos.model.lib.type.dto.TypeInfo
 import ru.citeck.ecos.model.lib.type.dto.TypeModelDef
+import ru.citeck.ecos.model.lib.type.repo.TypesRepo
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records3.RecordsService
@@ -70,23 +69,28 @@ class EcosConfigConfiguration(
                 updatable = true,
                 deletable = true
             ),
-            object : DbEcosTypeRepo {
-                override fun getTypeInfo(typeId: String): DbEcosTypeInfo? {
+            object : TypesRepo {
+                override fun getChildren(typeRef: RecordRef): List<RecordRef> {
+                    return emptyList()
+                }
+                override fun getTypeInfo(typeRef: RecordRef): TypeInfo? {
+                    val typeId = typeRef.id
                     if (typeId != "ecos-config") {
                         return null
                     }
-                    return DbEcosTypeInfo(
-                        typeId,
-                        MLText.EMPTY,
-                        MLText.EMPTY,
-                        RecordRef.EMPTY,
-                        attributes,
-                        emptyList()
-                    )
+                    return TypeInfo.create {
+                        withId(typeId)
+                        withModel(
+                            TypeModelDef.create()
+                                .withAttributes(attributes)
+                                .build()
+                        )
+                    }
                 }
             },
             dbDataService,
-            DefaultDbPermsComponent(recordsService)
+            DefaultDbPermsComponent(recordsService),
+            null
         )
 
         records.addAttributesMixin(ConfigFormMixin())
