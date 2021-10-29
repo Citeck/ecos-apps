@@ -101,11 +101,15 @@ class EcosArtifactsPatchService(
     }
 
     private fun updateArtifactSyncTime(artifactRef: ArtifactRef) {
-        updateSyncEntity(artifactRef) { it.artifactLastModified = System.nanoTime() }
+        updateSyncEntity(artifactRef) {
+            it.artifactLastModified = System.currentTimeMillis()
+        }
     }
 
     private fun updatePatchSyncTime(artifactRef: ArtifactRef) {
-        updateSyncEntity(artifactRef) { it.patchLastModified = System.nanoTime() }
+        updateSyncEntity(artifactRef) {
+            it.patchLastModified = System.currentTimeMillis()
+        }
     }
 
     private fun updateSyncEntity(artifactRef: ArtifactRef, action: (ArtifactPatchSyncEntity) -> Unit) {
