@@ -9,6 +9,6 @@ source-id: ""
 controller:
   type: json
   config:
-    idTemplate: ${scope!$appName{?str|presuf('app/','/')}}${id}
+    idTemplate: ${scope|presuf('','$')}${id}
     attsValues:
       scope: "${scope!$appName{?str|presuf('app/')}}"
