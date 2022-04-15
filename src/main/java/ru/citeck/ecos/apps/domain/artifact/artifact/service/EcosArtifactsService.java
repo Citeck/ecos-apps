@@ -103,9 +103,13 @@ public class EcosArtifactsService {
             return null;
         }
 
+        ArtifactRevSourceType sourceType = lastRev.getSourceType();
+        if (sourceType == null) {
+            sourceType = ArtifactRevSourceType.APPLICATION;
+        }
         EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
         ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
-            ArtifactSourceType.valueOf(lastRev.getSourceType().toString())
+            ArtifactSourceType.valueOf(sourceType.toString())
         );
 
         if (uploadPolicy == null || !uploadPolicy.isPatchingAllowed(artifactContext)) {
