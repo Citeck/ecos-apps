@@ -25,6 +25,8 @@
 
     <properties>
 
+        <ecos.webapp-lib.version>1.0.0-SNAPSHOT</ecos.webapp-lib.version>
+
         <!-- Build properties -->
         <argLine>-Djava.security.egd=file:/dev/./urandom -Xmx256m</argLine>
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
@@ -86,8 +88,6 @@
         <sonar.sources>${project.basedir}/src/main/</sonar.sources>
         <sonar.junit.reportsPath>${project.testresult.directory}</sonar.junit.reportsPath>
         <sonar.tests>${project.basedir}/src/test/</sonar.tests>
-
-        <ecos.webapp-lib.version>1.0.0-SNAPSHOT</ecos.webapp-lib.version>
 
         <!-- jhipster-needle-maven-property -->
     </properties>
