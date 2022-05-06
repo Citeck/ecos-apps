@@ -161,7 +161,7 @@ class EcosAppService(
         return EcosAppDef.create {
             id = entity.extId
             name = Json.mapper.read(entity.name, MLText::class.java) ?: MLText()
-            version = Version(entity.version ?: "1.0")
+            version = Version.valueOf(entity.version ?: "1.0")
             typeRefs = DataValue.create(entity.typeRefs).asList(RecordRef::class.java)
             artifacts = DataValue.create(entity.artifacts).asList(RecordRef::class.java)
         }

@@ -9,7 +9,7 @@ import org.springframework.test.context.junit4.SpringRunner
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
-import ru.citeck.ecos.config.lib.artifact.dto.ConfigDef
+import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.records3.RecordsService
 
 @RunWith(SpringRunner::class)

@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
-@EnableJpaRepositories("ru.citeck.ecos.apps.repository")
-@EnableJpaAuditing(auditorAwareRef = "springSecurityAuditorAware")
+@EnableJpaRepositories("ru.citeck.ecos.apps.domain.*.repo")
+//@EnableJpaAuditing(auditorAwareRef = "springSecurityAuditorAware")
 @EnableTransactionManagement
 public class DatabaseConfiguration {
 }

@@ -1,10 +1,11 @@
 package ru.citeck.ecos.apps.domain.config.eapps
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
+import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.ObjectData
-import ru.citeck.ecos.config.lib.artifact.dto.ConfigDef
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.records2.RecordRef
@@ -47,21 +48,24 @@ class ConfigArtifactHandler(
 
         val valueChanged = if (existingConfig == null || artifact.version > existingConfig.version) {
             val valueObj = ObjectData.create()
-            valueObj.set(EcosConfigAppConstants.VALUE_SHORT_PROP, attributes.get(PROP_VALUE))
-            attributes.set(PROP_VALUE, valueObj)
+            valueObj[EcosConfigAppConstants.VALUE_SHORT_PROP] = attributes[PROP_VALUE]
+            attributes[PROP_VALUE] = valueObj
             true
         } else {
-            attributes.set(PROP_VALUE, existingConfig.value)
+            attributes[PROP_VALUE] = existingConfig.value
             false
         }
-        attributes.set("configId", artifact.id)
+        attributes["configId"] = artifact.id
 
         recordAtts.setAttributes(attributes)
 
         recordsService.mutate(recordAtts)
 
         if (valueChanged) {
-            zkConfigService.setConfig(ConfigKey(artifact.id, artifact.scope), artifact.value, artifact.version)
+            zkConfigService.setConfig(
+                ConfigKey.create(artifact.id, artifact.scope),
+                artifact.value
+            )
         }
     }
 

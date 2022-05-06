@@ -10,7 +10,7 @@
     <parent>
         <groupId>ru.citeck.ecos</groupId>
         <artifactId>ecos-micro-base</artifactId>
-        <version>3.34.4</version>
+        <version>3.47.0</version>
     </parent>
 
     <repositories>
@@ -87,10 +87,26 @@
         <sonar.junit.reportsPath>${project.testresult.directory}</sonar.junit.reportsPath>
         <sonar.tests>${project.basedir}/src/test/</sonar.tests>
 
+        <ecos.webapp-lib.version>1.0.0-SNAPSHOT</ecos.webapp-lib.version>
+
         <!-- jhipster-needle-maven-property -->
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>ru.citeck.ecos.webapp</groupId>
+            <artifactId>ecos-webapp-lib-spring</artifactId>
+            <version>${ecos.webapp-lib.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ru.citeck.ecos.webapp</groupId>
+            <artifactId>ecos-webapp-lib-spring-test</artifactId>
+            <version>${ecos.webapp-lib.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.github.jhipster</groupId>
             <artifactId>jhipster-framework</artifactId>
@@ -115,11 +131,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-afterburner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>
@@ -337,56 +348,6 @@
         <dependency>
             <groupId>org.springframework.amqp</groupId>
             <artifactId>spring-rabbit</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-commands-spring</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-apps-lib-spring</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-apps-lib-test</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-meta-repo-sql-spring</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos.data</groupId>
-            <artifactId>ecos-data-sql-pg</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos.rabbitmq</groupId>
-            <artifactId>ecos-rabbitmq-spring</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos.zookeeper</groupId>
-            <artifactId>ecos-zookeeper-spring</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-curator-framework</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos</groupId>
-            <artifactId>ecos-curator-test</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ru.citeck.ecos.config</groupId>
-            <artifactId>ecos-config-spring</artifactId>
         </dependency>
 
         <dependency>

@@ -1,8 +1,8 @@
 package ru.citeck.ecos.apps.config.timezone;
 
 import ru.citeck.ecos.apps.EcosAppsApp;
-import ru.citeck.ecos.apps.repository.timezone.DateTimeWrapper;
-import ru.citeck.ecos.apps.repository.timezone.DateTimeWrapperRepository;
+import ru.citeck.ecos.apps.domain.jpa.repo.DateTimeWrapper;
+import ru.citeck.ecos.apps.domain.jpa.repo.DateTimeWrapperRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

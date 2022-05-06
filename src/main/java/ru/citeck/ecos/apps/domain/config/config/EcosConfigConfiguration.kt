@@ -1,6 +1,5 @@
 package ru.citeck.ecos.apps.domain.config.config
 
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.citeck.ecos.apps.domain.config.api.records.ConfigFormMixin
@@ -8,22 +7,13 @@ import ru.citeck.ecos.apps.domain.config.api.records.ConfigValueMixin
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
-import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
-import ru.citeck.ecos.data.sql.datasource.DbDataSourceImpl
+import ru.citeck.ecos.data.sql.domain.DbDomainConfig
+import ru.citeck.ecos.data.sql.domain.DbDomainFactory
 import ru.citeck.ecos.data.sql.dto.DbTableRef
-import ru.citeck.ecos.data.sql.pg.PgDataServiceFactory
-import ru.citeck.ecos.data.sql.records.DbRecordsDao
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
-import ru.citeck.ecos.data.sql.records.perms.DefaultDbPermsComponent
-import ru.citeck.ecos.data.sql.repo.entity.DbEntity
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
-import ru.citeck.ecos.data.sql.service.DbDataServiceImpl
-import ru.citeck.ecos.model.lib.attributes.dto.AttributeDef
-import ru.citeck.ecos.model.lib.type.dto.TypeInfo
-import ru.citeck.ecos.model.lib.type.dto.TypeModelDef
-import ru.citeck.ecos.model.lib.type.repo.TypesRepo
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records3.RecordsService
@@ -37,61 +27,27 @@ import javax.sql.DataSource
 
 @Configuration
 class EcosConfigConfiguration(
-    private val applicationContext: ApplicationContext,
+    private val dbDomainFactory: DbDomainFactory,
     private val recordsService: RecordsService
 ) {
-
-    private val attributes: List<AttributeDef> by lazy { getAttributesImpl() }
 
     @Bean
     fun configsRepoDao(dataSource: DataSource): RecordsDao {
 
-        val pgDataServiceFactory = PgDataServiceFactory()
-        val dbDataSource = DbDataSourceImpl(dataSource)
-        val dbDataService = DbDataServiceImpl(
-            DbEntity::class.java,
-            DbDataServiceConfig.create {
-                withAuthEnabled(false)
-                withTableRef(DbTableRef("public", "ecos_config"))
-                withTransactional(false)
-                withStoreTableMeta(true)
-                withMaxItemsToAllowSchemaMigration(1000)
-            },
-            dbDataSource,
-            pgDataServiceFactory
-        )
-
-        val records = DbRecordsDao(
-            "config-repo",
-            DbRecordsDaoConfig(
-                TypeUtils.getTypeRef("ecos-config"),
-                insertable = true,
-                updatable = true,
-                deletable = true
-            ),
-            object : TypesRepo {
-                override fun getChildren(typeRef: RecordRef): List<RecordRef> {
-                    return emptyList()
-                }
-                override fun getTypeInfo(typeRef: RecordRef): TypeInfo? {
-                    val typeId = typeRef.id
-                    if (typeId != "ecos-config") {
-                        return null
-                    }
-                    return TypeInfo.create {
-                        withId(typeId)
-                        withModel(
-                            TypeModelDef.create()
-                                .withAttributes(attributes)
-                                .build()
-                        )
-                    }
-                }
-            },
-            dbDataService,
-            DefaultDbPermsComponent(recordsService),
-            null
-        )
+        val records = dbDomainFactory.create(
+            DbDomainConfig.create()
+                .withRecordsDao(DbRecordsDaoConfig.create {
+                    withId("config-repo")
+                    withTypeRef(TypeUtils.getTypeRef("ecos-config"))
+                })
+                .withDataService(DbDataServiceConfig.create {
+                    withAuthEnabled(false)
+                    withTableRef(DbTableRef("public", "ecos_config"))
+                    withTransactional(false)
+                    withStoreTableMeta(true)
+                })
+                .build()
+        ).build()
 
         records.addAttributesMixin(ConfigFormMixin())
         records.addAttributesMixin(ConfigValueMixin())
@@ -142,16 +98,15 @@ class EcosConfigConfiguration(
 
                 RequestContext.doAfterCommit {
                     zkConfigService.setConfig(
-                        ConfigKey(currentValueDto.configId, currentValueDto.scope),
-                        value,
-                        currentValueDto.version
+                        ConfigKey.create(currentValueDto.configId, currentValueDto.scope),
+                        value
                     )
                 }
 
                 val valueObj = ObjectData.create()
-                valueObj.set(EcosConfigAppConstants.VALUE_SHORT_PROP, value)
+                valueObj[EcosConfigAppConstants.VALUE_SHORT_PROP] = value
                 val newAtts = atts.deepCopy()
-                newAtts.set("value", valueObj)
+                newAtts["value"] = valueObj
 
                 return newAtts
             }
@@ -160,20 +115,10 @@ class EcosConfigConfiguration(
         return proxyDao
     }
 
-    private fun getAttributesImpl(): List<AttributeDef> {
-        val configFile = applicationContext.getResource("classpath:eapps/artifacts/model/type/ecos-config.yml")
-        val typeDef = Json.mapper.read(configFile.file, TypeDef::class.java) ?: error("type config reading error")
-        return typeDef.model.attributes
-    }
-
     data class ConfigAtts(
         val configId: String,
         val scope: String,
         val value: ObjectData,
         val version: Int
-    )
-
-    class TypeDef(
-        val model: TypeModelDef
     )
 }

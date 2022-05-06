@@ -1,7 +1,7 @@
 # ===================================================================
-# Spring Boot configuration for the "dev" profile.
+# Spring Boot configuration.
 #
-# This configuration overrides the application.yml file.
+# This configuration is used for unit/integration tests.
 #
 # More information on profiles: https://www.jhipster.tech/profiles/
 # More information on configuration properties: https://www.jhipster.tech/common-application-properties/
@@ -14,48 +14,51 @@
 # ===================================================================
 
 eureka:
-  instance:
-    prefer-ip-address: true
   client:
-    service-url:
-      defaultZone: http://admin:${ecos.registry.password:${jhipster.registry.password:}}@localhost:8761/eureka/
+    enabled: false
 
 spring:
-  profiles:
-    active: dev
-    include:
-      - swagger
-      # Uncomment to activate TLS for the dev profile
-      #- tls
-  jackson:
-    serialization:
-      indent-output: true
+  cache:
+    type: simple
   jpa:
     database-platform: io.github.jhipster.domain.util.FixedPostgreSQL82Dialect
     database: POSTGRESQL
-    show-sql: false
+    open-in-view: false
+    show-sql: true
     properties:
       hibernate.id.new_generator_mappings: true
       hibernate.connection.provider_disables_autocommit: true
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
-      hibernate.generate_statistics: true
+      hibernate.generate_statistics: false
+      hibernate.hbm2ddl.auto: validate
+      hibernate.jdbc.time_zone: UTC
   liquibase:
-    contexts: dev
-  messages:
-    cache-duration: PT1S
-  sleuth:
-    sampler:
-      probability: 1 # report 100% of traces
-  zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
-    base-url: http://localhost:9411
-    enabled: false
-    locator:
-      discovery:
-        enabled: true
+    contexts: test
+  mvc:
+    favicon:
+      enabled: false
+  thymeleaf:
+    mode: HTML
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
 
 server:
-  port: 8089
+  port: 10344
+  address: localhost
+
+# ===================================================================
+# JHipster specific properties
+#
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+jhipster:
+  security:
+    authentication:
+      jwt:
+        # This token must be encoded using Base64 (you can type `echo 'secret-key'|base64` on your command line)
+        base64-secret: ZjgwMjI3YmVkODY5ODEzYjE2ODIxN2RiMzg0MGVkZjU3M2RiMzBmNjQ4NTc4MDhlYmE1ODk1MDhiZjcxZGRiNWJhMTkyZjU4ZmQ0NGJhYjQxOGQ3YWExYjU4ZDRiYWU5NGE5MjM1ODk0ZWQyZjNhYjUwOGU5YjNiZTAxNWQ2YjQ=
 
 # ===================================================================
 # Application specific properties
@@ -68,5 +71,6 @@ server:
 
 # application:
 
-spring.rabbitmq:
-  host: localhost
+ecos-apps:
+  modules-watcher:
+    init-delay-ms: 0

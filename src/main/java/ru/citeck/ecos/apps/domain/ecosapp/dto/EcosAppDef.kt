@@ -47,7 +47,7 @@ data class EcosAppDef(
 
         var id: String = ""
         var name: MLText = MLText()
-        var version: Version = Version("1.0")
+        var version: Version = Version.valueOf("1.0")
         var typeRefs: List<RecordRef> = emptyList()
         var artifacts: List<RecordRef> = emptyList()
 
