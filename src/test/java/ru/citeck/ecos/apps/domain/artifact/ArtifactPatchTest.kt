@@ -1,16 +1,15 @@
 package ru.citeck.ecos.apps.domain.artifact
 
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.util.ResourceUtils
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
@@ -19,7 +18,7 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider
 import java.util.concurrent.ConcurrentHashMap
 
-@RunWith(SpringRunner::class)
+@ExtendWith(SpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class ArtifactPatchTest {
@@ -34,7 +33,7 @@ class ArtifactPatchTest {
 
     private val allApps = mutableListOf<EcosTestApp>()
 
-    @Before
+    @BeforeEach
     fun before() {
 
         val connection = connectionProvider.getConnection()!!
@@ -66,7 +65,7 @@ class ArtifactPatchTest {
         assertEquals("patched-by-patch-2", testForm.get("formKey").asText())
     }
 
-    @After
+    @AfterEach
     fun after() {
         allApps.forEach { it.dispose() }
     }

@@ -1,7 +1,7 @@
 package ru.citeck.ecos.apps.domain.config
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import ru.citeck.ecos.apps.EcosAppsServiceFactory
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceProvider
@@ -13,7 +13,6 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.io.file.std.EcosStdFile
 import ru.citeck.ecos.commons.utils.TmplUtils
-import ru.citeck.ecos.records3.RecordsProperties
 import ru.citeck.ecos.records3.RecordsServiceFactory
 import ru.citeck.ecos.webapp.api.context.EcosWebAppContext
 import ru.citeck.ecos.webapp.api.properties.EcosWebAppProperties

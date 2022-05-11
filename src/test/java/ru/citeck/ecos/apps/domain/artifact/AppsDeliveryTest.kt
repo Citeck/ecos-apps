@@ -1,13 +1,15 @@
 package ru.citeck.ecos.apps.domain.artifact
 
-import org.junit.*
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.util.ResourceUtils
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.artifact.ArtifactRef
@@ -23,7 +25,7 @@ import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider
 import java.util.concurrent.ConcurrentHashMap
 
-@RunWith(SpringRunner::class)
+@ExtendWith(SpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class AppsDeliveryTest {
@@ -41,7 +43,7 @@ class AppsDeliveryTest {
     private val appByInstanceId = ConcurrentHashMap<String, EcosTestApp>()
     private val allApps = mutableListOf<EcosTestApp>()
 
-    @Before
+    @BeforeEach
     fun before() {
 
         val connection = connectionProvider.getConnection()!!
@@ -116,7 +118,7 @@ class AppsDeliveryTest {
         assertEquals("alf_samwf:incomePackageTask_disabled_by_patch", secondPatchedForm.get("formKey").asText())
     }
 
-    @After
+    @AfterEach
     fun after() {
         allApps.forEach { it.dispose() }
     }

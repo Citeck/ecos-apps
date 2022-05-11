@@ -27,7 +27,7 @@ spring:
     livereload:
       enabled: false
   jpa:
-    database-platform: io.github.jhipster.domain.util.FixedPostgreSQL82Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     database: POSTGRESQL
     show-sql: false
     properties:
@@ -40,8 +40,6 @@ spring:
       hibernate.cache.hazelcast.instance_name: eapps
       hibernate.cache.use_minimal_puts: true
       hibernate.cache.hazelcast.use_lite_member: true
-  liquibase:
-    contexts: prod
   sleuth:
     sampler:
       probability: 1 # report 100% of traces

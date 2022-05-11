@@ -21,7 +21,7 @@ spring:
   cache:
     type: simple
   jpa:
-    database-platform: io.github.jhipster.domain.util.FixedPostgreSQL82Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     database: POSTGRESQL
     open-in-view: false
     show-sql: true
@@ -33,8 +33,6 @@ spring:
       hibernate.generate_statistics: false
       hibernate.hbm2ddl.auto: validate
       hibernate.jdbc.time_zone: UTC
-  liquibase:
-    contexts: test
   mvc:
     favicon:
       enabled: false
