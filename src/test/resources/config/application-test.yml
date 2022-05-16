@@ -13,34 +13,6 @@
 # http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
 # ===================================================================
 
-eureka:
-  client:
-    enabled: false
-
-spring:
-  cache:
-    type: simple
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    database: POSTGRESQL
-    open-in-view: false
-    show-sql: true
-    properties:
-      hibernate.id.new_generator_mappings: true
-      hibernate.connection.provider_disables_autocommit: true
-      hibernate.cache.use_second_level_cache: false
-      hibernate.cache.use_query_cache: false
-      hibernate.generate_statistics: false
-      hibernate.hbm2ddl.auto: validate
-      hibernate.jdbc.time_zone: UTC
-  mvc:
-    favicon:
-      enabled: false
-  thymeleaf:
-    mode: HTML
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
-
 server:
   port: 10344
   address: localhost
@@ -50,13 +22,6 @@ server:
 #
 # Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
-
-jhipster:
-  security:
-    authentication:
-      jwt:
-        # This token must be encoded using Base64 (you can type `echo 'secret-key'|base64` on your command line)
-        base64-secret: ZjgwMjI3YmVkODY5ODEzYjE2ODIxN2RiMzg0MGVkZjU3M2RiMzBmNjQ4NTc4MDhlYmE1ODk1MDhiZjcxZGRiNWJhMTkyZjU4ZmQ0NGJhYjQxOGQ3YWExYjU4ZDRiYWU5NGE5MjM1ODk0ZWQyZjNhYjUwOGU5YjNiZTAxNWQ2YjQ=
 
 # ===================================================================
 # Application specific properties

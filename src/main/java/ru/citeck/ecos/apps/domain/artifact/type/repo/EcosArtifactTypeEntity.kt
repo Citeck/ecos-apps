@@ -1,12 +1,12 @@
 package ru.citeck.ecos.apps.domain.artifact.type.repo
 
-import ru.citeck.ecos.apps.app.audit.repo.AbstractAuditingEntity
+import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
 import java.time.Instant
 import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_artifact_type")
-open class EcosArtifactTypeEntity : AbstractAuditingEntity() {
+class EcosArtifactTypeEntity : AbstractAuditingEntity() {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_artifact_type_id_gen")
@@ -15,15 +15,15 @@ open class EcosArtifactTypeEntity : AbstractAuditingEntity() {
 
     override fun getId() = id
 
-    open lateinit var extId: String
-    open lateinit var appName: String
+    lateinit var extId: String
+    lateinit var appName: String
 
-    open var internal = false
-    open var recordsSourceId: String = ""
+    var internal = false
+    var recordsSourceId: String = ""
 
-    open lateinit var lastModifiedByApp: Instant
+    lateinit var lastModifiedByApp: Instant
 
     @OneToOne
     @JoinColumn(name = "last_rev_id")
-    open var lastRev: EcosArtifactTypeRevEntity? = null
+    var lastRev: EcosArtifactTypeRevEntity? = null
 }

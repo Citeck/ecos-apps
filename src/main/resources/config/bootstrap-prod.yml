@@ -2,10 +2,6 @@
 # Spring Cloud Config bootstrap configuration for the "prod" profile
 # ===================================================================
 
-jhipster:
-  registry:
-    password: admin
-
 ecos:
   registry:
     password: admin
@@ -18,7 +14,7 @@ spring:
         initial-interval: 1000
         max-interval: 2000
         max-attempts: 100
-      uri: http://admin:${ecos.registry.password:${jhipster.registry.password:}}@localhost:8761/config
+      uri: http://admin:${ecos.registry.password}@localhost:8761/config
       # name of the config server's property source (file.yml) that we want to use
       name: eapps
       profile: prod # profile(s) of the property source
