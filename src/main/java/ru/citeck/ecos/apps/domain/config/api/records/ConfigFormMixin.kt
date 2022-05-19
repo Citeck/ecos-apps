@@ -23,22 +23,26 @@ class ConfigFormMixin : AttMixin {
                 val attJsonValue = value.getAtt("value?json")
                 val attValue = attJsonValue.get(EcosConfigAppConstants.VALUE_SHORT_PROP)
                 if (attValue.isTextual()) {
-                    listOf(ObjectData.create(
-                        """
+                    listOf(
+                        ObjectData.create(
+                            """
                         {
                             "type": "text",
                             "key": "_value"
                         }
-                        """.trimIndent())
+                            """.trimIndent()
+                        )
                     )
                 } else {
-                    listOf(ObjectData.create(
-                        """
+                    listOf(
+                        ObjectData.create(
+                            """
                         {
                             "type": "text",
                             "key": "_value"
                         }
-                        """.trimIndent())
+                            """.trimIndent()
+                        )
                     )
                 }
             }

@@ -36,16 +36,20 @@ class EcosConfigConfiguration(
 
         val records = dbDomainFactory.create(
             DbDomainConfig.create()
-                .withRecordsDao(DbRecordsDaoConfig.create {
-                    withId("config-repo")
-                    withTypeRef(TypeUtils.getTypeRef("ecos-config"))
-                })
-                .withDataService(DbDataServiceConfig.create {
-                    withAuthEnabled(false)
-                    withTableRef(DbTableRef("public", "ecos_config"))
-                    withTransactional(false)
-                    withStoreTableMeta(true)
-                })
+                .withRecordsDao(
+                    DbRecordsDaoConfig.create {
+                        withId("config-repo")
+                        withTypeRef(TypeUtils.getTypeRef("ecos-config"))
+                    }
+                )
+                .withDataService(
+                    DbDataServiceConfig.create {
+                        withAuthEnabled(false)
+                        withTableRef(DbTableRef("public", "ecos_config"))
+                        withTransactional(false)
+                        withStoreTableMeta(true)
+                    }
+                )
                 .build()
         ).build()
 
@@ -58,59 +62,64 @@ class EcosConfigConfiguration(
     @Bean
     fun configsProxyDao(zkConfigService: ZkConfigService): RecordsDao {
 
-        val proxyDao = RecordsDaoProxy("config", "config-repo", object : MutateProxyProcessor {
+        val proxyDao = RecordsDaoProxy(
+            "config", "config-repo",
+            object : MutateProxyProcessor {
 
-            override fun mutatePostProcess(records: List<RecordRef>, context: ProxyProcContext): List<RecordRef> {
-                return records
-            }
-
-            override fun mutatePreProcess(
-                atts: List<LocalRecordAtts>,
-                context: ProxyProcContext
-            ): List<LocalRecordAtts> {
-                return atts.map { LocalRecordAtts(it.id, preProcess(it.id, it.attributes)) }
-            }
-
-            private fun preProcess(id: String, atts: ObjectData): ObjectData {
-
-                val rawValue = atts.get("_value")
-                if (rawValue.isNull()) {
-                    error("_value is null")
+                override fun mutatePostProcess(records: List<RecordRef>, context: ProxyProcContext): List<RecordRef> {
+                    return records
                 }
 
-                val currentValueDto = recordsService.getAtts("config-repo@$id", ConfigAtts::class.java)
-                val currentValue = currentValueDto.value.get(EcosConfigAppConstants.VALUE_SHORT_PROP)
-                if (currentValue.isNull()) {
-                    error("currentValue is null. Obj: $currentValueDto")
+                override fun mutatePreProcess(
+                    atts: List<LocalRecordAtts>,
+                    context: ProxyProcContext
+                ): List<LocalRecordAtts> {
+                    return atts.map { LocalRecordAtts(it.id, preProcess(it.id, it.attributes)) }
                 }
 
-                val value = DataValue.create(if (currentValue.isBoolean()) {
-                    rawValue.asBoolean()
-                } else if (currentValue.isIntegralNumber()) {
-                    rawValue.asLong()
-                } else if (currentValue.isFloatingPointNumber()) {
-                    rawValue.asDouble()
-                } else if (currentValue.isTextual()) {
-                    rawValue.asText()
-                } else {
-                    error("Current value is not modifiable: $currentValue")
-                })
+                private fun preProcess(id: String, atts: ObjectData): ObjectData {
 
-                RequestContext.doAfterCommit {
-                    zkConfigService.setConfig(
-                        ConfigKey.create(currentValueDto.configId, currentValueDto.scope),
-                        value
+                    val rawValue = atts.get("_value")
+                    if (rawValue.isNull()) {
+                        error("_value is null")
+                    }
+
+                    val currentValueDto = recordsService.getAtts("config-repo@$id", ConfigAtts::class.java)
+                    val currentValue = currentValueDto.value.get(EcosConfigAppConstants.VALUE_SHORT_PROP)
+                    if (currentValue.isNull()) {
+                        error("currentValue is null. Obj: $currentValueDto")
+                    }
+
+                    val value = DataValue.create(
+                        if (currentValue.isBoolean()) {
+                            rawValue.asBoolean()
+                        } else if (currentValue.isIntegralNumber()) {
+                            rawValue.asLong()
+                        } else if (currentValue.isFloatingPointNumber()) {
+                            rawValue.asDouble()
+                        } else if (currentValue.isTextual()) {
+                            rawValue.asText()
+                        } else {
+                            error("Current value is not modifiable: $currentValue")
+                        }
                     )
+
+                    RequestContext.doAfterCommit {
+                        zkConfigService.setConfig(
+                            ConfigKey.create(currentValueDto.configId, currentValueDto.scope),
+                            value
+                        )
+                    }
+
+                    val valueObj = ObjectData.create()
+                    valueObj[EcosConfigAppConstants.VALUE_SHORT_PROP] = value
+                    val newAtts = atts.deepCopy()
+                    newAtts["value"] = valueObj
+
+                    return newAtts
                 }
-
-                val valueObj = ObjectData.create()
-                valueObj[EcosConfigAppConstants.VALUE_SHORT_PROP] = value
-                val newAtts = atts.deepCopy()
-                newAtts["value"] = valueObj
-
-                return newAtts
             }
-        })
+        )
 
         return proxyDao
     }

@@ -38,8 +38,7 @@ class EcosAppService(
     private val applicationsWatcherJob: ApplicationsWatcherJob
 ) {
 
-
-    fun uploadZip(data: ByteArray) : EcosAppDef {
+    fun uploadZip(data: ByteArray): EcosAppDef {
 
         val appRoot = ZipUtils.extractZip(data)
         val meta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
@@ -60,7 +59,7 @@ class EcosAppService(
         return entityToDto(entity)
     }
 
-    fun save(app: EcosAppDef) : EcosAppDef {
+    fun save(app: EcosAppDef): EcosAppDef {
         return entityToDto(ecosAppRepo.save(internalSave(app)))
     }
 
@@ -75,12 +74,12 @@ class EcosAppService(
         return dtoToEntity(app)
     }
 
-    fun getById(id: String) : EcosAppDef? {
+    fun getById(id: String): EcosAppDef? {
         val app = ecosAppRepo.findFirstByExtId(id) ?: return null
         return entityToDto(app)
     }
 
-    fun getAll() : List<EcosAppDef> {
+    fun getAll(): List<EcosAppDef> {
         val sort = Sort.by(Sort.Order.desc("createdDate"))
         return ecosAppRepo.findAll(sort).map { entityToDto(it) }
     }
@@ -90,7 +89,7 @@ class EcosAppService(
         ecosArtifactsService.removeEcosApp(id)
     }
 
-    fun getAppForArtifacts(list: List<RecordRef>) : Map<RecordRef, RecordRef> {
+    fun getAppForArtifacts(list: List<RecordRef>): Map<RecordRef, RecordRef> {
 /*
         val result = mutableMapOf<RecordRef, RecordRef>()
         ecosAppContentRepo.findAllByArtifactIsIn(list.map { it.toString() }).forEach {
@@ -99,7 +98,7 @@ class EcosAppService(
                 result[RecordRef.valueOf(it.artifact)] = RecordRef.create("eapps", "ecos-app", appId)
             }
         }*/
-        return emptyMap()//result
+        return emptyMap() // result
     }
 
     fun getAppData(id: String): ByteArray {
@@ -129,19 +128,18 @@ class EcosAppService(
         return ZipUtils.writeZipAsBytes(rootDir)
     }
 
-    private fun dtoToEntity(dto: EcosAppDef) : EcosAppEntity {
+    private fun dtoToEntity(dto: EcosAppDef): EcosAppEntity {
 
         val nullableEntity = ecosAppRepo.findFirstByExtId(dto.id)
 
         val entity = if (nullableEntity != null) {
 
             nullableEntity
-
         } else {
 
             val newEntity = EcosAppEntity()
             newEntity.extId = if (dto.id.isBlank()) {
-                 UUID.randomUUID().toString()
+                UUID.randomUUID().toString()
             } else {
                 dto.id
             }
@@ -156,7 +154,7 @@ class EcosAppService(
         return entity
     }
 
-    private fun entityToDto(entity: EcosAppEntity) : EcosAppDef {
+    private fun entityToDto(entity: EcosAppEntity): EcosAppDef {
 
         return EcosAppDef.create {
             id = entity.extId
@@ -167,7 +165,7 @@ class EcosAppService(
         }
     }
 
-    private fun typeRefToArtifactRef(typeRef: RecordRef) : RecordRef {
+    private fun typeRefToArtifactRef(typeRef: RecordRef): RecordRef {
         return RecordRef.create("eapps", EcosArtifactRecords.ID, "model/type$${typeRef.id}")
     }
 

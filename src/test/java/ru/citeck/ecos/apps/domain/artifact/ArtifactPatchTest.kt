@@ -9,16 +9,16 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.util.ResourceUtils
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.test.EcosTestApp
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.util.concurrent.ConcurrentHashMap
 
-@ExtendWith(SpringExtension::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class ArtifactPatchTest {
@@ -56,7 +56,7 @@ class ArtifactPatchTest {
 
         val testForm = getAppByName("app0")
             .getDeployedArtifacts("ui/form2", ObjectData::class.java)["test-form"]
-                ?: error("test-form artifacts is not found")
+            ?: error("test-form artifacts is not found")
 
         assertTrue(testForm.get("patch-0-applied").asBoolean())
         assertTrue(testForm.get("patch-1-applied").asBoolean())

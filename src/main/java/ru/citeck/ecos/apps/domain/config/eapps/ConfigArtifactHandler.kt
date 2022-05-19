@@ -1,6 +1,5 @@
 package ru.citeck.ecos.apps.domain.config.eapps
 
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
 import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
@@ -28,13 +27,18 @@ class ConfigArtifactHandler(
 
     override fun deployArtifact(artifact: ConfigDef) {
 
-        val existingConfig = recordsService.queryOne(RecordsQuery.create {
-            withSourceId("config-repo")
-            withQuery(Predicates.and(
-                Predicates.eq("configId", artifact.id),
-                Predicates.eq("scope", artifact.scope)
-            ))
-        }, ExistingConfigQueryAtts::class.java)
+        val existingConfig = recordsService.queryOne(
+            RecordsQuery.create {
+                withSourceId("config-repo")
+                withQuery(
+                    Predicates.and(
+                        Predicates.eq("configId", artifact.id),
+                        Predicates.eq("scope", artifact.scope)
+                    )
+                )
+            },
+            ExistingConfigQueryAtts::class.java
+        )
 
         val recordAtts = RecordAtts()
         if (existingConfig != null) {
@@ -87,4 +91,3 @@ class ConfigArtifactHandler(
         val value: ObjectData
     )
 }
-

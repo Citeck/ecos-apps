@@ -57,7 +57,7 @@ class EcosApplicationsService(
 
         val appsByName = HashMap<String, MutableList<RemoteAppStatus>>()
 
-        appsStatus.forEach { appsByName.computeIfAbsent(it.appName) { ArrayList() }.add(it)  }
+        appsStatus.forEach { appsByName.computeIfAbsent(it.appName) { ArrayList() }.add(it) }
 
         for ((appName, statuses) in appsByName) {
 
@@ -85,8 +85,9 @@ class EcosApplicationsService(
             appStatus.forEach { appInstance ->
 
                 val typesSource = typesSourcesByAppName[appInstance.appName]
-                if (typesSource == null
-                    || appInstance.status.typesLastModified.isAfter(typesSource.status.typesLastModified)) {
+                if (typesSource == null ||
+                    appInstance.status.typesLastModified.isAfter(typesSource.status.typesLastModified)
+                ) {
 
                     typesSourcesByAppName[appInstance.appName] = appInstance
                 }
@@ -117,8 +118,9 @@ class EcosApplicationsService(
 
             val currentSource = typesSources[appStatus.appName]
 
-            if (currentSource == null
-                    || currentSource.status.typesLastModified.isBefore(appStatus.status.typesLastModified)) {
+            if (currentSource == null ||
+                currentSource.status.typesLastModified.isBefore(appStatus.status.typesLastModified)
+            ) {
 
                 try {
                     val typesDir = remoteAppService.getArtifactTypesDir(appStatus.appInstanceId)
@@ -130,7 +132,6 @@ class EcosApplicationsService(
 
                     deployers.remove(appStatus.appName)
                     typesSources[appStatus.appName] = appStatus
-
                 } catch (e: Exception) {
                     log.error(e) { "Types dir loading error. App: $appStatus" }
                 }
@@ -179,7 +180,8 @@ class EcosApplicationsService(
 
             val currentSource = sources[key]
             if (currentSource == null || currentSource.getLastModified()
-                    .isBefore(appSourceInfo.sourceInfo.lastModified)) {
+                .isBefore(appSourceInfo.sourceInfo.lastModified)
+            ) {
 
                 val appKey = AppKey(appSourceInfo.appStatus.appName, appSourceInfo.appStatus.appInstanceId)
                 val appSource = AppArtifactsSourceImpl(
@@ -204,10 +206,12 @@ class EcosApplicationsService(
 
         log.info("Send build info request to $appFullName")
 
-        val comRes: CommandResult = commandsService.execute(commandsService.buildCommand {
-            this.targetApp = getTargetAppByAppInstanceId(app.appInstanceId)
-            this.body = GetAppBuildInfoCommand(Instant.EPOCH)
-        }).get(10, TimeUnit.SECONDS)
+        val comRes: CommandResult = commandsService.execute(
+            commandsService.buildCommand {
+                this.targetApp = getTargetAppByAppInstanceId(app.appInstanceId)
+                this.body = GetAppBuildInfoCommand(Instant.EPOCH)
+            }
+        ).get(10, TimeUnit.SECONDS)
 
         comRes.throwPrimaryErrorIfNotNull()
 

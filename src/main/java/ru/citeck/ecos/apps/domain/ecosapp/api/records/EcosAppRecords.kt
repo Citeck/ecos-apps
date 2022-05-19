@@ -51,7 +51,6 @@ class EcosAppRecords(
             result.records = query.artifacts.map {
                 ArtifactsAppQueryRes(it, appByArtifacts[it] ?: RecordRef.EMPTY)
             }
-
         } else {
 
             result.records = ecosAppService.getAll().map { EcosAppRecord(it, ecosAppService) }
@@ -70,11 +69,16 @@ class EcosAppRecords(
     override fun save(values: MutableList<EcosAppRecord>): RecordsMutResult {
         val records = values.map {
             val appData = it.appData
-            RecordMeta(RecordRef.create(ID, if (appData != null) {
-                ecosAppService.uploadZip(appData).id
-            } else {
-                ecosAppService.save(it.build()).id
-            }))
+            RecordMeta(
+                RecordRef.create(
+                    ID,
+                    if (appData != null) {
+                        ecosAppService.uploadZip(appData).id
+                    } else {
+                        ecosAppService.save(it.build()).id
+                    }
+                )
+            )
         }
         val result = RecordsMutResult()
         result.records = records
@@ -132,13 +136,13 @@ class EcosAppRecords(
         fun setContent(content: List<ObjectData>) {
 
             val base64Content = content[0].get("url")
-            //val filename = content[0].get("originalName", "")
+            // val filename = content[0].get("originalName", "")
             val pattern = Pattern.compile("^data:(.+?);base64,(.+)$")
             val matcher = pattern.matcher(base64Content.asText())
 
             check(matcher.find()) { "Incorrect content: $base64Content" }
 
-            //val mimetype = matcher.group(1)
+            // val mimetype = matcher.group(1)
             val base64 = matcher.group(2)
 
             appData = Base64.getDecoder().decode(base64)

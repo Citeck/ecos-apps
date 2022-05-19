@@ -3,4 +3,6 @@
 
 <configuration>
     <include resource="ecos/logback-base.xml" />
+
+    <root level="WARN" />
 </configuration>

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.app.domain.artifact.source.*
 import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
@@ -21,9 +20,10 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeplo
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.time.Instant
 
-@ExtendWith(SpringExtension::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class EcosArtifactsServiceTest {
@@ -113,7 +113,7 @@ class EcosArtifactsServiceTest {
 
         val deployedArtifacts = mutableMapOf<String, MutableList<Any>>()
 
-        val deployer = object: ArtifactDeployer {
+        val deployer = object : ArtifactDeployer {
 
             override fun deploy(type: String, artifact: ByteArray): List<DeployError> {
                 deployedArtifacts.computeIfAbsent(type) { ArrayList() }
@@ -153,13 +153,15 @@ class EcosArtifactsServiceTest {
         val firstArtifact = artifacts[jsonTestTypeId]?.get(0) as ObjectData
         firstArtifact.set("newField", "newValue")
 
-        ecosArtifactsService.uploadArtifact(ArtifactUploadDto(
-            jsonTestTypeId,
-            firstArtifact,
-            AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
-        ))
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                jsonTestTypeId,
+                firstArtifact,
+                AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
+            )
+        )
 
-        val artifactRef = ArtifactRef.create(jsonTestTypeId, firstArtifact.get("id").asText());
+        val artifactRef = ArtifactRef.create(jsonTestTypeId, firstArtifact.get("id").asText())
         val updatedArtifact = ecosArtifactsService.getLastArtifact(artifactRef)!!
 
         assertFalse(revIdByArtifact[artifactRef].isNullOrBlank())

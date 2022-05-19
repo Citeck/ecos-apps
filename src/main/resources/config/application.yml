@@ -14,9 +14,10 @@
 # http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
 # ===================================================================
 
+server:
+  port: 8089
+
 spring:
-  application:
-    name: eapps
   datasource:
     url: jdbc:postgresql://localhost:5437/eapps
     username: eapps
@@ -37,7 +38,3 @@ ecos-apps:
   modules-watcher:
     init-delay-ms: 10000
 
-spring.rabbitmq:
-  host: rabbitmq
-  username: admin
-  password: admin

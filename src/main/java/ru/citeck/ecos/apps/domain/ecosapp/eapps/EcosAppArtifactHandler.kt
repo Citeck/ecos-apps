@@ -10,7 +10,7 @@ import java.util.function.Consumer
 @Component
 class EcosAppArtifactHandler(
     val ecosAppService: EcosAppService
-) : EcosArtifactHandler<EcosAppArtifactHandler.EcosAppArtifact>{
+) : EcosArtifactHandler<EcosAppArtifactHandler.EcosAppArtifact> {
 
     override fun deployArtifact(artifact: EcosAppArtifact) {
 
@@ -18,7 +18,7 @@ class EcosAppArtifactHandler(
 
         val targetArtifactsDir = ecosAppTargetDir.createDir("artifacts")
         val sourceArtifactsDir = ZipUtils.extractZip(artifact.artifactsDir)
-        targetArtifactsDir.copyFilesFrom(sourceArtifactsDir);
+        targetArtifactsDir.copyFilesFrom(sourceArtifactsDir)
 
         ecosAppTargetDir.createFile("meta.json", artifact.metaContent)
 

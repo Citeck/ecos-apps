@@ -1,20 +1,20 @@
 package ru.citeck.ecos.apps.domain.devtools.devmodule.service
 
 import org.springframework.stereotype.Service
+import ru.citeck.ecos.apps.domain.devtools.devmodule.dto.DevModuleDef
+import ru.citeck.ecos.apps.domain.devtools.devmodule.repo.DevModuleEntity
+import ru.citeck.ecos.apps.domain.devtools.devmodule.repo.DevModuleRepo
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.records2.RecordRef
-import ru.citeck.ecos.apps.domain.devtools.devmodule.dto.DevModuleDef
-import ru.citeck.ecos.apps.domain.devtools.devmodule.repo.DevModuleEntity
-import ru.citeck.ecos.apps.domain.devtools.devmodule.repo.DevModuleRepo
 
 @Service
 class DevModulesService(
     val repo: DevModuleRepo
 ) {
 
-    fun getById(id: String) : DevModuleDef? {
+    fun getById(id: String): DevModuleDef? {
         return repo.findByExtId(id)?.let { toDto(it) }
     }
 

@@ -8,10 +8,10 @@ import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.application.service.EcosApplicationsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
-import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.EcosArtifactDto
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
@@ -73,7 +73,7 @@ class EcosArtifactRecords(
 
             val typeArtifactsQuery = recordsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
             val artifacts = getArtifactsForTypes(typeArtifactsQuery.typeRefs, HashSet())
-            artifacts.removeAll(typeArtifactsQuery.typeRefs);
+            artifacts.removeAll(typeArtifactsQuery.typeRefs)
 
             result.records = artifacts.map {
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
@@ -86,10 +86,9 @@ class EcosArtifactRecords(
                 }
                 moduleRes
             }.filter { it !== EmptyValue.INSTANCE }
-
         } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
-            val predicate = recordsQuery.getQuery(Predicate::class.java);
+            val predicate = recordsQuery.getQuery(Predicate::class.java)
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
                 recordsQuery.skipCount,
@@ -102,8 +101,10 @@ class EcosArtifactRecords(
         return result
     }
 
-    private fun getArtifactsForTypes(typeRefs: Collection<RecordRef>,
-                                     checkedTypes: MutableSet<RecordRef>): MutableSet<RecordRef> {
+    private fun getArtifactsForTypes(
+        typeRefs: Collection<RecordRef>,
+        checkedTypes: MutableSet<RecordRef>
+    ): MutableSet<RecordRef> {
 
         if (typeRefs.isEmpty()) {
             return mutableSetOf()
@@ -154,7 +155,7 @@ class EcosArtifactRecords(
             artifactsSet.addAll(it)
             it.forEach { ref ->
                 if (ref.appName == "emodel" && ref.sourceId == "type" && checkedTypes.add(ref)) {
-                    newTypes.add(ref);
+                    newTypes.add(ref)
                 }
             }
         }

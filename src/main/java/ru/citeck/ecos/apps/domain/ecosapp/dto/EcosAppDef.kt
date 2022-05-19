@@ -1,12 +1,11 @@
 package ru.citeck.ecos.apps.domain.ecosapp.dto
 
 import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize as JackDeserialize
-
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
 import ru.citeck.ecos.records2.RecordRef
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize as JackDeserialize
 
 @JsonDeserialize(builder = EcosAppDef.Builder::class)
 @JackDeserialize(builder = EcosAppDef.Builder::class)

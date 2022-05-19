@@ -167,9 +167,11 @@ class EcosArtifactsPatchService(
         return wasChanged
     }
 
-    private fun applyPatches(artifact: Any,
-                     artifactRef: ArtifactRef,
-                     patches: List<ArtifactPatchDto>): Any {
+    private fun applyPatches(
+        artifact: Any,
+        artifactRef: ArtifactRef,
+        patches: List<ArtifactPatchDto>
+    ): Any {
 
         val artifactPatches = mapper.convert<List<ArtifactPatch>>(
             patches,
@@ -236,19 +238,19 @@ class EcosArtifactsPatchService(
         val name = predicateDto.name
         if (!name.isNullOrBlank()) {
             spec = Specification {
-                root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
-                    builder.like(
-                        builder.lower(root.get("name")), "%" + name.lowercase() + "%"
-                    )
+                    root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
+                builder.like(
+                    builder.lower(root.get("name")), "%" + name.lowercase() + "%"
+                )
             }
         }
         val artifactId = predicateDto.artifactId ?: predicateDto.moduleId
         if (!artifactId.isNullOrBlank()) {
             val idSpec = Specification {
-                root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
-                    builder.like(
-                        builder.lower(root.get("extId")), "%" + artifactId.lowercase() + "%"
-                    )
+                    root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
+                builder.like(
+                    builder.lower(root.get("extId")), "%" + artifactId.lowercase() + "%"
+                )
             }
             spec = spec?.or(idSpec) ?: idSpec
         }

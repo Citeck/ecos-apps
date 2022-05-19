@@ -9,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.util.ResourceUtils
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.artifact.ArtifactRef
@@ -23,9 +22,10 @@ import ru.citeck.ecos.apps.test.EcosTestApp
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.util.concurrent.ConcurrentHashMap
 
-@ExtendWith(SpringExtension::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class AppsDeliveryTest {
@@ -70,7 +70,8 @@ class AppsDeliveryTest {
         assertEquals(2, app2Imgs.size)
         val app0ImgBytes = ResourceUtils.getFile(
             "src/test/resources/test/apps-delivery/" +
-            "apps/app0__0/artifacts/ui/img/app0-image.png").readBytes()
+                "apps/app0__0/artifacts/ui/img/app0-image.png"
+        ).readBytes()
 
         assertArrayEquals(app2Imgs["app0-image.png"]!!.data, app0ImgBytes)
 
@@ -81,12 +82,14 @@ class AppsDeliveryTest {
         assertEquals(DeployStatus.DEPLOYED, firstFormArtifact.deployStatus)
         assertEquals(ArtifactRevSourceType.APPLICATION, firstFormArtifact.source.type)
 
-        val newFirstForm = ObjectData.create("""
+        val newFirstForm = ObjectData.create(
+            """
             {
                 "id": "first-form",
                 "user-prop": "user-value"
             }
-        """.trimIndent())
+            """.trimIndent()
+        )
 
         appByName["app1"]!!.addArtifactChangedByUser(formTypeId, newFirstForm)
 
@@ -104,7 +107,7 @@ class AppsDeliveryTest {
             artifactsService.readArtifactFromBytes(formTypeId, firstFormData),
             ObjectData::class.java
         )!!
-        assertEquals("user-value", firstFormDataFromDb.get("user-prop").asText())
+        assertEquals("user-value", firstFormDataFromDb["user-prop"].asText())
 
         // patches test
 

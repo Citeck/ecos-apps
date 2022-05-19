@@ -1,7 +1,7 @@
 package ru.citeck.ecos.apps.domain.ecosapp.repo
 
-import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
+import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
 import javax.persistence.*
 
 @Entity

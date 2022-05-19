@@ -4,4 +4,3 @@ data class ArtifactRevSourceInfo(
     val id: String,
     val type: ArtifactRevSourceType
 )
-

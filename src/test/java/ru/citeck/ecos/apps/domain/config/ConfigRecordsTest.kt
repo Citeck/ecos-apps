@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import ru.citeck.ecos.apps.EcosAppsApp
+import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
-import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.records3.RecordsService
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 
-@ExtendWith(SpringExtension::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 class ConfigRecordsTest {
 
