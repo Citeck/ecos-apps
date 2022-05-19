@@ -69,7 +69,7 @@ timestamps {
           // /build-info
           sh "mvn jib:dockerBuild -Dskip.npm -Pprod,logToFile -Djib.docker.image.tag=${lower_version}"
         }
-        junit '**/target/surefire-reports/*.xml'
+        junit '**/target/test-results/*/*.xml'
       }
       stage('Push docker image') {
         docker.withRegistry('http://127.0.0.1:8082', '7d800357-2193-4474-b768-5c27b97a1030') {
