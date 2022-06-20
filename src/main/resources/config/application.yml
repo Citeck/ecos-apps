@@ -17,11 +17,13 @@
 server:
   port: 8089
 
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5437/eapps
-    username: eapps
-    password:
+ecos:
+  webapp:
+    dataSources:
+      main:
+        url: jdbc:postgresql://localhost:5437/eapps
+        username: eapps
+        password:
 
 # ===================================================================
 # Application specific properties
