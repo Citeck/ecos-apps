@@ -12,8 +12,8 @@ import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
-import ru.citeck.ecos.webapp.api.task.scheduler.EcosTaskScheduler
 import ru.citeck.ecos.webapp.lib.patch.EcosPatchCommandExecutor
+import ru.citeck.ecos.webapp.lib.spring.context.task.EcosTasksManager
 import java.time.Duration
 import java.time.Instant
 import javax.annotation.PostConstruct
@@ -22,12 +22,14 @@ import javax.annotation.PostConstruct
 class EcosPatchService(
     val recordsService: RecordsService,
     val commandsService: CommandsService,
-    val scheduler: EcosTaskScheduler,
+    val tasksManager: EcosTasksManager,
     val watcherJob: ApplicationsWatcherJob
 ) {
 
     companion object {
         private val log = KotlinLogging.logger {}
+
+        private const val SCHEDULER_ID = "ecos-patches"
 
         private val errorDelayDistribution = listOf(
             Duration.ofMinutes(1),
@@ -42,7 +44,7 @@ class EcosPatchService(
 
     @PostConstruct
     fun init() {
-        scheduler.scheduleWithFixedDelay(
+        tasksManager.getScheduler(SCHEDULER_ID).scheduleWithFixedDelay(
             { "Ecos patch task" },
             Duration.ofSeconds(30),
             Duration.ofSeconds(30)
@@ -63,6 +65,11 @@ class EcosPatchService(
 
     private fun applyPatch(appName: String): Boolean {
 
+        if (!isAppReadyToDeployPatches(appName)) {
+            log.debug { "App is not ready yet: $appName" }
+            return false
+        }
+
         val query = RecordsQuery.create {
             withSourceId(EcosPatchConfig.REPO_ID)
             withQuery(Predicates.and(
@@ -71,8 +78,11 @@ class EcosPatchService(
                 Predicates.or(
                     Predicates.and(
                         Predicates.eq("status", EcosPatchStatus.PENDING),
-                        // apply only patches changed more than 1 minute ago
-                        Predicates.lt(RecordConstants.ATT_MODIFIED, Instant.now().minus(Duration.ofMinutes(1))),
+                        // apply only patches changed more than 30 seconds ago
+                        Predicates.lt(
+                            RecordConstants.ATT_MODIFIED,
+                            Instant.now().minus(Duration.ofSeconds(30))
+                        ),
                     ),
                     Predicates.and(
                         Predicates.eq("status", EcosPatchStatus.FAILED),
@@ -123,5 +133,26 @@ class EcosPatchService(
         }
 
         return false
+    }
+
+    private fun isAppReadyToDeployPatches(appName: String): Boolean {
+        val query = RecordsQuery.create {
+            withSourceId(EcosPatchConfig.REPO_ID)
+            withQuery(Predicates.and(
+                Predicates.eq("manual", false),
+                Predicates.eq("targetApp", appName),
+                Predicates.and(
+                    Predicates.eq("status", EcosPatchStatus.PENDING),
+                    // apply only patches for app with last change more than 30 seconds ago
+                    // this delay required to collect patches for app from all sources
+                    Predicates.gt(
+                        RecordConstants.ATT_MODIFIED,
+                        Instant.now().minus(Duration.ofSeconds(30))
+                    ),
+                )
+            ))
+            withMaxItems(1)
+        }
+        return recordsService.query(query).getRecords().isEmpty()
     }
 }
