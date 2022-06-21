@@ -1,0 +1,14 @@
+modelVersion: "1.0"
+
+name:
+  ru: Патч
+  en: Patch
+
+source-id: ""
+
+controller:
+  type: json
+  config:
+    idTemplate: ${targetApp!$appName|presuf('','$')}${id}
+    attsValues:
+      targetApp: "${targetApp!$appName}"
