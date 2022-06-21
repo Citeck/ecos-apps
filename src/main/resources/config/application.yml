@@ -19,6 +19,11 @@ server:
 
 ecos:
   webapp:
+    task:
+      schedulers:
+        ecos-patches:
+          corePoolSize: 1
+
     dataSources:
       main:
         url: jdbc:postgresql://localhost:5437/eapps
