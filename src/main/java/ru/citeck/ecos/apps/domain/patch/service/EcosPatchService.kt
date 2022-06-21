@@ -23,7 +23,8 @@ class EcosPatchService(
     val recordsService: RecordsService,
     val commandsService: CommandsService,
     val tasksManager: EcosTasksManager,
-    val watcherJob: ApplicationsWatcherJob
+    val watcherJob: ApplicationsWatcherJob,
+    val properties: EcosPatchProperties
 ) {
 
     companion object {
@@ -46,10 +47,12 @@ class EcosPatchService(
     fun init() {
         tasksManager.getScheduler(SCHEDULER_ID).scheduleWithFixedDelay(
             { "Ecos patch task" },
-            Duration.ofSeconds(30),
-            Duration.ofSeconds(30)
+            properties.job.initDelayDuration,
+            properties.job.delayDuration
         ) {
-            watcherJob.activeApps.forEach {
+            val apps = watcherJob.activeApps
+            log.debug { "Apply patches for apps: $apps" }
+            apps.forEach {
                 applyPatches(it)
             }
         }
@@ -76,14 +79,7 @@ class EcosPatchService(
                 Predicates.eq("manual", false),
                 Predicates.eq("targetApp", appName),
                 Predicates.or(
-                    Predicates.and(
-                        Predicates.eq("status", EcosPatchStatus.PENDING),
-                        // apply only patches changed more than 30 seconds ago
-                        Predicates.lt(
-                            RecordConstants.ATT_MODIFIED,
-                            Instant.now().minus(Duration.ofSeconds(30))
-                        ),
-                    ),
+                    Predicates.eq("status", EcosPatchStatus.PENDING),
                     Predicates.and(
                         Predicates.eq("status", EcosPatchStatus.FAILED),
                         Predicates.and(
@@ -95,7 +91,11 @@ class EcosPatchService(
             ))
             withSortBy(SortBy("date", true))
         }
-        val patch = recordsService.queryOne(query, EcosPatchEntity::class.java) ?: return false
+        val patch = recordsService.queryOne(query, EcosPatchEntity::class.java)
+        if (patch == null) {
+            log.debug { "Active patches is not found for app: '$appName'" }
+            return false
+        }
 
         log.info { "Found patch for app '${patch.targetApp}' with id '${patch.id}'" }
 
@@ -147,7 +147,7 @@ class EcosPatchService(
                     // this delay required to collect patches for app from all sources
                     Predicates.gt(
                         RecordConstants.ATT_MODIFIED,
-                        Instant.now().minus(Duration.ofSeconds(30))
+                        Instant.now().minus(properties.appReadyThresholdDuration)
                     ),
                 )
             ))

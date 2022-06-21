@@ -5,6 +5,7 @@ import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
 import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchEntity
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService
@@ -40,7 +41,9 @@ class EcosPatchArtifactHandler(
         }
 
         val ref = RecordRef.create(EcosPatchConfig.REPO_ID, entity.id)
-        recordsService.mutate(RecordAtts(ref, ObjectData.create(entity)))
+        AuthContext.runAsSystem {
+            recordsService.mutate(RecordAtts(ref, ObjectData.create(entity)))
+        }
     }
 
     override fun getArtifactType(): String {
