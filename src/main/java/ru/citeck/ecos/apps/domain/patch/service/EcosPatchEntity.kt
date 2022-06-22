@@ -9,6 +9,7 @@ class EcosPatchEntity(
     var id: String = "",
     var name: MLText,
     var patchId: String,
+    var state: ObjectData = ObjectData.create(),
     var targetApp: String,
     var date: Instant,
     var manual: Boolean = false,
@@ -17,6 +18,7 @@ class EcosPatchEntity(
     var status: EcosPatchStatus = EcosPatchStatus.PENDING,
     var patchResult: DataValue = DataValue.NULL,
     var errorsCount: Int = 0,
-    var nextTryDate: Instant? = null,
-    var lastError: String? = null
+    var nextExecDate: Instant? = null,
+    var lastError: String? = null,
+    var dependsOn: List<String>
 )

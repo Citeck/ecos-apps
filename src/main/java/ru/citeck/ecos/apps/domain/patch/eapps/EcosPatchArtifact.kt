@@ -12,6 +12,7 @@ data class EcosPatchArtifact(
     val targetApp: String,
     val date: Instant,
     val manual: Boolean = false,
+    val dependsOn: List<String> = emptyList(),
     val type: String,
     val config: ObjectData
 ) {
@@ -23,6 +24,7 @@ data class EcosPatchArtifact(
             targetApp = targetApp,
             date = Instant.now(),
             manual = manual,
+            dependsOn = getDependsOnWithApp(),
             type = type,
             config = config.deepCopy()
         )
@@ -39,5 +41,16 @@ data class EcosPatchArtifact(
         entity.manual = manual
         entity.type = type
         entity.config = config.deepCopy()
+        entity.dependsOn = getDependsOnWithApp()
+    }
+
+    private fun getDependsOnWithApp(): List<String> {
+        return dependsOn.map {
+            if (!it.contains('$')) {
+                "$targetApp$$it"
+            } else {
+                it
+            }
+        }
     }
 }

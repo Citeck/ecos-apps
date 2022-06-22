@@ -13,6 +13,8 @@ model:
       type: DATETIME
     - id: manual
       type: BOOLEAN
+    - id: dependsOn
+      multiple: true
     - id: type
     - id: config
       type: JSON
@@ -20,9 +22,11 @@ model:
     - id: status
     - id: patchResult
       type: JSON
+    - id: state
+      type: JSON
     - id: errorsCount
       type: NUMBER
-    - id: nextTryDate
+    - id: nextExecDate
       type: DATETIME
     - id: lastError
 

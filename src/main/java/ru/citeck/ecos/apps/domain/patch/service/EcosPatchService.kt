@@ -6,6 +6,7 @@ import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJo
 import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commons.data.DataValue
+import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
@@ -34,12 +35,14 @@ class EcosPatchService(
 
         private val errorDelayDistribution = listOf(
             Duration.ofMinutes(1),
+            Duration.ofMinutes(1),
+            Duration.ofMinutes(1),
             Duration.ofMinutes(5),
             Duration.ofMinutes(10),
             Duration.ofMinutes(30),
             Duration.ofHours(1),
-            Duration.ofHours(6),
-            Duration.ofHours(12)
+            Duration.ofHours(2),
+            Duration.ofHours(3)
         )
     }
 
@@ -81,10 +84,13 @@ class EcosPatchService(
                 Predicates.or(
                     Predicates.eq("status", EcosPatchStatus.PENDING),
                     Predicates.and(
-                        Predicates.eq("status", EcosPatchStatus.FAILED),
+                        Predicates.or(
+                            Predicates.eq("status", EcosPatchStatus.FAILED),
+                            Predicates.eq("status", EcosPatchStatus.IN_PROGRESS)
+                        ),
                         Predicates.and(
-                            Predicates.notEmpty("nextTryDate"),
-                            Predicates.lt("nextTryDate", Instant.now())
+                            Predicates.notEmpty("nextExecDate"),
+                            Predicates.lt("nextExecDate", Instant.now())
                         )
                     ),
                 )
@@ -97,13 +103,20 @@ class EcosPatchService(
             return false
         }
 
-        log.info { "Found patch for app '${patch.targetApp}' with id '${patch.id}'" }
+        if (isAnyPatchNotApplied(patch.dependsOn)) {
+            patch.status = EcosPatchStatus.DEPS_WAITING
+            recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
+            return false
+        }
+
+        log.info { "Found patch '${patch.targetApp}$${patch.patchId}'" }
 
         val result = commandsService.executeSync {
             withTargetApp(patch.targetApp)
             withBody(EcosPatchCommandExecutor.Command(
                 patch.type,
-                patch.config
+                patch.config,
+                patch.state
             ))
         }
         val commRes = result.getResultAs(EcosPatchCommandExecutor.CommandRes::class.java)
@@ -114,22 +127,56 @@ class EcosPatchService(
         if (!errorMsg.isNullOrBlank()) {
             patch.errorsCount++
             if (patch.errorsCount > errorDelayDistribution.size) {
-                patch.nextTryDate = null
+                patch.nextExecDate = null
             } else {
-                patch.nextTryDate = Instant.now().plus(errorDelayDistribution[patch.errorsCount - 1])
+                patch.nextExecDate = Instant.now().plus(errorDelayDistribution[patch.errorsCount - 1])
             }
             patch.lastError = errorMsg
             patch.status = EcosPatchStatus.FAILED
             recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
-            log.info { "Patch with id '${patch.id}' for app '${patch.targetApp}' completed with error: $errorMsg" }
+            log.info { "Patch '${patch.targetApp}$${patch.patchId}' completed with error: $errorMsg" }
         } else {
+            patch.state = commRes?.result?.state ?: ObjectData.create()
             patch.errorsCount = 0
             patch.lastError = null
-            patch.nextTryDate = null
-            patch.status = EcosPatchStatus.APPLIED
+            patch.status = if (commRes?.result?.completed == true) {
+                patch.nextExecDate = null
+                EcosPatchStatus.APPLIED
+            } else {
+                patch.nextExecDate = commRes?.result?.nextExecutionTime
+                EcosPatchStatus.IN_PROGRESS
+            }
             patch.patchResult = DataValue.create(commRes?.result)
             recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
-            log.info { "Patch with id '${patch.id}' for app '${patch.targetApp}' successfully applied" }
+            log.info {
+                val msg = "Patch '${patch.targetApp}$${patch.patchId}' "
+                if (patch.status == EcosPatchStatus.APPLIED) {
+                    msg + "successfully applied"
+                } else {
+                    msg + "partially applied"
+                }
+            }
+
+            if (patch.status == EcosPatchStatus.APPLIED) {
+                val depsWaitingPatches = recordsService.query(RecordsQuery.create {
+                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withQuery(
+                        Predicates.and(
+                            Predicates.eq("status", EcosPatchStatus.DEPS_WAITING),
+                            Predicates.contains("dependsOn", patch.targetApp + "$" + patch.patchId)
+                        )
+                    )
+                }, EcosPatchEntity::class.java)
+                depsWaitingPatches.getRecords().forEach { depsWaitingPatch ->
+                    if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
+                        depsWaitingPatch.status = EcosPatchStatus.PENDING
+                        recordsService.mutate(
+                            RecordRef.create(EcosPatchConfig.REPO_ID, depsWaitingPatch.id),
+                            depsWaitingPatch
+                        )
+                    }
+                }
+            }
         }
 
         return false
@@ -154,5 +201,34 @@ class EcosPatchService(
             withMaxItems(1)
         }
         return recordsService.query(query).getRecords().isEmpty()
+    }
+
+    private fun isAnyPatchNotApplied(patches: List<String>): Boolean {
+        if (patches.isEmpty()) {
+            return false
+        }
+        val patchIdPredicates = patches.mapNotNull {
+            val appAndId = it.split("$")
+            if (appAndId.size == 2) {
+                Predicates.and(
+                    Predicates.eq("targetApp", appAndId[0]),
+                    Predicates.eq("patchId", appAndId[1])
+                )
+            } else {
+                null
+            }
+        }
+        if (patchIdPredicates.isEmpty()) {
+            return false
+        }
+        return recordsService.query(RecordsQuery.create {
+            withSourceId(EcosPatchConfig.REPO_ID)
+            withQuery(
+                Predicates.and(
+                    Predicates.eq("status", EcosPatchStatus.APPLIED),
+                    Predicates.or(patchIdPredicates)
+                )
+            )
+        }).getRecords().size < patchIdPredicates.size
     }
 }

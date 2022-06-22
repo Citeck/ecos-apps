@@ -1,5 +1,9 @@
 package ru.citeck.ecos.apps.domain.patch.service
 
 enum class EcosPatchStatus {
-    PENDING, FAILED, APPLIED
+    PENDING,
+    IN_PROGRESS,
+    DEPS_WAITING,
+    FAILED,
+    APPLIED
 }
