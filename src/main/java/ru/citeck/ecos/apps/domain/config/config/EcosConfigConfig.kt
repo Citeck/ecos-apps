@@ -5,14 +5,18 @@ import org.springframework.context.annotation.Configuration
 import ru.citeck.ecos.apps.domain.config.api.records.ConfigValueMixin
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.DataValue
+import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.dto.ConfigKey
+import ru.citeck.ecos.config.lib.dto.ConfigValue
+import ru.citeck.ecos.config.lib.dto.ConfigValueDef
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
 import ru.citeck.ecos.data.sql.dto.DbTableRef
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
+import ru.citeck.ecos.model.lib.attributes.dto.AttributeType
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records3.RecordsService
@@ -93,7 +97,20 @@ class EcosConfigConfig(
                         error("currentValue is null. Obj: $currentValueDto")
                     }
 
-                    val value = DataValue.create(
+                    val type = currentValueDto.valueDef.type
+                    val value = DataValue.create(if (type == AttributeType.MLTEXT) {
+                        if (rawValue.isObject()) {
+                            val mlTextObj = DataValue.createObj()
+                            rawValue.fieldNamesList().forEach {
+                                if (!it.startsWith("_")) {
+                                    mlTextObj[it] = rawValue[it]
+                                }
+                            }
+                            mlTextObj.getAs(MLText::class.java)
+                        } else {
+                            rawValue.getAs(MLText::class.java)
+                        } ?: error("Invalid mltext: $rawValue")
+                    } else {
                         if (currentValue.isBoolean()) {
                             rawValue.asBoolean()
                         } else if (currentValue.isIntegralNumber()) {
@@ -107,12 +124,16 @@ class EcosConfigConfig(
                         } else {
                             error("Current value is not modifiable: $currentValue")
                         }
-                    )
+                    })
 
                     RequestContext.doAfterCommit {
+                        val configValue = ConfigValue(
+                            value,
+                            currentValueDto.valueDef
+                        )
                         zkConfigService.setConfig(
                             ConfigKey.create(currentValueDto.scope, currentValueDto.configId),
-                            value
+                            configValue
                         )
                     }
 
@@ -133,6 +154,7 @@ class EcosConfigConfig(
         val configId: String,
         val scope: String,
         val value: ObjectData,
-        val version: Int
+        val version: Int,
+        val valueDef: ConfigValueDef
     )
 }

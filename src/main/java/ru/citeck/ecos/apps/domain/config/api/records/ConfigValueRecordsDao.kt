@@ -45,7 +45,13 @@ class ConfigValueRecordsDao : AbstractRecordsDao(), RecordAttsDao, RecordMutateD
         if (record.attributes.has(RecordConstants.ATT_SELF)) {
             recordsService.mutateAtt(ref, "_value", record.attributes[RecordConstants.ATT_SELF])
         } else {
-            recordsService.mutateAtt(ref,"_value", record.attributes)
+            val atts = record.attributes.deepCopy()
+            atts.fieldNamesList().forEach {
+                if (it.startsWith('_')) {
+                    atts.remove(it)
+                }
+            }
+            recordsService.mutateAtt(ref,"_value", atts)
         }
         return record.id
     }

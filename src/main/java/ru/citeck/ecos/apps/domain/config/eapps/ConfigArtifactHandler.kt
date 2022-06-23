@@ -6,6 +6,7 @@ import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.dto.ConfigKey
+import ru.citeck.ecos.config.lib.dto.ConfigValue
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
@@ -68,7 +69,7 @@ class ConfigArtifactHandler(
         if (valueChanged) {
             zkConfigService.setConfig(
                 ConfigKey.create(artifact.id, artifact.scope),
-                artifact.value
+                ConfigValue(artifact.value, artifact.valueDef)
             )
         }
     }

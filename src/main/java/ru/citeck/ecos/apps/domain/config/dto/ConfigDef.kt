@@ -4,6 +4,7 @@ import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.json.serialization.annotation.IncludeNonDefault
+import ru.citeck.ecos.config.lib.dto.ConfigValueDef
 
 @IncludeNonDefault
 @JsonDeserialize(builder = ConfigDef.Builder::class)
