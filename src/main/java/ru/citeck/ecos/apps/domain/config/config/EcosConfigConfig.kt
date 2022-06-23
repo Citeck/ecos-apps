@@ -2,7 +2,6 @@ package ru.citeck.ecos.apps.domain.config.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import ru.citeck.ecos.apps.domain.config.api.records.ConfigFormMixin
 import ru.citeck.ecos.apps.domain.config.api.records.ConfigValueMixin
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.DataValue
@@ -26,10 +25,15 @@ import ru.citeck.ecos.records3.record.request.RequestContext
 import javax.sql.DataSource
 
 @Configuration
-class EcosConfigConfiguration(
+class EcosConfigConfig(
     private val dbDomainFactory: DbDomainFactory,
     private val recordsService: RecordsService
 ) {
+
+    companion object {
+        const val CONFIG_REPO_SRC_ID = "config-repo"
+        const val CONFIG_SRC_ID = "config"
+    }
 
     @Bean
     fun configsRepoDao(dataSource: DataSource): RecordsDao {
@@ -38,7 +42,7 @@ class EcosConfigConfiguration(
             DbDomainConfig.create()
                 .withRecordsDao(
                     DbRecordsDaoConfig.create {
-                        withId("config-repo")
+                        withId(CONFIG_REPO_SRC_ID)
                         withTypeRef(TypeUtils.getTypeRef("ecos-config"))
                     }
                 )
@@ -53,7 +57,6 @@ class EcosConfigConfiguration(
                 .build()
         ).build()
 
-        records.addAttributesMixin(ConfigFormMixin())
         records.addAttributesMixin(ConfigValueMixin())
 
         return records
@@ -63,7 +66,7 @@ class EcosConfigConfiguration(
     fun configsProxyDao(zkConfigService: ZkConfigService): RecordsDao {
 
         val proxyDao = RecordsDaoProxy(
-            "config", "config-repo",
+            CONFIG_SRC_ID, CONFIG_REPO_SRC_ID,
             object : MutateProxyProcessor {
 
                 override fun mutatePostProcess(records: List<RecordRef>, context: ProxyProcContext): List<RecordRef> {
@@ -79,13 +82,13 @@ class EcosConfigConfiguration(
 
                 private fun preProcess(id: String, atts: ObjectData): ObjectData {
 
-                    val rawValue = atts.get("_value")
+                    val rawValue = atts["_value"]
                     if (rawValue.isNull()) {
                         error("_value is null")
                     }
 
                     val currentValueDto = recordsService.getAtts("config-repo@$id", ConfigAtts::class.java)
-                    val currentValue = currentValueDto.value.get(EcosConfigAppConstants.VALUE_SHORT_PROP)
+                    val currentValue = currentValueDto.value[EcosConfigAppConstants.VALUE_SHORT_PROP]
                     if (currentValue.isNull()) {
                         error("currentValue is null. Obj: $currentValueDto")
                     }
@@ -99,6 +102,8 @@ class EcosConfigConfiguration(
                             rawValue.asDouble()
                         } else if (currentValue.isTextual()) {
                             rawValue.asText()
+                        } else if (currentValue.isObject()) {
+                            rawValue.asObjectData()
                         } else {
                             error("Current value is not modifiable: $currentValue")
                         }
@@ -106,7 +111,7 @@ class EcosConfigConfiguration(
 
                     RequestContext.doAfterCommit {
                         zkConfigService.setConfig(
-                            ConfigKey.create(currentValueDto.configId, currentValueDto.scope),
+                            ConfigKey.create(currentValueDto.scope, currentValueDto.configId),
                             value
                         )
                     }

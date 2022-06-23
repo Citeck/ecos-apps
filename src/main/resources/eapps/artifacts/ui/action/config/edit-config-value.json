@@ -1,0 +1,17 @@
+{
+  "id": "config-value-edit",
+  "name": {
+    "ru": "Редактировать значение",
+    "en": "Edit value"
+  },
+  "type": "edit",
+  "config": {
+    "recordId": "eapps/config-value@${scope}$${configId}"
+  },
+  "evaluator": {
+    "type": "has-permission",
+    "config": {
+      "permission": "Write"
+    }
+  }
+}
