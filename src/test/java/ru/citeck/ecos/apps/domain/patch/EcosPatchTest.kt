@@ -59,33 +59,48 @@ class EcosPatchTest {
         Thread.sleep(1000)
 
         AuthContext.runAsSystem {
-            val patchRes = records.queryOne(RecordsQuery.create {
-                withSourceId(EcosPatchConfig.REPO_ID)
-                withQuery(Predicates.and(
-                    Predicates.eq("targetApp", "eapps"),
-                    Predicates.eq("patchId", "test-patch")
-                ))
-            }, "patchResult.result").asText()
+            val patchRes = records.queryOne(
+                RecordsQuery.create {
+                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withQuery(
+                        Predicates.and(
+                            Predicates.eq("targetApp", "eapps"),
+                            Predicates.eq("patchId", "test-patch")
+                        )
+                    )
+                },
+                "patchResult.result"
+            ).asText()
 
             assertThat(patchRes).isEqualTo("custom-result")
 
-            val patchRes2 = records.queryOne(RecordsQuery.create {
-                withSourceId(EcosPatchConfig.REPO_ID)
-                withQuery(Predicates.and(
-                    Predicates.eq("targetApp", "eapps"),
-                    Predicates.eq("patchId", "stateful-patch")
-                ))
-            }, "state.counter?num").asInt()
+            val patchRes2 = records.queryOne(
+                RecordsQuery.create {
+                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withQuery(
+                        Predicates.and(
+                            Predicates.eq("targetApp", "eapps"),
+                            Predicates.eq("patchId", "stateful-patch")
+                        )
+                    )
+                },
+                "state.counter?num"
+            ).asInt()
 
             assertThat(patchRes2).isEqualTo(5)
 
-            val patchRes3 = records.queryOne(RecordsQuery.create {
-                withSourceId(EcosPatchConfig.REPO_ID)
-                withQuery(Predicates.and(
-                    Predicates.eq("targetApp", "eapps"),
-                    Predicates.eq("patchId", "dependent-patch")
-                ))
-            }, "patchResult.result").asText()
+            val patchRes3 = records.queryOne(
+                RecordsQuery.create {
+                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withQuery(
+                        Predicates.and(
+                            Predicates.eq("targetApp", "eapps"),
+                            Predicates.eq("patchId", "dependent-patch")
+                        )
+                    )
+                },
+                "patchResult.result"
+            ).asText()
 
             assertThat(patchRes3).isEqualTo("SUCCESS")
         }
@@ -111,8 +126,11 @@ class EcosPatchTest {
             val counter = state.get("counter", 0) + 1
             completed = counter == 5
             log.info { "Execute stateful patch. Counter: $counter, Completed: $completed" }
-            return PatchExecutionState(ObjectData.create()
-                .set("counter", counter), completed)
+            return PatchExecutionState(
+                ObjectData.create()
+                    .set("counter", counter),
+                completed
+            )
         }
     }
 

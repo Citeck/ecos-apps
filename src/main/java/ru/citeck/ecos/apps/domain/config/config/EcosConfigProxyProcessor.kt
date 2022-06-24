@@ -44,16 +44,20 @@ class EcosConfigProxyProcessor(
 
     override fun attsPreProcess(schemaAtts: List<SchemaAtt>, context: ProxyProcContext): List<SchemaAtt> {
         val newAtts = schemaAtts.toMutableList()
-        newAtts.add(SchemaAtt.create {
-            withAlias(ATT_CONFIG_ID_ALIAS)
-            withName(ATT_CONFIG_ID)
-            withInner(SchemaAtt.create { withName(ScalarType.STR.schema) })
-        })
-        newAtts.add(SchemaAtt.create {
-            withAlias(ATT_SCOPE_ALIAS)
-            withName(ATT_SCOPE)
-            withInner(SchemaAtt.create { withName(ScalarType.STR.schema) })
-        })
+        newAtts.add(
+            SchemaAtt.create {
+                withAlias(ATT_CONFIG_ID_ALIAS)
+                withName(ATT_CONFIG_ID)
+                withInner(SchemaAtt.create { withName(ScalarType.STR.schema) })
+            }
+        )
+        newAtts.add(
+            SchemaAtt.create {
+                withAlias(ATT_SCOPE_ALIAS)
+                withName(ATT_SCOPE)
+                withInner(SchemaAtt.create { withName(ScalarType.STR.schema) })
+            }
+        )
         return newAtts
     }
 
@@ -62,14 +66,17 @@ class EcosConfigProxyProcessor(
     }
 
     fun getConfigInnerIdByKey(key: ConfigKey): String? {
-        return recordsService.queryOne(RecordsQuery.create {
-            withSourceId(EcosConfigConfig.CONFIG_REPO_SRC_ID)
-            withQuery(
-                Predicates.and(
-                Predicates.eq("scope", key.scope),
-                Predicates.eq("configId", key.id)
-            ))
-        })?.id
+        return recordsService.queryOne(
+            RecordsQuery.create {
+                withSourceId(EcosConfigConfig.CONFIG_REPO_SRC_ID)
+                withQuery(
+                    Predicates.and(
+                        Predicates.eq("scope", key.scope),
+                        Predicates.eq("configId", key.id)
+                    )
+                )
+            }
+        )?.id
     }
 
     override fun mutatePreProcess(

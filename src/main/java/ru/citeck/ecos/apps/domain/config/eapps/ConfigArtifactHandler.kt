@@ -6,10 +6,7 @@ import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.artifact.provider.ConfigArtifactUtils
-import ru.citeck.ecos.config.lib.dto.ConfigKey
-import ru.citeck.ecos.config.lib.dto.ConfigValue
 import ru.citeck.ecos.config.lib.dto.ConfigValueDef
-import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService

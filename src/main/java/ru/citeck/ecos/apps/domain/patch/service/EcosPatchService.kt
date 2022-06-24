@@ -78,23 +78,25 @@ class EcosPatchService(
 
         val query = RecordsQuery.create {
             withSourceId(EcosPatchConfig.REPO_ID)
-            withQuery(Predicates.and(
-                Predicates.eq("manual", false),
-                Predicates.eq("targetApp", appName),
-                Predicates.or(
-                    Predicates.eq("status", EcosPatchStatus.PENDING),
-                    Predicates.and(
-                        Predicates.or(
-                            Predicates.eq("status", EcosPatchStatus.FAILED),
-                            Predicates.eq("status", EcosPatchStatus.IN_PROGRESS)
-                        ),
+            withQuery(
+                Predicates.and(
+                    Predicates.eq("manual", false),
+                    Predicates.eq("targetApp", appName),
+                    Predicates.or(
+                        Predicates.eq("status", EcosPatchStatus.PENDING),
                         Predicates.and(
-                            Predicates.notEmpty("nextExecDate"),
-                            Predicates.lt("nextExecDate", Instant.now())
-                        )
-                    ),
+                            Predicates.or(
+                                Predicates.eq("status", EcosPatchStatus.FAILED),
+                                Predicates.eq("status", EcosPatchStatus.IN_PROGRESS)
+                            ),
+                            Predicates.and(
+                                Predicates.notEmpty("nextExecDate"),
+                                Predicates.lt("nextExecDate", Instant.now())
+                            )
+                        ),
+                    )
                 )
-            ))
+            )
             withSortBy(SortBy("date", true))
         }
         val patch = recordsService.queryOne(query, EcosPatchEntity::class.java)
@@ -115,11 +117,13 @@ class EcosPatchService(
 
         val result = commandsService.executeSync {
             withTargetApp(patch.targetApp)
-            withBody(EcosPatchCommandExecutor.Command(
-                patch.type,
-                patch.config,
-                patch.state
-            ))
+            withBody(
+                EcosPatchCommandExecutor.Command(
+                    patch.type,
+                    patch.config,
+                    patch.state
+                )
+            )
             withTtl(Duration.ofMinutes(10))
         }
 
@@ -164,15 +168,18 @@ class EcosPatchService(
             }
 
             if (patch.status == EcosPatchStatus.APPLIED) {
-                val depsWaitingPatches = recordsService.query(RecordsQuery.create {
-                    withSourceId(EcosPatchConfig.REPO_ID)
-                    withQuery(
-                        Predicates.and(
-                            Predicates.eq("status", EcosPatchStatus.DEPS_WAITING),
-                            Predicates.contains("dependsOn", patch.targetApp + "$" + patch.patchId)
+                val depsWaitingPatches = recordsService.query(
+                    RecordsQuery.create {
+                        withSourceId(EcosPatchConfig.REPO_ID)
+                        withQuery(
+                            Predicates.and(
+                                Predicates.eq("status", EcosPatchStatus.DEPS_WAITING),
+                                Predicates.contains("dependsOn", patch.targetApp + "$" + patch.patchId)
+                            )
                         )
-                    )
-                }, EcosPatchEntity::class.java)
+                    },
+                    EcosPatchEntity::class.java
+                )
                 depsWaitingPatches.getRecords().forEach { depsWaitingPatch ->
                     if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
                         depsWaitingPatch.status = EcosPatchStatus.PENDING
@@ -191,19 +198,21 @@ class EcosPatchService(
     private fun isAppReadyToDeployPatches(appName: String): Boolean {
         val query = RecordsQuery.create {
             withSourceId(EcosPatchConfig.REPO_ID)
-            withQuery(Predicates.and(
-                Predicates.eq("manual", false),
-                Predicates.eq("targetApp", appName),
+            withQuery(
                 Predicates.and(
-                    Predicates.eq("status", EcosPatchStatus.PENDING),
-                    // apply only patches for app with last change more than 30 seconds ago
-                    // this delay required to collect patches for app from all sources
-                    Predicates.gt(
-                        RecordConstants.ATT_MODIFIED,
-                        Instant.now().minus(properties.appReadyThresholdDuration)
-                    ),
+                    Predicates.eq("manual", false),
+                    Predicates.eq("targetApp", appName),
+                    Predicates.and(
+                        Predicates.eq("status", EcosPatchStatus.PENDING),
+                        // apply only patches for app with last change more than 30 seconds ago
+                        // this delay required to collect patches for app from all sources
+                        Predicates.gt(
+                            RecordConstants.ATT_MODIFIED,
+                            Instant.now().minus(properties.appReadyThresholdDuration)
+                        ),
+                    )
                 )
-            ))
+            )
             withMaxItems(1)
         }
         return recordsService.query(query).getRecords().isEmpty()
@@ -227,14 +236,16 @@ class EcosPatchService(
         if (patchIdPredicates.isEmpty()) {
             return false
         }
-        return recordsService.query(RecordsQuery.create {
-            withSourceId(EcosPatchConfig.REPO_ID)
-            withQuery(
-                Predicates.and(
-                    Predicates.eq("status", EcosPatchStatus.APPLIED),
-                    Predicates.or(patchIdPredicates)
+        return recordsService.query(
+            RecordsQuery.create {
+                withSourceId(EcosPatchConfig.REPO_ID)
+                withQuery(
+                    Predicates.and(
+                        Predicates.eq("status", EcosPatchStatus.APPLIED),
+                        Predicates.or(patchIdPredicates)
+                    )
                 )
-            )
-        }).getRecords().size < patchIdPredicates.size
+            }
+        ).getRecords().size < patchIdPredicates.size
     }
 }
