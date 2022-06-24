@@ -7,7 +7,7 @@ system: true
 sourceId: eapps/config
 
 actions:
-  - uiserv/action@config-value-edit
+  - uiserv/action@edit
 
 editable: true
 

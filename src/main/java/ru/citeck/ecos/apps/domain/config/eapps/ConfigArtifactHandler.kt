@@ -5,8 +5,10 @@ import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
 import ru.citeck.ecos.apps.domain.config.dto.ConfigDef
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.config.lib.artifact.provider.ConfigArtifactUtils
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.dto.ConfigValue
+import ru.citeck.ecos.config.lib.dto.ConfigValueDef
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
@@ -18,23 +20,25 @@ import java.util.function.Consumer
 
 @Component
 class ConfigArtifactHandler(
-    val recordsService: RecordsService,
-    val zkConfigService: ZkConfigService
-) : EcosArtifactHandler<ConfigDef> {
+    val recordsService: RecordsService
+) : EcosArtifactHandler<ObjectData> {
 
     companion object {
         private const val PROP_VALUE = "value"
     }
 
-    override fun deployArtifact(artifact: ConfigDef) {
+    override fun deployArtifact(artifact: ObjectData) {
+
+        ConfigArtifactUtils.fillDefaultProps(artifact.getData())
+        val configDef = artifact.getAsNotNull(ConfigDef::class.java)
 
         val existingConfig = recordsService.queryOne(
             RecordsQuery.create {
                 withSourceId("config-repo")
                 withQuery(
                     Predicates.and(
-                        Predicates.eq("configId", artifact.id),
-                        Predicates.eq("scope", artifact.scope)
+                        Predicates.eq("configId", configDef.id),
+                        Predicates.eq("scope", configDef.scope)
                     )
                 )
             },
@@ -48,37 +52,28 @@ class ConfigArtifactHandler(
             recordAtts.setId(RecordRef.create("config-repo", ""))
         }
 
-        val attributes = ObjectData.create(artifact)
+        val attributes = ObjectData.create(configDef)
         attributes.remove("id")
 
-        val valueChanged = if (existingConfig == null || artifact.version > existingConfig.version) {
+        if (existingConfig == null || configDef.version > existingConfig.version) {
             val valueObj = ObjectData.create()
             valueObj[EcosConfigAppConstants.VALUE_SHORT_PROP] = attributes[PROP_VALUE]
             attributes[PROP_VALUE] = valueObj
-            true
         } else {
             attributes[PROP_VALUE] = existingConfig.value
-            false
         }
-        attributes["configId"] = artifact.id
+        attributes["configId"] = configDef.id
 
         recordAtts.setAttributes(attributes)
 
         recordsService.mutate(recordAtts)
-
-        if (valueChanged) {
-            zkConfigService.setConfig(
-                ConfigKey.create(artifact.id, artifact.scope),
-                ConfigValue(artifact.value, artifact.valueDef)
-            )
-        }
     }
 
     override fun getArtifactType(): String {
         return "app/config"
     }
 
-    override fun listenChanges(listener: Consumer<ConfigDef>) {
+    override fun listenChanges(listener: Consumer<ObjectData>) {
     }
 
     override fun deleteArtifact(artifactId: String) {
@@ -89,6 +84,7 @@ class ConfigArtifactHandler(
         @AttName("?id")
         val ref: RecordRef,
         val version: Int,
-        val value: ObjectData
+        val value: ObjectData,
+        val valueDef: ConfigValueDef
     )
 }

@@ -109,7 +109,9 @@ class EcosPatchService(
             return false
         }
 
-        log.info { "Found patch '${patch.targetApp}$${patch.patchId}'" }
+        val patchId = "${patch.targetApp}$${patch.patchId}"
+
+        log.info { "Found patch '$patchId'. Execute it" }
 
         val result = commandsService.executeSync {
             withTargetApp(patch.targetApp)
@@ -118,7 +120,11 @@ class EcosPatchService(
                 patch.config,
                 patch.state
             ))
+            withTtl(Duration.ofMinutes(10))
         }
+
+        log.info { "Patch command completed. Path: $patchId" }
+
         val commRes = result.getResultAs(EcosPatchCommandExecutor.CommandRes::class.java)
         var errorMsg = result.primaryError?.message
         if (errorMsg.isNullOrBlank() && commRes == null) {
@@ -134,7 +140,7 @@ class EcosPatchService(
             patch.lastError = errorMsg
             patch.status = EcosPatchStatus.FAILED
             recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
-            log.info { "Patch '${patch.targetApp}$${patch.patchId}' completed with error: $errorMsg" }
+            log.info { "Patch '$patchId' completed with error: $errorMsg" }
         } else {
             patch.state = commRes?.result?.state ?: ObjectData.create()
             patch.errorsCount = 0
@@ -149,7 +155,7 @@ class EcosPatchService(
             patch.patchResult = DataValue.create(commRes?.result)
             recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
             log.info {
-                val msg = "Patch '${patch.targetApp}$${patch.patchId}' "
+                val msg = "Patch '$patchId' "
                 if (patch.status == EcosPatchStatus.APPLIED) {
                     msg + "successfully applied"
                 } else {
