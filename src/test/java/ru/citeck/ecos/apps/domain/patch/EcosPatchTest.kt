@@ -50,7 +50,7 @@ class EcosPatchTest {
     fun test() {
         val waitingStart = System.currentTimeMillis()
         while (!component.executed || !stateful.completed || !dependentPatch.completed) {
-            if ((System.currentTimeMillis() - waitingStart) > 30_000) {
+            if ((System.currentTimeMillis() - waitingStart) > 60_000) {
                 error("Timeout exception")
             }
             Thread.sleep(1000)

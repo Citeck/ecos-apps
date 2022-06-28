@@ -9,7 +9,7 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.dto.ConfigValue
 import ru.citeck.ecos.config.lib.dto.ConfigValueDef
-import ru.citeck.ecos.config.lib.zookeeper.ZkConfigService
+import ru.citeck.ecos.config.lib.zookeeper.ZkConfigProvider
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
 import ru.citeck.ecos.data.sql.dto.DbTableRef
@@ -25,7 +25,7 @@ import javax.sql.DataSource
 @Configuration
 class EcosConfigConfig(
     private val dbDomainFactory: DbDomainFactory,
-    private val zkConfigService: ZkConfigService,
+    private val zkConfigProvider: ZkConfigProvider,
     private val recordsService: RecordsService
 ) {
 
@@ -65,7 +65,7 @@ class EcosConfigConfig(
             log.info { "Update zookeeper config value. Atts: $atts" }
             val value = atts.value[EcosConfigAppConstants.VALUE_SHORT_PROP]
 
-            zkConfigService.setConfig(
+            zkConfigProvider.setConfig(
                 ConfigKey.create(atts.scope, atts.configId),
                 ConfigValue(value, atts.valueDef)
             )
