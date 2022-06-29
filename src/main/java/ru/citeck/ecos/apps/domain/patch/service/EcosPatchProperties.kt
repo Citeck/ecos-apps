@@ -4,7 +4,7 @@ import java.time.Duration
 
 class EcosPatchProperties(
     val job: EcosPatchJob = EcosPatchJob(),
-    val appReadyThresholdDuration: Duration = Duration.ofSeconds(30)
+    val appReadyThresholdDuration: Duration = Duration.ofSeconds(10)
 ) {
 
     class EcosPatchJob(
