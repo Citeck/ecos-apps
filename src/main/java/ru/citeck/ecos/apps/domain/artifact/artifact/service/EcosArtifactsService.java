@@ -904,8 +904,8 @@ public class EcosArtifactsService {
             new ArtifactRevSourceInfo(sourceId, sourceType),
             Boolean.TRUE.equals(entity.getArtifact().getSystem()),
             entity.getExtId(),
-            entity.getArtifact().getCreatedDate(),
-            entity.getArtifact().getLastModifiedDate()
+            entity.getArtifact().getLastModifiedDate(),
+            entity.getArtifact().getCreatedDate()
         ));
     }
 

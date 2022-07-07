@@ -54,7 +54,7 @@ class EcosPatchService(
             properties.job.delayDuration
         ) {
             val apps = watcherJob.activeApps
-            log.debug { "Apply patches for apps: $apps" }
+            log.trace { "Apply patches for apps: $apps" }
             apps.forEach {
                 applyPatches(it)
             }
@@ -72,7 +72,7 @@ class EcosPatchService(
     private fun applyPatch(appName: String): Boolean {
 
         if (!isAppReadyToDeployPatches(appName)) {
-            log.debug { "App is not ready yet: $appName" }
+            log.trace { "App is not ready yet: $appName" }
             return false
         }
 
@@ -101,7 +101,7 @@ class EcosPatchService(
         }
         val patch = recordsService.queryOne(query, EcosPatchEntity::class.java)
         if (patch == null) {
-            log.debug { "Active patches is not found for app: '$appName'" }
+            log.trace { "Active patches is not found for app: '$appName'" }
             return false
         }
 
@@ -127,7 +127,7 @@ class EcosPatchService(
             withTtl(Duration.ofMinutes(10))
         }
 
-        log.info { "Patch command completed. Path: $patchId" }
+        log.info { "Patch command completed. Patch: $patchId" }
 
         val commRes = result.getResultAs(EcosPatchCommandExecutor.CommandRes::class.java)
         var errorMsg = result.primaryError?.message
