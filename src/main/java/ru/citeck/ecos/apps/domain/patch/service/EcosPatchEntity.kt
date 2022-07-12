@@ -20,5 +20,6 @@ class EcosPatchEntity(
     var errorsCount: Int = 0,
     var nextExecDate: Instant? = null,
     var lastError: String? = null,
-    var dependsOn: List<String>
+    var dependsOn: List<String>,
+    var dependsOnApps: List<String>
 )

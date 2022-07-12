@@ -10,6 +10,7 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
+import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
@@ -56,20 +57,20 @@ class EcosPatchService(
             val apps = watcherJob.activeApps
             log.trace { "Apply patches for apps: $apps" }
             apps.forEach {
-                applyPatches(it)
+                applyPatches(it, apps)
             }
         }
     }
 
-    private fun applyPatches(appName: String): Boolean {
+    private fun applyPatches(appName: String, availableApps: Set<String>): Boolean {
         var toApply = 10
-        while (toApply > 0 && applyPatch(appName)) {
+        while (toApply > 0 && applyPatch(appName, availableApps)) {
             toApply--
         }
         return toApply != 10
     }
 
-    private fun applyPatch(appName: String): Boolean {
+    private fun applyPatch(appName: String, availableApps: Set<String>): Boolean {
 
         if (!isAppReadyToDeployPatches(appName)) {
             log.trace { "App is not ready yet: $appName" }
@@ -82,6 +83,10 @@ class EcosPatchService(
                 Predicates.and(
                     Predicates.eq("manual", false),
                     Predicates.eq("targetApp", appName),
+                    Predicates.or(
+                        Predicates.empty("dependsOnApps"),
+                        ValuePredicate.contains("dependsOnApps", availableApps),
+                    ),
                     Predicates.or(
                         Predicates.eq("status", EcosPatchStatus.PENDING),
                         Predicates.and(
