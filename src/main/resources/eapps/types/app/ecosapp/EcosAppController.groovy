@@ -40,9 +40,20 @@ class EcosAppControllerImpl implements ArtifactController<EcosAppArtifact, Unit>
             }).collect(Collectors.toList())
     }
 
-    private static EcosAppArtifact readArtifact(EcosFile ecosAppDir) {
+    private static EcosAppArtifact readArtifact(EcosFile ecosApp) {
 
-        def metaFile = ecosAppDir.getFile("meta.json")
+        def ecosAppDir = ecosApp
+        if (ecosApp.name.endsWith(".zip")) {
+            ecosAppDir = ecosApp.read( {input -> ZipUtils.extractZip(input) })
+        }
+
+        def metaFile = ecosAppDir.getFile("meta.yml")
+        if (metaFile == null) {
+            metaFile = ecosAppDir.getFile("meta.yaml")
+        }
+        if (metaFile == null) {
+            metaFile = ecosAppDir.getFile("meta.json")
+        }
         def meta = Json.mapper.read(metaFile, ObjectData.class)
         if (meta == null) {
             return null
@@ -68,7 +79,7 @@ class EcosAppControllerImpl implements ArtifactController<EcosAppArtifact, Unit>
         if (versionStr.isEmpty()) {
             versionStr = "1.0"
         }
-        artifact.version = new Version(versionStr)
+        artifact.version = Version.valueOf(versionStr)
 
         return artifact
     }
