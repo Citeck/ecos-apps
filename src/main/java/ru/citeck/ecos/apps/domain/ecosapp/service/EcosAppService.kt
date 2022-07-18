@@ -83,9 +83,10 @@ class EcosAppService(
                 }
             }
             if (invalidArtifactsByOwner.isNotEmpty()) {
-                error("You can't upload application '${appMeta.id}' " +
-                    "with artifacts which is belong " +
-                    "to other ECOS applications: $invalidArtifactsByOwner"
+                error(
+                    "You can't upload application '${appMeta.id}' " +
+                        "with artifacts which is belong " +
+                        "to other ECOS applications: $invalidArtifactsByOwner"
                 )
             }
         }
