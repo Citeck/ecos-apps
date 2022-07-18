@@ -28,6 +28,7 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -79,7 +80,7 @@ class EcosArtifactRecords(
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
-                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.id))
+                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
                     if (artifact != null && !artifact.system) {
                         moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
                     }
@@ -102,9 +103,9 @@ class EcosArtifactRecords(
     }
 
     private fun getArtifactsForTypes(
-        typeRefs: Collection<RecordRef>,
-        checkedTypes: MutableSet<RecordRef>
-    ): MutableSet<RecordRef> {
+        typeRefs: Collection<EntityRef>,
+        checkedTypes: MutableSet<EntityRef>
+    ): MutableSet<EntityRef> {
 
         if (typeRefs.isEmpty()) {
             return mutableSetOf()
@@ -127,8 +128,8 @@ class EcosArtifactRecords(
             return mutableSetOf()
         }
 
-        val artifactsSet = HashSet<RecordRef>()
-        val newTypes = HashSet<RecordRef>()
+        val artifactsSet = HashSet<EntityRef>()
+        val newTypes = HashSet<EntityRef>()
 
         val appNames = applicationsService.getAppsStatus().keys.toList()
         val resultFutures = appNames.map {
@@ -154,7 +155,7 @@ class EcosArtifactRecords(
         }.forEach {
             artifactsSet.addAll(it)
             it.forEach { ref ->
-                if (ref.appName == "emodel" && ref.sourceId == "type" && checkedTypes.add(ref)) {
+                if (ref.getAppName() == "emodel" && ref.getSourceId() == "type" && checkedTypes.add(ref)) {
                     newTypes.add(ref)
                 }
             }

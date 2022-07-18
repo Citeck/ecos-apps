@@ -235,12 +235,12 @@ class EcosApplicationsService(
         return appsStatusByName
     }
 
-    fun deployArtifacts() {
+    fun deployArtifacts(lastModified: Instant) {
         deployers.values.forEach {
             try {
                 var iter = -1
                 while (++iter < 10) {
-                    if (!ecosArtifactsService.deployArtifacts(it)) {
+                    if (!ecosArtifactsService.deployArtifacts(it, lastModified)) {
                         break
                     }
                 }

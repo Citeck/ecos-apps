@@ -81,6 +81,10 @@ public class EcosArtifactsDao {
         }
     }
 
+    public List<EcosArtifactEntity> getArtifactsByEcosApp(String ecosAppId) {
+        return artifactsRepo.getArtifactsByEcosApp(ecosAppId);
+    }
+
     public List<EcosArtifactEntity> getDependentModules(ArtifactRef targetRef) {
 
         EcosArtifactEntity moduleEntity = artifactsRepo.getByExtId(targetRef.getType(), targetRef.getId());
@@ -101,6 +105,14 @@ public class EcosArtifactsDao {
             return patchedRev;
         }
         return artifact.getLastRev();
+    }
+
+    public List<EcosArtifactEntity> getArtifactsByRefs(List<ArtifactRef> refs) {
+        return refs.stream()
+            .map(it -> Optional.ofNullable(artifactsRepo.getByExtId(it.getType(), it.getId())))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
     }
 
     public EcosArtifactEntity getArtifact(ArtifactRef ref) {

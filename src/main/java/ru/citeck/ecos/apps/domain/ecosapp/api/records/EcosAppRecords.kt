@@ -6,10 +6,9 @@ import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
-import ru.citeck.ecos.records2.QueryContext
+import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.records2.RecordMeta
 import ru.citeck.ecos.records2.RecordRef
-import ru.citeck.ecos.records2.graphql.meta.annotation.MetaAtt
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField
 import ru.citeck.ecos.records2.request.delete.RecordsDelResult
 import ru.citeck.ecos.records2.request.delete.RecordsDeletion
@@ -122,14 +121,12 @@ class EcosAppRecords(
             return appDef.id
         }
 
-        @MetaAtt(".type")
         fun getEcosType(): RecordRef {
             return RecordRef.valueOf("emodel/type@ecos-app")
         }
 
-        @MetaAtt(".disp")
         fun getDisplayName(): String {
-            return MLText.getClosestValue(name, QueryContext.getCurrent<QueryContext>().locale)
+            return MLText.getClosestValue(name, I18nContext.getLocale())
         }
 
         @JsonProperty("_content")

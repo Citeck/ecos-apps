@@ -4,7 +4,7 @@ import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
-import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize as JackDeserialize
 
 @JsonDeserialize(builder = EcosAppDef.Builder::class)
@@ -13,8 +13,8 @@ data class EcosAppDef(
     val id: String,
     val name: MLText,
     val version: Version,
-    val typeRefs: List<RecordRef>,
-    val artifacts: List<RecordRef>
+    val typeRefs: List<EntityRef>,
+    val artifacts: List<EntityRef>
 ) {
 
     companion object {
@@ -47,15 +47,15 @@ data class EcosAppDef(
         var id: String = ""
         var name: MLText = MLText()
         var version: Version = Version.valueOf("1.0")
-        var typeRefs: List<RecordRef> = emptyList()
-        var artifacts: List<RecordRef> = emptyList()
+        var typeRefs: List<EntityRef> = emptyList()
+        var artifacts: List<EntityRef> = emptyList()
 
         constructor(base: EcosAppDef) : this() {
             id = base.id
             name = base.name
             version = base.version
-            typeRefs = DataValue.create(base.typeRefs).asList(RecordRef::class.java)
-            artifacts = DataValue.create(base.artifacts).asList(RecordRef::class.java)
+            typeRefs = DataValue.create(base.typeRefs).asList(EntityRef::class.java)
+            artifacts = DataValue.create(base.artifacts).asList(EntityRef::class.java)
         }
 
         fun withId(id: String): Builder {
@@ -73,12 +73,12 @@ data class EcosAppDef(
             return this
         }
 
-        fun withTypeRefs(typeRefs: List<RecordRef>): Builder {
+        fun withTypeRefs(typeRefs: List<EntityRef>): Builder {
             this.typeRefs = typeRefs
             return this
         }
 
-        fun withArtifacts(artifacts: List<RecordRef>): Builder {
+        fun withArtifacts(artifacts: List<EntityRef>): Builder {
             this.artifacts = artifacts
             return this
         }

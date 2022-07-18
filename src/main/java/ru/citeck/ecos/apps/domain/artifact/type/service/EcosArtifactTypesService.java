@@ -22,7 +22,7 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.utils.ZipUtils;
-import ru.citeck.ecos.records2.RecordRef;
+import ru.citeck.ecos.webapp.api.entity.EntityRef;
 
 import java.time.Instant;
 import java.util.*;
@@ -182,8 +182,8 @@ public class EcosArtifactTypesService {
         }
     }
 
-    public String getTypeIdForRecordRef(RecordRef recordRef) {
-        if (RecordRef.isEmpty(recordRef)) {
+    public String getTypeIdForRecordRef(EntityRef recordRef) {
+        if (EntityRef.isEmpty(recordRef)) {
             return "";
         }
         EcosArtifactTypeEntity typeEntity = artifactTypeRepo.findFirstByAppNameAndRecordsSourceId(
@@ -228,7 +228,7 @@ public class EcosArtifactTypesService {
             .map(ref -> {
                 String artifactType = getTypeIdForRecordRef(ref);
                 if (StringUtils.isNotBlank(artifactType)) {
-                    return ArtifactRef.create(artifactType, ref.getId());
+                    return ArtifactRef.create(artifactType, ref.getLocalId());
                 }
                 return ArtifactRef.EMPTY;
             })

@@ -25,8 +25,11 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
     List<EcosArtifactEntity> findAllByType(String type);
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
-        "WHERE m.type = ?1 AND m.deployStatus = ?2 AND m.deleted = false")
-    List<EcosArtifactEntity> findAllByTypeAndDeployStatus(String type, DeployStatus status, Pageable page);
+        "WHERE m.type = ?1 AND m.deployStatus = ?2 AND m.deleted = false AND m.lastModifiedDate <= ?3")
+    List<EcosArtifactEntity> findAllByTypeAndDeployStatus(String type,
+                                                          DeployStatus status,
+                                                          Instant lastModified,
+                                                          Pageable page);
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
         "WHERE m.deployStatus = ?1 AND m.deployRetryCounter <= ?2 AND m.lastModifiedDate < ?3 AND m.deleted = false")
@@ -48,4 +51,8 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
     @Query("SELECT COUNT(artifact) FROM EcosArtifactEntity artifact " +
            "WHERE artifact.deleted = false")
     long getCount();
+
+    @Query("SELECT artifact FROM EcosArtifactEntity artifact " +
+        "WHERE artifact.ecosApp = ?1 AND artifact.deleted = false")
+    List<EcosArtifactEntity> getArtifactsByEcosApp(String ecosApp);
 }

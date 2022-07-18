@@ -20,7 +20,7 @@ class ApplicationSourcePolicy : ArtifactSourcePolicy {
         }
         val prevContent = context.getLastRevBySourceType(ArtifactRevSourceType.APPLICATION)
 
-        return prevContent?.getContentId() != newRev.getContentId()
+        return !context.isRevisionsEquals(prevContent, newRev)
     }
 
     override fun getSourceType(): ArtifactSourceType {

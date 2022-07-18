@@ -22,6 +22,7 @@ import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -226,20 +227,23 @@ public class ApplicationsWatcherJob {
             }
         }
 
-        long artifactsLastModified = ecosArtifactsService.getLastModifiedTime().toEpochMilli();
+        Instant artifactsLastModified = ecosArtifactsService.getLastModifiedTime();
+        long artifactsLastModifiedMs = artifactsLastModified.toEpochMilli();
 
-        if (artifactsLastModified > artifactsLastModifiedTime
+        if (artifactsLastModifiedMs > artifactsLastModifiedTime
                 && (forceUpdateChangedSources
-                    || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
+                    || currentTime - artifactsLastModifiedMs > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
 
             try {
 
-                ecosApplicationsService.deployArtifacts();
+                ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 if (ecosArtifactsPatchService.applyOutOfSyncPatches()) {
-                    ecosApplicationsService.deployArtifacts();
+                    artifactsLastModified = ecosArtifactsService.getLastModifiedTime();
+                    artifactsLastModifiedMs = artifactsLastModified.toEpochMilli();
+                    ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 }
 
-                artifactsLastModifiedTime = artifactsLastModified;
+                artifactsLastModifiedTime = artifactsLastModifiedMs;
 
             } catch (Exception e) {
                 log.error("Artifacts deployment error", e);

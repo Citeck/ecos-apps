@@ -127,7 +127,7 @@ class EcosArtifactsServiceTest {
         }
 
         var deployIterations = 0
-        while (ecosArtifactsService.deployArtifacts(deployer)) {
+        while (ecosArtifactsService.deployArtifacts(deployer, Instant.MAX)) {
             if (++deployIterations > 100) {
                 error("Unexpected deploy iterations: $deployIterations")
             }
@@ -168,7 +168,7 @@ class EcosArtifactsServiceTest {
         assertNotEquals(updatedArtifact.revId, revIdByArtifact[artifactRef])
         assertEquals(DeployStatus.DRAFT, updatedArtifact.deployStatus)
 
-        assertTrue(ecosArtifactsService.deployArtifacts(deployer))
+        assertTrue(ecosArtifactsService.deployArtifacts(deployer, Instant.MAX))
         assertEquals(deployedArtifacts[jsonTestTypeId]!!.last(), firstArtifact)
     }
 }
