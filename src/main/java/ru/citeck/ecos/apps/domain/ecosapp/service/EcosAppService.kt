@@ -97,10 +97,21 @@ class EcosAppService(
         }
 
         var entity = dtoToEntity(appMeta)
-        entity.artifactsDir = artifactsContentEntity
+        if (entity.artifactsDir?.id != artifactsContentEntity?.id) {
+            log.info {
+                "Application content changed. App ID: '${appMeta.id}' " +
+                "New content id: ${artifactsContentEntity?.id}"
+            }
+            entity.artifactsDir = artifactsContentEntity
+            entity.artifactsLastModifiedDate = Instant.now()
+        } else {
+            log.info {
+                "Application content doesn't change. App ID: '${appMeta.id}'"
+            }
+        }
         entity = ecosAppRepo.save(entity)
 
-        applicationsWatcherJob.forceUpdate("eapps", appToSource(entity))
+        applicationsWatcherJob.forceUpdate(EcosAppsApp.NAME, appToSource(entity))
 
         log.info { "Uploading of application '" + appMeta.id + "' completed" }
 
@@ -186,10 +197,8 @@ class EcosAppService(
         } else {
 
             val newEntity = EcosAppEntity()
-            newEntity.extId = if (dto.id.isBlank()) {
+            newEntity.extId = dto.id.ifBlank {
                 UUID.randomUUID().toString()
-            } else {
-                dto.id
             }
             newEntity
         }
@@ -230,7 +239,7 @@ class EcosAppService(
     // AdditionalSourceProvider
 
     private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
-        val lastModified = app.artifactsDir?.createdDate ?: Instant.EPOCH
+        val lastModified = app.artifactsLastModifiedDate ?: app.artifactsDir?.createdDate ?: Instant.EPOCH
         return ArtifactSourceInfo.create {
             withKey(app.extId, ArtifactSourceType.ECOS_APP)
             withLastModified(lastModified)

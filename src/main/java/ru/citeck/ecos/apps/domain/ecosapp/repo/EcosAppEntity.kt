@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.domain.ecosapp.repo
 
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
+import java.time.Instant
 import javax.persistence.*
 
 @Entity
@@ -22,4 +23,6 @@ class EcosAppEntity : AbstractAuditingEntity() {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "artifacts_dir_content_id")
     var artifactsDir: EcosContentEntity? = null
+
+    var artifactsLastModifiedDate: Instant? = null
 }

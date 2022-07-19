@@ -126,6 +126,7 @@ public class ApplicationsWatcherJob {
 
             } catch (InterruptedException e) {
                 log.info("Watcher thread was interrupted");
+                Thread.currentThread().interrupt();
                 break;
             } catch (Throwable e) {
                 try {
