@@ -57,12 +57,13 @@ class EcosAppService(
         log.info { "Upload application '" + appMeta.id + "'" }
 
         val artifactsDir = appRoot.getDir("artifacts")
+        val artifactRefs = mutableListOf<ArtifactRef>()
+
         if (artifactsDir != null) {
             val types = typesService.allTypesCtx.map {
                 it.getTypeContext()
             }
             val artifactsData = ecosAppsServiceFactory.artifactService.readArtifacts(artifactsDir, types)
-            val artifactRefs = mutableListOf<ArtifactRef>()
             types.forEach { typeCtx ->
                 val artifacts = artifactsData[typeCtx.getId()]
                 if (artifacts != null && artifacts.isNotEmpty()) {
@@ -104,6 +105,7 @@ class EcosAppService(
             }
             entity.artifactsDir = artifactsContentEntity
             entity.artifactsLastModifiedDate = Instant.now()
+            ecosArtifactsService.setEcosAppFull(artifactRefs, appMeta.id)
         } else {
             log.info {
                 "Application content doesn't change. App ID: '${appMeta.id}'"
