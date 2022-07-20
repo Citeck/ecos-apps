@@ -210,6 +210,11 @@ public class EcosArtifactsDao {
             spec = spec.and(systemSpec);
         }
 
+        if (Boolean.TRUE.equals(predicateDto.excludeTypes)) {
+            spec = spec.and((root, query, builder) ->
+                builder.notEqual(root.get("type"), "model/type"));
+        }
+
         return spec.and(getNonDeletedWithLastRevSpec());
     }
 
@@ -221,5 +226,6 @@ public class EcosArtifactsDao {
         private String tagsStr;
         private String moduleId;
         private Boolean system;
+        private Boolean excludeTypes;
     }
 }

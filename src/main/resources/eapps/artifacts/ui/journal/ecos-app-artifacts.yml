@@ -16,9 +16,10 @@ predicate:
       a: system
       v: false
     # types on ecos-app form should be selected in other journal
-    - t: not-eq
-      a: type
-      v: model/type
+    # this solution is temporal until not-eq predicate will work
+    - t: eq
+      a: excludeTypes
+      v: true
 
 columns:
 
