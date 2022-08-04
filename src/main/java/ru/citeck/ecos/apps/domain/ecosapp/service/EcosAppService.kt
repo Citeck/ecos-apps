@@ -101,7 +101,7 @@ class EcosAppService(
         if (entity.artifactsDir?.id != artifactsContentEntity?.id) {
             log.info {
                 "Application content changed. App ID: '${appMeta.id}' " +
-                "New content id: ${artifactsContentEntity?.id}"
+                    "New content id: ${artifactsContentEntity?.id}"
             }
             entity.artifactsDir = artifactsContentEntity
             entity.artifactsLastModifiedDate = Instant.now()

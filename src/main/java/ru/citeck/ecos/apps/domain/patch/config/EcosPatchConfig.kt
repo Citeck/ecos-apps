@@ -10,13 +10,13 @@ import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records3.record.dao.RecordsDao
-import ru.citeck.ecos.webapp.lib.spring.context.env.EcosSpringEnvironment
+import ru.citeck.ecos.webapp.lib.env.EcosWebAppEnvironment
 import javax.sql.DataSource
 
 @Configuration
 class EcosPatchConfig(
     private val dbDomainFactory: DbDomainFactory,
-    private val ecosSpringEnvironment: EcosSpringEnvironment
+    private val ecosSpringEnvironment: EcosWebAppEnvironment
 ) {
 
     companion object {

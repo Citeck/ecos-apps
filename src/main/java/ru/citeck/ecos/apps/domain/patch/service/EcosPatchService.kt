@@ -14,8 +14,8 @@ import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.task.EcosTasksApi
 import ru.citeck.ecos.webapp.lib.patch.EcosPatchCommandExecutor
-import ru.citeck.ecos.webapp.lib.spring.context.task.EcosTasksManager
 import java.time.Duration
 import java.time.Instant
 import javax.annotation.PostConstruct
@@ -24,7 +24,7 @@ import javax.annotation.PostConstruct
 class EcosPatchService(
     val recordsService: RecordsService,
     val commandsService: CommandsService,
-    val tasksManager: EcosTasksManager,
+    val ecosTasksApi: EcosTasksApi,
     val watcherJob: ApplicationsWatcherJob,
     val properties: EcosPatchProperties
 ) {
@@ -49,8 +49,8 @@ class EcosPatchService(
 
     @PostConstruct
     fun init() {
-        tasksManager.getScheduler(SCHEDULER_ID).scheduleWithFixedDelay(
-            { "Ecos patch task" },
+        ecosTasksApi.getScheduler(SCHEDULER_ID).scheduleWithFixedDelay(
+            "Ecos patch task",
             properties.job.initDelayDuration,
             properties.job.delayDuration
         ) {
