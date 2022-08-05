@@ -1,8 +1,11 @@
 package ru.citeck.ecos.apps.domain.ecosapp.service
 
+import mu.KotlinLogging
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import ru.citeck.ecos.apps.EcosAppsApp
+import ru.citeck.ecos.apps.EcosAppsServiceFactory
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
@@ -11,12 +14,12 @@ import ru.citeck.ecos.apps.artifact.type.TypeContext
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo
-import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.Version
 import ru.citeck.ecos.commons.io.file.EcosFile
@@ -24,7 +27,9 @@ import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
 import ru.citeck.ecos.commons.utils.ZipUtils
+import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.*
@@ -32,55 +37,110 @@ import java.util.*
 @Service
 @Transactional
 class EcosAppService(
+    private val typesService: EcosArtifactTypesService,
+    private val ecosAppsServiceFactory: EcosAppsServiceFactory,
     private val ecosAppRepo: EcosAppRepo,
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
     private val applicationsWatcherJob: ApplicationsWatcherJob
 ) {
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
-
-    fun uploadZip(data: ByteArray) : EcosAppDef {
+    fun uploadZip(data: ByteArray): EcosAppDef {
 
         val appRoot = ZipUtils.extractZip(data)
-        val meta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
+        val appMeta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
             ?: error("Incorrect application: ${Base64.getEncoder().encodeToString(data)}")
 
+        log.info { "Upload application '" + appMeta.id + "'" }
+
         val artifactsDir = appRoot.getDir("artifacts")
+        val artifactRefs = mutableListOf<ArtifactRef>()
+
+        if (artifactsDir != null) {
+            val types = typesService.allTypesCtx.map {
+                it.getTypeContext()
+            }
+            val artifactsData = ecosAppsServiceFactory.artifactService.readArtifacts(artifactsDir, types)
+            types.forEach { typeCtx ->
+                val artifacts = artifactsData[typeCtx.getId()]
+                if (artifacts != null && artifacts.isNotEmpty()) {
+                    artifacts.forEach {
+                        val meta = ecosAppsServiceFactory.artifactService.getArtifactMeta(typeCtx, it)
+                        if (meta != null) {
+                            artifactRefs.add(ArtifactRef.create(typeCtx.getId(), meta.id))
+                        }
+                    }
+                }
+            }
+            val ecosAppIdByArtifactRef = ecosArtifactsService.getEcosAppIdByArtifactRef(artifactRefs)
+            val invalidArtifactsByOwner = mutableMapOf<String, MutableList<ArtifactRef>>()
+
+            ecosAppIdByArtifactRef.forEach { (artifactRef, ecosAppId) ->
+                if (ecosAppId.isNotBlank() && ecosAppId != appMeta.id) {
+                    invalidArtifactsByOwner.computeIfAbsent(ecosAppId) { mutableListOf() }.add(artifactRef)
+                }
+            }
+            if (invalidArtifactsByOwner.isNotEmpty()) {
+                error(
+                    "You can't upload application '${appMeta.id}' " +
+                        "with artifacts which is belong " +
+                        "to other ECOS applications: $invalidArtifactsByOwner"
+                )
+            }
+        }
+
         var artifactsContentEntity: EcosContentEntity? = null
         if (artifactsDir != null) {
             artifactsContentEntity = ecosContentDao.upload(ZipUtils.writeZipAsBytes(artifactsDir))
         }
 
-        var entity = dtoToEntity(meta)
-        entity.artifactsDir = artifactsContentEntity
+        var entity = dtoToEntity(appMeta)
+        if (entity.artifactsDir?.id != artifactsContentEntity?.id) {
+            log.info {
+                "Application content changed. App ID: '${appMeta.id}' " +
+                    "New content id: ${artifactsContentEntity?.id}"
+            }
+            entity.artifactsDir = artifactsContentEntity
+            entity.artifactsLastModifiedDate = Instant.now()
+            ecosArtifactsService.setEcosAppFull(artifactRefs, appMeta.id)
+        } else {
+            log.info {
+                "Application content doesn't change. App ID: '${appMeta.id}'"
+            }
+        }
         entity = ecosAppRepo.save(entity)
 
-        applicationsWatcherJob.forceUpdate("eapps", appToSource(entity))
+        applicationsWatcherJob.forceUpdate(EcosAppsApp.NAME, appToSource(entity))
+
+        log.info { "Uploading of application '" + appMeta.id + "' completed" }
 
         return entityToDto(entity)
     }
 
-    fun save(app: EcosAppDef) : EcosAppDef {
+    fun save(app: EcosAppDef): EcosAppDef {
         return entityToDto(ecosAppRepo.save(internalSave(app)))
     }
 
     private fun internalSave(app: EcosAppDef): EcosAppEntity {
 
         val artifactsSet = HashSet<String>()
-        app.typeRefs.forEach { artifactsSet.add(typeRefToArtifactRef(it).id) }
-        app.artifacts.forEach { artifactsSet.add(it.id) }
+        app.typeRefs.forEach { artifactsSet.add(typeRefToArtifactRef(it).getLocalId()) }
+        app.artifacts.forEach { artifactsSet.add(it.getLocalId()) }
 
         ecosArtifactsService.setEcosAppFull(artifactsSet.map { ArtifactRef.valueOf(it) }, app.id)
 
         return dtoToEntity(app)
     }
 
-    fun getById(id: String) : EcosAppDef? {
+    fun getById(id: String): EcosAppDef? {
         val app = ecosAppRepo.findFirstByExtId(id) ?: return null
         return entityToDto(app)
     }
 
-    fun getAll() : List<EcosAppDef> {
+    fun getAll(): List<EcosAppDef> {
         val sort = Sort.by(Sort.Order.desc("createdDate"))
         return ecosAppRepo.findAll(sort).map { entityToDto(it) }
     }
@@ -90,7 +150,7 @@ class EcosAppService(
         ecosArtifactsService.removeEcosApp(id)
     }
 
-    fun getAppForArtifacts(list: List<RecordRef>) : Map<RecordRef, RecordRef> {
+    fun getAppForArtifacts(list: List<RecordRef>): Map<RecordRef, RecordRef> {
 /*
         val result = mutableMapOf<RecordRef, RecordRef>()
         ecosAppContentRepo.findAllByArtifactIsIn(list.map { it.toString() }).forEach {
@@ -99,14 +159,14 @@ class EcosAppService(
                 result[RecordRef.valueOf(it.artifact)] = RecordRef.create("eapps", "ecos-app", appId)
             }
         }*/
-        return emptyMap()//result
+        return emptyMap() // result
     }
 
     fun getAppData(id: String): ByteArray {
 
         val appDef = getById(id) ?: error("Invalid ECOS application ID: '$id'")
 
-        val artifacts = mutableSetOf<RecordRef>()
+        val artifacts = mutableSetOf<EntityRef>()
         artifacts.addAll(appDef.artifacts)
         artifacts.addAll(appDef.typeRefs.map { typeRefToArtifactRef(it) })
 
@@ -114,7 +174,7 @@ class EcosAppService(
         val artifactsDir = rootDir.createDir("artifacts")
 
         for (ref in artifacts) {
-            val artifactRef = ArtifactRef.valueOf(ref.id)
+            val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
             val artifactRev = ecosArtifactsService.getLastArtifactRev(artifactRef)
             if (artifactRev != null) {
                 ZipUtils.extractZip(
@@ -129,52 +189,59 @@ class EcosAppService(
         return ZipUtils.writeZipAsBytes(rootDir)
     }
 
-    private fun dtoToEntity(dto: EcosAppDef) : EcosAppEntity {
+    private fun dtoToEntity(dto: EcosAppDef): EcosAppEntity {
 
         val nullableEntity = ecosAppRepo.findFirstByExtId(dto.id)
 
         val entity = if (nullableEntity != null) {
 
             nullableEntity
-
         } else {
 
             val newEntity = EcosAppEntity()
-            newEntity.extId = if (dto.id.isBlank()) {
-                 UUID.randomUUID().toString()
-            } else {
-                dto.id
+            newEntity.extId = dto.id.ifBlank {
+                UUID.randomUUID().toString()
             }
             newEntity
         }
 
         entity.name = Json.mapper.toString(dto.name)
         entity.version = dto.version.toString()
-        entity.typeRefs = Json.mapper.toString(dto.typeRefs)
-        entity.artifacts = Json.mapper.toString(dto.artifacts)
 
         return entity
     }
 
-    private fun entityToDto(entity: EcosAppEntity) : EcosAppDef {
+    private fun entityToDto(entity: EcosAppEntity): EcosAppDef {
+
+        val appArtifacts = ecosArtifactsService.getArtifactsByEcosApp(entity.extId)
+        val typeArtifactRefs = mutableListOf<EntityRef>()
+        val otherArtifactRefs = mutableListOf<EntityRef>()
+
+        appArtifacts.forEach {
+            if (it.type == "model/type") {
+                typeArtifactRefs.add(TypeUtils.getTypeRef(it.id))
+            } else {
+                otherArtifactRefs.add(EntityRef.create(EcosAppsApp.NAME, EcosArtifactRecords.ID, it.toString()))
+            }
+        }
 
         return EcosAppDef.create {
             id = entity.extId
             name = Json.mapper.read(entity.name, MLText::class.java) ?: MLText()
-            version = Version(entity.version ?: "1.0")
-            typeRefs = DataValue.create(entity.typeRefs).asList(RecordRef::class.java)
-            artifacts = DataValue.create(entity.artifacts).asList(RecordRef::class.java)
+            version = Version.valueOf(entity.version ?: "1.0")
+            typeRefs = typeArtifactRefs
+            artifacts = otherArtifactRefs
         }
     }
 
-    private fun typeRefToArtifactRef(typeRef: RecordRef) : RecordRef {
-        return RecordRef.create("eapps", EcosArtifactRecords.ID, "model/type$${typeRef.id}")
+    private fun typeRefToArtifactRef(typeRef: EntityRef): EntityRef {
+        return RecordRef.create("eapps", EcosArtifactRecords.ID, "model/type$${typeRef.getLocalId()}")
     }
 
     // AdditionalSourceProvider
 
     private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
-        val lastModified = app.artifactsDir?.createdDate ?: Instant.EPOCH
+        val lastModified = app.artifactsLastModifiedDate ?: app.artifactsDir?.createdDate ?: Instant.EPOCH
         return ArtifactSourceInfo.create {
             withKey(app.extId, ArtifactSourceType.ECOS_APP)
             withLastModified(lastModified)

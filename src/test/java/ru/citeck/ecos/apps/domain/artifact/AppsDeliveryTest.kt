@@ -1,13 +1,14 @@
 package ru.citeck.ecos.apps.domain.artifact
 
-import org.junit.*
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.util.ResourceUtils
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.artifact.ArtifactRef
@@ -21,9 +22,10 @@ import ru.citeck.ecos.apps.test.EcosTestApp
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.rabbitmq.RabbitMqConnProvider
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.util.concurrent.ConcurrentHashMap
 
-@RunWith(SpringRunner::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class AppsDeliveryTest {
@@ -41,7 +43,7 @@ class AppsDeliveryTest {
     private val appByInstanceId = ConcurrentHashMap<String, EcosTestApp>()
     private val allApps = mutableListOf<EcosTestApp>()
 
-    @Before
+    @BeforeEach
     fun before() {
 
         val connection = connectionProvider.getConnection()!!
@@ -68,7 +70,8 @@ class AppsDeliveryTest {
         assertEquals(2, app2Imgs.size)
         val app0ImgBytes = ResourceUtils.getFile(
             "src/test/resources/test/apps-delivery/" +
-            "apps/app0__0/artifacts/ui/img/app0-image.png").readBytes()
+                "apps/app0__0/artifacts/ui/img/app0-image.png"
+        ).readBytes()
 
         assertArrayEquals(app2Imgs["app0-image.png"]!!.data, app0ImgBytes)
 
@@ -79,12 +82,14 @@ class AppsDeliveryTest {
         assertEquals(DeployStatus.DEPLOYED, firstFormArtifact.deployStatus)
         assertEquals(ArtifactRevSourceType.APPLICATION, firstFormArtifact.source.type)
 
-        val newFirstForm = ObjectData.create("""
+        val newFirstForm = ObjectData.create(
+            """
             {
                 "id": "first-form",
                 "user-prop": "user-value"
             }
-        """.trimIndent())
+            """.trimIndent()
+        )
 
         appByName["app1"]!!.addArtifactChangedByUser(formTypeId, newFirstForm)
 
@@ -102,7 +107,7 @@ class AppsDeliveryTest {
             artifactsService.readArtifactFromBytes(formTypeId, firstFormData),
             ObjectData::class.java
         )!!
-        assertEquals("user-value", firstFormDataFromDb.get("user-prop").asText())
+        assertEquals("user-value", firstFormDataFromDb["user-prop"].asText())
 
         // patches test
 
@@ -116,7 +121,7 @@ class AppsDeliveryTest {
         assertEquals("alf_samwf:incomePackageTask_disabled_by_patch", secondPatchedForm.get("formKey").asText())
     }
 
-    @After
+    @AfterEach
     fun after() {
         allApps.forEach { it.dispose() }
     }

@@ -1,7 +1,8 @@
 package ru.citeck.ecos.apps.domain.config
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import ru.citeck.ecos.apps.EcosAppsServiceFactory
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceProvider
 import ru.citeck.ecos.apps.app.domain.artifact.source.DirectorySourceProvider
@@ -12,8 +13,9 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.io.file.std.EcosStdFile
 import ru.citeck.ecos.commons.utils.TmplUtils
-import ru.citeck.ecos.records3.RecordsProperties
 import ru.citeck.ecos.records3.RecordsServiceFactory
+import ru.citeck.ecos.webapp.api.context.EcosWebAppContext
+import ru.citeck.ecos.webapp.api.properties.EcosWebAppProperties
 import java.io.File
 
 class ConfigArtifactTest {
@@ -33,11 +35,13 @@ class ConfigArtifactTest {
     @Test
     fun templateTest() {
 
+        val webAppContext = Mockito.mock(EcosWebAppContext::class.java)
+        Mockito.`when`(webAppContext.getProperties())
+            .thenReturn(EcosWebAppProperties("test-app", "123456"))
+
         val recordsFactory = object : RecordsServiceFactory() {
-            override fun createProperties(): RecordsProperties {
-                val props = super.createProperties()
-                props.appName = "test-app"
-                return props
+            override fun getEcosWebAppContext(): EcosWebAppContext? {
+                return webAppContext
             }
         }
 
@@ -72,16 +76,18 @@ class ConfigArtifactTest {
         artifactsDir.createFile("app/config/config-with-scope.yml", configWithScope)
         artifactsDir.createFile("app/config/config-without-scope.yml", configWithoutScope)
 
+        val webAppContext = Mockito.mock(EcosWebAppContext::class.java)
+        Mockito.`when`(webAppContext.getProperties())
+            .thenReturn(EcosWebAppProperties("test-app", "123456"))
+
         val artifactsFactory = object : EcosAppsServiceFactory() {
             override fun createArtifactSourceProviders(): List<ArtifactSourceProvider> {
                 return listOf(DirectorySourceProvider(artifactsDir))
             }
         }
         val recordsFactory = object : RecordsServiceFactory() {
-            override fun createProperties(): RecordsProperties {
-                val props = super.createProperties()
-                props.appName = "test-app"
-                return props
+            override fun getEcosWebAppContext(): EcosWebAppContext? {
+                return webAppContext
             }
         }
         artifactsFactory.recordsServices = recordsFactory

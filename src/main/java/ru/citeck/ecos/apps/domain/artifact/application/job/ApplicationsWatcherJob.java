@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -21,6 +22,7 @@ import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,6 +76,17 @@ public class ApplicationsWatcherJob {
         }
     }
 
+    public Set<String> getActiveApps() {
+        Set<String> appNames = new HashSet<>();
+        currentStatuses.values().forEach(it -> {
+            String appName = it.getStatus().getAppName();
+            if (StringUtils.isNotBlank(appName)) {
+                appNames.add(appName);
+            }
+        });
+        return appNames;
+    }
+
     private void runWatcher() {
 
         long initDelay = props.getModulesWatcher().getInitDelayMs();
@@ -113,6 +126,7 @@ public class ApplicationsWatcherJob {
 
             } catch (InterruptedException e) {
                 log.info("Watcher thread was interrupted");
+                Thread.currentThread().interrupt();
                 break;
             } catch (Throwable e) {
                 try {
@@ -214,20 +228,23 @@ public class ApplicationsWatcherJob {
             }
         }
 
-        long artifactsLastModified = ecosArtifactsService.getLastModifiedTime().toEpochMilli();
+        Instant artifactsLastModified = ecosArtifactsService.getLastModifiedTime();
+        long artifactsLastModifiedMs = artifactsLastModified.toEpochMilli();
 
-        if (artifactsLastModified > artifactsLastModifiedTime
+        if (artifactsLastModifiedMs > artifactsLastModifiedTime
                 && (forceUpdateChangedSources
-                    || currentTime - artifactsLastModified > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
+                    || currentTime - artifactsLastModifiedMs > ARTIFACTS_DEPLOY_THRESHOLD_TIME)) {
 
             try {
 
-                ecosApplicationsService.deployArtifacts();
+                ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 if (ecosArtifactsPatchService.applyOutOfSyncPatches()) {
-                    ecosApplicationsService.deployArtifacts();
+                    artifactsLastModified = ecosArtifactsService.getLastModifiedTime();
+                    artifactsLastModifiedMs = artifactsLastModified.toEpochMilli();
+                    ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 }
 
-                artifactsLastModifiedTime = artifactsLastModified;
+                artifactsLastModifiedTime = artifactsLastModifiedMs;
 
             } catch (Exception e) {
                 log.error("Artifacts deployment error", e);

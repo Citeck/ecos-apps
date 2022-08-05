@@ -13,6 +13,7 @@ editable: true
 
 columns:
 
+  - id: scope
   - id: configId
   - id: name
   - id: _value

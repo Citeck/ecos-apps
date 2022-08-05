@@ -47,6 +47,6 @@ class EcosAppArtifactSourceProvider(
 
     @EventListener
     fun onContextClosed(event: ContextClosedEvent) {
-       destroyed.set(true)
+        destroyed.set(true)
     }
 }

@@ -1,0 +1,34 @@
+
+id: ecos-patch
+
+#journalRef: uiserv/journal@ecos-patches
+
+model:
+  attributes:
+    - id: patchId
+    - id: name
+      type: MLTEXT
+    - id: targetApp
+    - id: date
+      type: DATETIME
+    - id: manual
+      type: BOOLEAN
+    - id: dependsOn
+      multiple: true
+    - id: dependsOnApps
+      multiple: true
+    - id: type
+    - id: config
+      type: JSON
+  systemAttributes:
+    - id: status
+    - id: patchResult
+      type: JSON
+    - id: state
+      type: JSON
+    - id: errorsCount
+      type: NUMBER
+    - id: nextExecDate
+      type: DATETIME
+    - id: lastError
+

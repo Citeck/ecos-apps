@@ -27,7 +27,7 @@ model:
       name:
         ru: Конфигурация типа значения
         en: Config type config
-      type: TEXT
+      type: JSON
     - id: version
       name:
         ru: Версия

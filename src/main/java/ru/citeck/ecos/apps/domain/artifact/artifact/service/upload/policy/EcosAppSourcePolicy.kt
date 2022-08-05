@@ -25,14 +25,14 @@ class EcosAppSourcePolicy : ArtifactSourcePolicy {
         }
         if (newRev.getSourceId() != context.getEcosApp()) {
             log.warn {
-                "Artifact owned by " + context.getEcosApp() + " app and can't " +
-                    "be updated by " + newRev.getSourceType() + "-" + newRev.getSourceId()
+                "Artifact owned by '" + context.getEcosApp() + "' app and can't " +
+                    "be updated by " + newRev.getSourceType() + " '" + newRev.getSourceId() + "'"
             }
             return false
         }
         val prevContent = context.getLastRevBySourceType(ArtifactRevSourceType.ECOS_APP)
 
-        return prevContent?.getContentId() != newRev.getContentId()
+        return !context.isRevisionsEquals(prevContent, newRev)
     }
 
     override fun getSourceType(): ArtifactSourceType {

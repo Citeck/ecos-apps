@@ -27,7 +27,7 @@ public class EcosArtifactDb implements EcosArtifactRev {
         this.type = artifact.getType();
 
         String version = entity.getModelVersion();
-        this.modelVersion = StringUtils.isBlank(version) ? new Version("1.0") : new Version(version);
+        this.modelVersion = StringUtils.isBlank(version) ? Version.valueOf("1.0") : Version.valueOf(version);
 
         this.data = content.getData();
         this.hash = content.getHash();

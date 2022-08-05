@@ -8,10 +8,10 @@ import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.application.service.EcosApplicationsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
-import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.EcosArtifactDto
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
@@ -28,6 +28,7 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -73,23 +74,22 @@ class EcosArtifactRecords(
 
             val typeArtifactsQuery = recordsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
             val artifacts = getArtifactsForTypes(typeArtifactsQuery.typeRefs, HashSet())
-            artifacts.removeAll(typeArtifactsQuery.typeRefs);
+            artifacts.removeAll(typeArtifactsQuery.typeRefs)
 
             result.records = artifacts.map {
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                 var moduleRes: Any = EmptyValue.INSTANCE
                 if (type.isNotEmpty()) {
-                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.id))
+                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
                     if (artifact != null && !artifact.system) {
                         moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
                     }
                 }
                 moduleRes
             }.filter { it !== EmptyValue.INSTANCE }
-
         } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
-            val predicate = recordsQuery.getQuery(Predicate::class.java);
+            val predicate = recordsQuery.getQuery(Predicate::class.java)
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
                 recordsQuery.skipCount,
@@ -102,8 +102,10 @@ class EcosArtifactRecords(
         return result
     }
 
-    private fun getArtifactsForTypes(typeRefs: Collection<RecordRef>,
-                                     checkedTypes: MutableSet<RecordRef>): MutableSet<RecordRef> {
+    private fun getArtifactsForTypes(
+        typeRefs: Collection<EntityRef>,
+        checkedTypes: MutableSet<EntityRef>
+    ): MutableSet<EntityRef> {
 
         if (typeRefs.isEmpty()) {
             return mutableSetOf()
@@ -126,8 +128,8 @@ class EcosArtifactRecords(
             return mutableSetOf()
         }
 
-        val artifactsSet = HashSet<RecordRef>()
-        val newTypes = HashSet<RecordRef>()
+        val artifactsSet = HashSet<EntityRef>()
+        val newTypes = HashSet<EntityRef>()
 
         val appNames = applicationsService.getAppsStatus().keys.toList()
         val resultFutures = appNames.map {
@@ -153,8 +155,8 @@ class EcosArtifactRecords(
         }.forEach {
             artifactsSet.addAll(it)
             it.forEach { ref ->
-                if (ref.appName == "emodel" && ref.sourceId == "type" && checkedTypes.add(ref)) {
-                    newTypes.add(ref);
+                if (ref.getAppName() == "emodel" && ref.getSourceId() == "type" && checkedTypes.add(ref)) {
+                    newTypes.add(ref)
                 }
             }
         }

@@ -10,9 +10,16 @@ actions:
   - uiserv/action@artifact-deploy
 
 predicate:
-  t: eq
-  att: system
-  val: false
+  t: and
+  v:
+    - t: eq
+      a: system
+      v: false
+    # types on ecos-app form should be selected in other journal
+    # this solution is temporal until not-eq predicate will work
+    - t: eq
+      a: excludeTypes
+      v: true
 
 columns:
 

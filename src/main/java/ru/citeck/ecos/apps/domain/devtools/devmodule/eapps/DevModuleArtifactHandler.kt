@@ -2,8 +2,8 @@ package ru.citeck.ecos.apps.domain.devtools.devmodule.eapps
 
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
-import ru.citeck.ecos.apps.domain.devtools.devmodule.service.DevModulesService
 import ru.citeck.ecos.apps.domain.devtools.devmodule.dto.DevModuleDef
+import ru.citeck.ecos.apps.domain.devtools.devmodule.service.DevModulesService
 import java.util.function.Consumer
 
 @Component
@@ -24,4 +24,3 @@ class DevModuleArtifactHandler(val service: DevModulesService) : EcosArtifactHan
         service.delete(artifactId)
     }
 }
-

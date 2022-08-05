@@ -64,9 +64,11 @@ class EcosArtifactsSourcesService(
         uploadArtifacts(sources.values, typesDir, onlyChanged)
     }
 
-    private fun uploadArtifacts(sources: Collection<AppArtifactsSource>,
-                                typesDir: EcosFile,
-                                onlyChanged: Boolean = false) {
+    private fun uploadArtifacts(
+        sources: Collection<AppArtifactsSource>,
+        typesDir: EcosFile,
+        onlyChanged: Boolean = false
+    ) {
 
         sources.forEach { uploadArtifacts(it, typesDir, onlyChanged) }
     }
@@ -89,7 +91,7 @@ class EcosArtifactsSourcesService(
 
         log.info {
             "Start artifacts uploading from source ${source.getKey()}. " +
-            "New date: $lastModified Old date: $currentLastModified"
+                "New date: $lastModified Old date: $currentLastModified"
         }
 
         val artifacts: Map<String, List<Any>> = try {

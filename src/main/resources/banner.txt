@@ -1,2 +1,0 @@
-
-:: STARTING ${AnsiColor.BRIGHT_RED}ECOS-APPS${AnsiColor.DEFAULT} ::

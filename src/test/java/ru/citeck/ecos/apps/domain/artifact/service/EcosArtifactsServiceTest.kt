@@ -1,14 +1,13 @@
 package ru.citeck.ecos.apps.domain.artifact.service
 
 import org.assertj.core.api.Assertions
-import org.junit.Assert.*
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.junit4.SpringRunner
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.app.domain.artifact.source.*
 import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
@@ -21,9 +20,10 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeplo
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.time.Instant
 
-@RunWith(SpringRunner::class)
+@ExtendWith(EcosSpringExtension::class)
 @SpringBootTest(classes = [EcosAppsApp::class])
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class EcosArtifactsServiceTest {
@@ -113,7 +113,7 @@ class EcosArtifactsServiceTest {
 
         val deployedArtifacts = mutableMapOf<String, MutableList<Any>>()
 
-        val deployer = object: ArtifactDeployer {
+        val deployer = object : ArtifactDeployer {
 
             override fun deploy(type: String, artifact: ByteArray): List<DeployError> {
                 deployedArtifacts.computeIfAbsent(type) { ArrayList() }
@@ -127,7 +127,7 @@ class EcosArtifactsServiceTest {
         }
 
         var deployIterations = 0
-        while (ecosArtifactsService.deployArtifacts(deployer)) {
+        while (ecosArtifactsService.deployArtifacts(deployer, Instant.now())) {
             if (++deployIterations > 100) {
                 error("Unexpected deploy iterations: $deployIterations")
             }
@@ -153,20 +153,22 @@ class EcosArtifactsServiceTest {
         val firstArtifact = artifacts[jsonTestTypeId]?.get(0) as ObjectData
         firstArtifact.set("newField", "newValue")
 
-        ecosArtifactsService.uploadArtifact(ArtifactUploadDto(
-            jsonTestTypeId,
-            firstArtifact,
-            AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
-        ))
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                jsonTestTypeId,
+                firstArtifact,
+                AppSourceKey("eapps", SourceKey("classpath", ArtifactSourceType.APPLICATION))
+            )
+        )
 
-        val artifactRef = ArtifactRef.create(jsonTestTypeId, firstArtifact.get("id").asText());
+        val artifactRef = ArtifactRef.create(jsonTestTypeId, firstArtifact.get("id").asText())
         val updatedArtifact = ecosArtifactsService.getLastArtifact(artifactRef)!!
 
         assertFalse(revIdByArtifact[artifactRef].isNullOrBlank())
         assertNotEquals(updatedArtifact.revId, revIdByArtifact[artifactRef])
         assertEquals(DeployStatus.DRAFT, updatedArtifact.deployStatus)
 
-        assertTrue(ecosArtifactsService.deployArtifacts(deployer))
+        assertTrue(ecosArtifactsService.deployArtifacts(deployer, Instant.now()))
         assertEquals(deployedArtifacts[jsonTestTypeId]!!.last(), firstArtifact)
     }
 }

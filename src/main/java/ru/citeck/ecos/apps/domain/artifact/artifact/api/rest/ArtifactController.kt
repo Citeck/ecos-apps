@@ -35,7 +35,7 @@ class ArtifactController(
 
     @PostMapping("reset-user-rev")
     fun resetUserRevision(@RequestParam(required = true) ref: RecordRef) {
-        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.id));
+        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.id))
         applicationsWatcherJob.forceUpdate()
     }
 
@@ -47,8 +47,10 @@ class ArtifactController(
     }
 
     @GetMapping("download-revisions")
-    fun downloadRevisions(@RequestParam(required = true) ref: RecordRef,
-                          @RequestParam(required = true) fromTime: String) : HttpEntity<ByteArray> {
+    fun downloadRevisions(
+        @RequestParam(required = true) ref: RecordRef,
+        @RequestParam(required = true) fromTime: String
+    ): HttpEntity<ByteArray> {
 
         val artifactRef = ArtifactRef.valueOf(ref.id)
         val fromTimeInstant = OffsetDateTime.parse(fromTime).toInstant()
@@ -58,8 +60,8 @@ class ArtifactController(
 
         val headers = HttpHeaders()
         headers.contentDisposition = ContentDisposition.builder("attachment")
-                .filename(artifactRef.id.replace("[^a-zA-Z\\-\\d_]".toRegex(), "_") + ".zip")
-                .build();
+            .filename(artifactRef.id.replace("[^a-zA-Z\\-\\d_]".toRegex(), "_") + ".zip")
+            .build()
 
         return HttpEntity(resultBytes, headers)
     }

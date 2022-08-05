@@ -81,6 +81,10 @@ public class EcosArtifactsDao {
         }
     }
 
+    public List<EcosArtifactEntity> getArtifactsByEcosApp(String ecosAppId) {
+        return artifactsRepo.getArtifactsByEcosApp(ecosAppId);
+    }
+
     public List<EcosArtifactEntity> getDependentModules(ArtifactRef targetRef) {
 
         EcosArtifactEntity moduleEntity = artifactsRepo.getByExtId(targetRef.getType(), targetRef.getId());
@@ -101,6 +105,14 @@ public class EcosArtifactsDao {
             return patchedRev;
         }
         return artifact.getLastRev();
+    }
+
+    public List<EcosArtifactEntity> getArtifactsByRefs(List<ArtifactRef> refs) {
+        return refs.stream()
+            .map(it -> Optional.ofNullable(artifactsRepo.getByExtId(it.getType(), it.getId())))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
     }
 
     public EcosArtifactEntity getArtifact(ArtifactRef ref) {
@@ -198,6 +210,11 @@ public class EcosArtifactsDao {
             spec = spec.and(systemSpec);
         }
 
+        if (Boolean.TRUE.equals(predicateDto.excludeTypes)) {
+            spec = spec.and((root, query, builder) ->
+                builder.notEqual(root.get("type"), "model/type"));
+        }
+
         return spec.and(getNonDeletedWithLastRevSpec());
     }
 
@@ -209,5 +226,6 @@ public class EcosArtifactsDao {
         private String tagsStr;
         private String moduleId;
         private Boolean system;
+        private Boolean excludeTypes;
     }
 }

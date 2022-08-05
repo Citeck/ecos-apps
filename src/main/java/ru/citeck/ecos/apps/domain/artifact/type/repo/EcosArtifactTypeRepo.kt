@@ -7,8 +7,9 @@ import org.springframework.stereotype.Repository
 import java.time.Instant
 
 @Repository
-interface EcosArtifactTypeRepo : JpaRepository<EcosArtifactTypeEntity, Long>,
-                                 JpaSpecificationExecutor<EcosArtifactTypeEntity> {
+interface EcosArtifactTypeRepo :
+    JpaRepository<EcosArtifactTypeEntity, Long>,
+    JpaSpecificationExecutor<EcosArtifactTypeEntity> {
 
     @Query("SELECT max(t.lastModifiedDate) FROM EcosArtifactTypeEntity t")
     fun getLastModified(): Instant?

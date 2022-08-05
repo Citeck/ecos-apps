@@ -107,7 +107,14 @@ public class EcosArtifactsService {
         if (sourceType == null) {
             sourceType = ArtifactRevSourceType.APPLICATION;
         }
-        EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
+
+        String typeId = artifactEntity.getType();
+        EcosArtifactTypeContext typeContext = ecosArtifactTypesService.getTypeContext(typeId);
+        if (typeContext == null) {
+            log.error("Type is not found: " + typeId);
+            return null;
+        }
+        EcosArtifactContext artifactContext = new EcosArtifactContext(typeContext, artifactEntity);
         ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
             ArtifactSourceType.valueOf(sourceType.toString())
         );
@@ -116,7 +123,6 @@ public class EcosArtifactsService {
             return null;
         }
 
-        String typeId = artifactEntity.getType();
         return artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
     }
 
@@ -265,7 +271,7 @@ public class EcosArtifactsService {
             artifactEntity = artifactsRepo.save(artifactEntity);
         }
 
-        EcosArtifactContext artifactContext = new EcosArtifactContext(artifactEntity);
+        EcosArtifactContext artifactContext = new EcosArtifactContext(typeContext, artifactEntity);
         NewRevContext newRevContext = new NewRevContext(uploadDto);
 
         if (!uploadPolicy.isUploadAllowed(artifactContext, newRevContext)) {
@@ -304,7 +310,7 @@ public class EcosArtifactsService {
         if (Objects.equals(lastRevContentId, newContent.getId())
                 && revSourceType.equals(lastRevSourceType)) {
 
-            // content and source doesn't changed
+            // content and source doesn't change
             return false;
         }
 
@@ -455,7 +461,7 @@ public class EcosArtifactsService {
         }
     }
 
-    public synchronized boolean deployArtifacts(ArtifactDeployer deployer) {
+    public boolean deployArtifacts(ArtifactDeployer deployer, Instant lastModified) {
 
         if (deployer.getSupportedTypes().isEmpty()) {
             return false;
@@ -471,6 +477,7 @@ public class EcosArtifactsService {
             List<EcosArtifactEntity> artifacts = artifactsRepo.findAllByTypeAndDeployStatus(
                 type,
                 DeployStatus.DRAFT,
+                lastModified,
                 page
             );
             if (artifacts.isEmpty()) {
@@ -495,7 +502,15 @@ public class EcosArtifactsService {
                     }
                 }
 
-                List<DeployError> errors = deployer.deploy(type, revToDeploy.getContent().getData());
+                List<DeployError> errors;
+                try {
+                    errors = deployer.deploy(type, revToDeploy.getContent().getData());
+                } catch (Exception e) {
+                    log.error("Error while artifact deploying: "
+                        + ArtifactRef.create(type, revToDeploy.getArtifact().getExtId())
+                        + " rev: " + revToDeploy.getExtId());
+                    throw e;
+                }
                 DeployStatus deployStatusBefore = entity.getDeployStatus();
 
                 if (!errors.isEmpty()) {
@@ -840,6 +855,37 @@ public class EcosArtifactsService {
         artifactsDao.removeEcosApp(ecosAppId);
     }
 
+    public Map<ArtifactRef, String> getEcosAppIdByArtifactRef(List<ArtifactRef> artifacts) {
+        if (artifacts == null || artifacts.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<EcosArtifactEntity> artifactEntities = artifactsDao.getArtifactsByRefs(artifacts);
+        Map<ArtifactRef, EcosArtifactEntity> entityByRef = new HashMap<>();
+        artifactEntities.forEach(entity ->
+            entityByRef.put(ArtifactRef.create(entity.getType(), entity.getExtId()), entity)
+        );
+        Map<ArtifactRef, String> result = new HashMap<>();
+        artifacts.forEach(artifactRef -> {
+            EcosArtifactEntity entity = entityByRef.get(artifactRef);
+            String ecosAppId = "";
+            if (entity != null && StringUtils.isNotBlank(entity.getEcosApp())) {
+                ecosAppId = entity.getEcosApp();
+            }
+            result.put(artifactRef, ecosAppId);
+        });
+        return result;
+    }
+
+    public List<ArtifactRef> getArtifactsByEcosApp(@Nullable String ecosAppId) {
+        if (StringUtils.isBlank(ecosAppId)) {
+            return Collections.emptyList();
+        }
+        return artifactsDao.getArtifactsByEcosApp(ecosAppId)
+            .stream()
+            .map(a -> ArtifactRef.create(a.getType(), a.getExtId()))
+            .collect(Collectors.toList());
+    }
+
     @Nullable
     @Transactional(readOnly = true)
     public EcosArtifactRev getLastArtifactRev(ArtifactRef artifactRef) {
@@ -904,8 +950,8 @@ public class EcosArtifactsService {
             new ArtifactRevSourceInfo(sourceId, sourceType),
             Boolean.TRUE.equals(entity.getArtifact().getSystem()),
             entity.getExtId(),
-            entity.getArtifact().getCreatedDate(),
-            entity.getArtifact().getLastModifiedDate()
+            entity.getArtifact().getLastModifiedDate(),
+            entity.getArtifact().getCreatedDate()
         ));
     }
 
@@ -913,9 +959,64 @@ public class EcosArtifactsService {
         artifactRevUpdateListeners.add(listener);
     }
 
+    private boolean isArtifactRevisionsEquals(
+        @NotNull ArtifactContext artifactContext,
+        @Nullable ArtifactRevContext rev0,
+        @Nullable ArtifactRevContext rev1,
+        @NotNull EcosArtifactTypeContext artifactTypeContext
+    ) {
+
+        if (rev0 == null || rev1 == null) {
+            return false;
+        }
+        long content0 = rev0.getContentId();
+        long content1 = rev1.getContentId();
+        if (content0 == content1) {
+            return true;
+        }
+        if (content0 == -1 || content1 == -1) {
+            return false;
+        }
+
+        if (!artifactsService.isTypeComparable(artifactTypeContext.getTypeContext())) {
+            return false;
+        }
+
+        EcosContentEntity contentEntity0 = contentDao.getContent(content0);
+        EcosContentEntity contentEntity1 = contentDao.getContent(content1);
+        if (contentEntity0 == null || contentEntity1 == null) {
+            return false;
+        }
+
+        Object artifact0;
+        Object artifact1;
+        try {
+            artifact0 = artifactsService.readArtifactFromBytes(
+                artifactTypeContext.getTypeContext(),
+                contentEntity0.getData()
+            );
+            artifact1 = artifactsService.readArtifactFromBytes(
+                artifactTypeContext.getTypeContext(),
+                contentEntity1.getData()
+            );
+        } catch (Exception e) {
+            log.error("Error while artifacts reading. Type: " + artifactTypeContext.getTypeContext().getId()
+                + " Artifact: " + artifactContext.getId()
+                + " content0: " + rev0.getContentId()
+                + " content1: " + rev1.getContentId());
+            return false;
+        }
+        if (artifact0 == null || artifact1 == null) {
+            return false;
+        }
+
+        return artifactsService.compareArtifacts(artifactTypeContext.getTypeContext(), artifact0, artifact1);
+    }
+
     @RequiredArgsConstructor
     private class EcosArtifactContext implements ArtifactContext {
 
+        final EcosArtifactTypeContext artifactTypeContext;
         final EcosArtifactEntity artifactEntity;
 
         @NotNull
@@ -926,6 +1027,17 @@ public class EcosArtifactsService {
                 return "";
             }
             return app;
+        }
+
+        @NotNull
+        @Override
+        public String getId() {
+            return artifactEntity.getExtId();
+        }
+
+        @Override
+        public boolean isRevisionsEquals(@Nullable ArtifactRevContext rev0, @Nullable ArtifactRevContext rev1) {
+            return isArtifactRevisionsEquals(this, rev0, rev1, artifactTypeContext);
         }
 
         @Nullable

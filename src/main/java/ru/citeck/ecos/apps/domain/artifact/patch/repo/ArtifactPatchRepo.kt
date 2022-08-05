@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ArtifactPatchRepo : JpaRepository<ArtifactPatchEntity, Long>,
+interface ArtifactPatchRepo :
+    JpaRepository<ArtifactPatchEntity, Long>,
     JpaSpecificationExecutor<ArtifactPatchEntity> {
 
     fun findFirstByExtId(extId: String): ArtifactPatchEntity?
