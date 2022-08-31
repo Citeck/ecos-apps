@@ -29,10 +29,15 @@ import ru.citeck.ecos.commons.utils.NameUtils
 import ru.citeck.ecos.commons.utils.ZipUtils
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.entity.EntityRef
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.*
+import javax.annotation.PostConstruct
 
 @Service
 @Transactional
@@ -42,10 +47,18 @@ class EcosAppService(
     private val ecosAppRepo: EcosAppRepo,
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
-    private val applicationsWatcherJob: ApplicationsWatcherJob
+    private val applicationsWatcherJob: ApplicationsWatcherJob,
+    private val jpaSearchConverterFactory: JpaSearchConverterFactory
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
+    }
+
+    private lateinit var searchConv: JpaSearchConverter<EcosAppEntity>
+
+    @PostConstruct
+    fun init() {
+        searchConv = jpaSearchConverterFactory.createConverter(EcosAppEntity::class.java).build()
     }
 
     fun uploadZip(data: ByteArray): EcosAppDef {
@@ -138,6 +151,10 @@ class EcosAppService(
     fun getById(id: String): EcosAppDef? {
         val app = ecosAppRepo.findFirstByExtId(id) ?: return null
         return entityToDto(app)
+    }
+
+    fun getAll(predicate: Predicate, max: Int, skip: Int, sort: List<SortBy>): List<EcosAppDef> {
+        return searchConv.findAll(ecosAppRepo, predicate, max, skip, sort).map { entityToDto(it) }
     }
 
     fun getAll(): List<EcosAppDef> {

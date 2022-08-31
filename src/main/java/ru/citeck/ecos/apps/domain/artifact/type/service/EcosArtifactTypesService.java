@@ -19,6 +19,7 @@ import ru.citeck.ecos.apps.domain.artifact.type.repo.EcosArtifactTypeRevEntity;
 import ru.citeck.ecos.apps.domain.artifact.type.repo.EcosArtifactTypeRevRepo;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
+import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.utils.ZipUtils;
@@ -87,6 +88,25 @@ public class EcosArtifactTypesService {
             log.error("Type reading failed. TypeId: " + entity.getExtId(), e);
             return null;
         }
+    }
+
+    public Map<String, MLText> getNonInternalTypesWithName() {
+        Set<String> typesId = getNonInternalTypes();
+        Map<String, MLText> result = new HashMap<>();
+        for (String typeId : typesId) {
+            EcosArtifactTypeContext typeContext = getTypeContext(typeId);
+            if (typeContext == null) {
+                result.put(typeId, new MLText(typeId));
+            } else {
+                MLText name = typeContext.getMeta().getName();
+                if (MLText.isEmpty(name)) {
+                    result.put(typeId, new MLText(typeId));
+                } else {
+                    result.put(typeId, name);
+                }
+            }
+        }
+        return result;
     }
 
     public Set<String> getNonInternalTypes() {
