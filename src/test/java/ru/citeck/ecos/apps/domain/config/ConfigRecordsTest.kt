@@ -20,6 +20,7 @@ class ConfigRecordsTest {
 
     @Autowired
     lateinit var recordsService: RecordsService
+
     @Autowired
     lateinit var configArtifactHandler: ConfigArtifactHandler
 

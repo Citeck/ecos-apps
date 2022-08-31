@@ -2,10 +2,6 @@ package ru.citeck.ecos.apps.domain.artifact.patch.service
 
 import lombok.extern.slf4j.Slf4j
 import mu.KotlinLogging
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.artifact.ArtifactRef
@@ -20,7 +16,6 @@ import ru.citeck.ecos.apps.domain.artifact.patch.repo.ArtifactPatchSyncRepo
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
-import ru.citeck.ecos.records2.predicate.PredicateUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
@@ -28,9 +23,6 @@ import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchCon
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 import javax.annotation.PostConstruct
-import javax.persistence.criteria.CriteriaBuilder
-import javax.persistence.criteria.CriteriaQuery
-import javax.persistence.criteria.Root
 
 @Slf4j
 @Service

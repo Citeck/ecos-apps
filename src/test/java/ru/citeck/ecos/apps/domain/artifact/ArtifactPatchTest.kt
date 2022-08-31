@@ -25,6 +25,7 @@ class ArtifactPatchTest {
 
     @Autowired
     private lateinit var connectionProvider: RabbitMqConnProvider
+
     @Autowired
     private lateinit var watcherJob: ApplicationsWatcherJob
 

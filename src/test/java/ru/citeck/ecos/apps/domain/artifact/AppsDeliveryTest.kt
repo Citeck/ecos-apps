@@ -32,10 +32,13 @@ class AppsDeliveryTest {
 
     @Autowired
     private lateinit var connectionProvider: RabbitMqConnProvider
+
     @Autowired
     private lateinit var watcherJob: ApplicationsWatcherJob
+
     @Autowired
     private lateinit var ecosArtifactsService: EcosArtifactsService
+
     @Autowired
     private lateinit var artifactsService: ArtifactService
 

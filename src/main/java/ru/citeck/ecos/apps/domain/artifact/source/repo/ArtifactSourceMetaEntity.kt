@@ -15,6 +15,7 @@ open class ArtifactSourceMetaEntity {
 
     open lateinit var appName: String
     open lateinit var sourceId: String
+
     @Enumerated(EnumType.ORDINAL)
     open lateinit var sourceType: ArtifactSourceType
     open lateinit var lastModified: Instant
