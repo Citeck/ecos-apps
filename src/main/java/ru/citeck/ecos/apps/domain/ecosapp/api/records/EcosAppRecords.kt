@@ -60,6 +60,7 @@ class EcosAppRecords(
                 recordsQuery.skipPage.skipCount,
                 LegacyRecordsUtils.mapLegacySortBy(recordsQuery.sortBy)
             ).map { EcosAppRecord(it, ecosAppService) }
+            result.totalCount = ecosAppService.getCount(predicate)
         }
         return result
     }

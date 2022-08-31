@@ -153,6 +153,10 @@ class EcosAppService(
         return entityToDto(app)
     }
 
+    fun getCount(predicate: Predicate): Long {
+        return searchConv.getCount(ecosAppRepo, predicate)
+    }
+
     fun getAll(predicate: Predicate, max: Int, skip: Int, sort: List<SortBy>): List<EcosAppDef> {
         return searchConv.findAll(ecosAppRepo, predicate, max, skip, sort).map { entityToDto(it) }
     }
