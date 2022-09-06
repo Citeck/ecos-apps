@@ -3,6 +3,7 @@ id: ecos-app-types
 name: { ru: Типы данных, en: Data types }
 
 system: true
+properties: {}
 
 typeRef: emodel/type@type
 

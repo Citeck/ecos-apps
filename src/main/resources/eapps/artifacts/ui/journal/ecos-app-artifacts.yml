@@ -3,6 +3,8 @@ id: ecos-app-artifacts
 name: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
+properties: {}
+
 typeRef: emodel/type@ecos-artifact
 
 actions:

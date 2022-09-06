@@ -1,10 +1,11 @@
 ---
 id: dev-module-actions
 name:
-  ru: Dev actions
+  ru: Действия разработки
   en: Dev actions
 
 system: true
+properties: {}
 
 actions:
   - uiserv/action@dev-module-actions
@@ -18,4 +19,3 @@ columns:
   - id: description
     name: { ru: Описание, en: Description }
     type: TEXT
-

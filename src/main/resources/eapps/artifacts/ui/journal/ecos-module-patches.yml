@@ -3,6 +3,7 @@ id: ecos-module-patches
 name: { ru: Патчи артефактов, en: Artifacts patches }
 
 system: true
+properties: {}
 
 actions:
   - uiserv/action@ecos-module-download

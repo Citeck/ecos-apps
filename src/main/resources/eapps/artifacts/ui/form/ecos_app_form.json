@@ -3,7 +3,8 @@
   "formKey": "",
   "system": true,
   "title": {
-    "en": "ECOS Applications Form"
+    "en": "ECOS Applications Form",
+    "ru": "Форма приложения ECOS"
   },
   "description": {},
   "customModule": null,

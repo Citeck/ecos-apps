@@ -1,7 +1,9 @@
-
+---
 id: ecos-config
 
 journalRef: uiserv/journal@ecos-configs
+
+system: true
 
 model:
   attributes:

@@ -3,6 +3,7 @@ id: ecos-artifacts
 name: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
+properties: {}
 
 actions:
   - uiserv/action@artifact-download-revisions

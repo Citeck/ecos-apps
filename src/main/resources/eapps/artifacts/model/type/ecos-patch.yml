@@ -1,7 +1,8 @@
-
+---
 id: ecos-patch
 
 #journalRef: uiserv/journal@ecos-patches
+system: true
 
 model:
   attributes:
@@ -31,4 +32,3 @@ model:
     - id: nextExecDate
       type: DATETIME
     - id: lastError
-
