@@ -204,10 +204,6 @@ public class EcosArtifactsDao {
         List<Predicate> andPredicates = new ArrayList<>();
         andPredicates.add(predicate);
         andPredicates.add(Predicates.in("type", ecosArtifactTypesService.getNonInternalTypes()));
-        if (!attsInPredicate.contains("system")) {
-            andPredicates.add(Predicates.not(Predicates.eq("system", true)));
-        }
-
         andPredicates.add(Predicates.notEmpty("lastRev"));
         andPredicates.add(Predicates.not(Predicates.eq("deleted", true)));
 
