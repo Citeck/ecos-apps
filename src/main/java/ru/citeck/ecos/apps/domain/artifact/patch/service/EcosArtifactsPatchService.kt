@@ -2,10 +2,6 @@ package ru.citeck.ecos.apps.domain.artifact.patch.service
 
 import lombok.extern.slf4j.Slf4j
 import mu.KotlinLogging
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.artifact.ArtifactRef
@@ -20,13 +16,13 @@ import ru.citeck.ecos.apps.domain.artifact.patch.repo.ArtifactPatchSyncRepo
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
-import ru.citeck.ecos.records2.predicate.PredicateUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
-import javax.persistence.criteria.CriteriaBuilder
-import javax.persistence.criteria.CriteriaQuery
-import javax.persistence.criteria.Root
+import javax.annotation.PostConstruct
 
 @Slf4j
 @Service
@@ -35,7 +31,8 @@ class EcosArtifactsPatchService(
     private val patchRepo: ArtifactPatchRepo,
     private val patchSyncRepo: ArtifactPatchSyncRepo,
     private val artifactService: ArtifactService,
-    private val ecosArtifactsService: EcosArtifactsService
+    private val ecosArtifactsService: EcosArtifactsService,
+    private val jpaSearchConverterFactory: JpaSearchConverterFactory
 ) {
 
     companion object {
@@ -43,6 +40,7 @@ class EcosArtifactsPatchService(
     }
 
     private val changeListeners: MutableList<Consumer<ArtifactPatchDto?>> = CopyOnWriteArrayList()
+    private lateinit var searchConv: JpaSearchConverter<ArtifactPatchEntity>
 
     init {
         ecosArtifactsService.addArtifactRevUpdateListener {
@@ -50,27 +48,18 @@ class EcosArtifactsPatchService(
         }
     }
 
-    fun getAll(max: Int, skip: Int, predicate: Predicate?): List<ArtifactPatchDto> {
-        val page = PageRequest.of(skip / max, max, Sort.by(Sort.Direction.DESC, "id"))
-        val artifacts: Page<ArtifactPatchEntity>
-        artifacts = if (predicate == null) {
-            patchRepo.findAll(page)
-        } else {
-            patchRepo.findAll(toSpec(predicate), page)
-        }
+    @PostConstruct
+    fun init() {
+        searchConv = jpaSearchConverterFactory.createConverter(ArtifactPatchEntity::class.java).build()
+    }
+
+    fun getAll(max: Int, skip: Int, predicate: Predicate, sort: List<SortBy>): List<ArtifactPatchDto> {
+        val artifacts = searchConv.findAll(patchRepo, predicate, max, skip, sort)
         return artifacts.mapNotNull { toDto(it) }
     }
 
-    fun getCount(predicate: Predicate?): Int {
-        if (predicate == null) {
-            return getCount()
-        }
-        val spec = toSpec(predicate)
-        return if (spec != null) {
-            patchRepo.count(spec).toInt()
-        } else {
-            getCount()
-        }
+    fun getCount(predicate: Predicate): Int {
+        return searchConv.getCount(patchRepo, predicate).toInt()
     }
 
     fun getCount(): Int {
@@ -230,36 +219,4 @@ class EcosArtifactsPatchService(
         entity.type = patch.type
         return entity
     }
-
-    private fun toSpec(predicate: Predicate): Specification<ArtifactPatchEntity>? {
-        val predicateDto = PredicateUtils.convertToDto(predicate, PredicateDto::class.java)
-        var spec: Specification<ArtifactPatchEntity>? = null
-
-        val name = predicateDto.name
-        if (!name.isNullOrBlank()) {
-            spec = Specification {
-                    root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
-                builder.like(
-                    builder.lower(root.get("name")), "%" + name.lowercase() + "%"
-                )
-            }
-        }
-        val artifactId = predicateDto.artifactId ?: predicateDto.moduleId
-        if (!artifactId.isNullOrBlank()) {
-            val idSpec = Specification {
-                    root: Root<ArtifactPatchEntity>, _: CriteriaQuery<*>?, builder: CriteriaBuilder ->
-                builder.like(
-                    builder.lower(root.get("extId")), "%" + artifactId.lowercase() + "%"
-                )
-            }
-            spec = spec?.or(idSpec) ?: idSpec
-        }
-        return spec
-    }
-
-    class PredicateDto(
-        val name: String? = null,
-        val moduleId: String? = null,
-        val artifactId: String? = null
-    )
 }

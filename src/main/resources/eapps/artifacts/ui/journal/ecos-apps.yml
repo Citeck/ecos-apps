@@ -3,6 +3,7 @@ id: ecos-apps
 name: { ru: Приложения ECOS, en: ECOS Applications }
 
 system: true
+properties: {}
 
 actions:
   - uiserv/action@download-base64-data-zip

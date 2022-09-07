@@ -1,9 +1,7 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.service;
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,8 +10,12 @@ import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
-import ru.citeck.ecos.records2.predicate.model.Predicate;
+import ru.citeck.ecos.records2.predicate.model.*;
+import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter;
+import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,6 +29,20 @@ public class EcosArtifactsDao {
     private final EcosArtifactsRevRepo artifactsRevRepo;
     private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
+    private final JpaSearchConverterFactory jpaSearchConverterFactory;
+
+    private JpaSearchConverter<EcosArtifactEntity> searchConv;
+
+    @PostConstruct
+    public void init() {
+        searchConv = jpaSearchConverterFactory.createConverter(EcosArtifactEntity.class)
+            .withAttMapping("sourceType", "lastRev.sourceType")
+            .withAttMapping("sourceId", "lastRev.sourceId")
+            .withAttMapping("modifiedIso", "lastModifiedDate")
+            .withAttMapping("createdIso", "createdDate")
+            .withFieldVariants("type", ecosArtifactTypesService::getNonInternalTypesWithName)
+            .build();
+    }
 
     public int getArtifactsCount() {
         return (int) artifactsRepo.getCount();
@@ -56,20 +72,19 @@ public class EcosArtifactsDao {
             .collect(Collectors.toList());
     }
 
-    public List<EcosArtifactRevEntity> getAllLastRevisions(Predicate predicate, int skipCount, int maxItems) {
+    public List<EcosArtifactRevEntity> getAllLastRevisions(Predicate predicate,
+                                                           int maxItems,
+                                                           int skipCount,
+                                                           List<SortBy> sort) {
 
-        Specification<EcosArtifactEntity> spec = toSpec(predicate);
-
-        int page = skipCount / maxItems;
-        return artifactsRepo.findAll(spec, PageRequest.of(page, maxItems, Sort.by(Sort.Order.desc("id"))))
+        return searchConv.findAll(artifactsRepo, preparePredicate(predicate), maxItems, skipCount, sort)
             .stream()
             .map(EcosArtifactEntity::getLastRev)
             .collect(Collectors.toList());
     }
 
     public long getCount(Predicate predicate) {
-        Specification<EcosArtifactEntity> spec = toSpec(predicate);
-        return artifactsRepo.count(spec);
+        return searchConv.getCount(artifactsRepo, preparePredicate(predicate));
     }
 
     public void removeEcosApp(String ecosAppId) {
@@ -159,73 +174,39 @@ public class EcosArtifactsDao {
         return spec;
     }
 
-    private Specification<EcosArtifactEntity> toSpec(Predicate predicate) {
+    private Predicate preparePredicate(Predicate predicate) {
 
-        PredicateDto predicateDto = PredicateUtils.convertToDto(predicate, PredicateDto.class);
-        Specification<EcosArtifactEntity> spec = null;
-
-        if (StringUtils.isNotBlank(predicateDto.name)) {
-            spec = (root, query, builder) ->
-                builder.like(builder.lower(root.get("name")), "%" + predicateDto.name.toLowerCase() + "%");
-        }
-        if (StringUtils.isNotBlank(predicateDto.moduleId)) {
-            Specification<EcosArtifactEntity> idSpec = (root, query, builder) ->
-                builder.like(builder.lower(root.get("extId")), "%" + predicateDto.moduleId.toLowerCase() + "%");
-            spec = spec != null ? spec.or(idSpec) : idSpec;
-        }
-        if (StringUtils.isNotBlank(predicateDto.type)) {
-            Specification<EcosArtifactEntity> typeSpec = (root, query, builder) ->
-                builder.like(builder.lower(root.get("type")), "%" + predicateDto.type.toLowerCase() + "%");
-            spec = spec != null ? spec.or(typeSpec) : typeSpec;
-        }
-        String tags = predicateDto.tags;
-        if (StringUtils.isBlank(tags)) {
-            tags = predicateDto.tagsStr;
-        }
-        String finalTags = tags;
-        if (StringUtils.isNotBlank(finalTags)) {
-            Specification<EcosArtifactEntity> tagsSpec = (root, query, builder) ->
-                builder.like(
-                    builder.lower(root.get("tags")), "%" + finalTags.toLowerCase() + "%"
-                );
-            spec = spec != null ? spec.or(tagsSpec) : tagsSpec;
-        }
-
-        Specification<EcosArtifactEntity> sourceIdFilter = (root, query, builder) ->
-            root.get("type").in(ecosArtifactTypesService.getNonInternalTypes());
-
-        if (spec != null) {
-            spec = spec.and(sourceIdFilter);
-        } else {
-            spec = sourceIdFilter;
-        }
-
-        if (predicateDto.system != null) {
-            Specification<EcosArtifactEntity> systemSpec;
-            if (!predicateDto.system) {
-                systemSpec = (root, query, builder) -> builder.not(builder.equal(root.get("system"), true));
-            } else {
-                systemSpec = (root, query, builder) -> builder.equal(root.get("system"), true);
+        Set<String> attsInPredicate = new HashSet<>();
+        predicate = PredicateUtils.mapAttributePredicates(predicate, pred -> {
+            attsInPredicate.add(pred.getAttribute());
+            if (pred instanceof ValuePredicate && pred.getAttribute().equals("excludeTypes")) {
+                ValuePredicate valuePred = (ValuePredicate) pred;
+                if (valuePred.getValue().asBoolean()) {
+                    return Predicates.not(Predicates.eq("type", "model/type"));
+                } else {
+                    return null;
+                }
             }
-            spec = spec.and(systemSpec);
+            return pred;
+        });
+        if (attsInPredicate.contains("tagsStr") && !attsInPredicate.contains("tags")) {
+            predicate = PredicateUtils.mapAttributePredicates(predicate, pred -> {
+                if (pred.getAttribute().equals("tagsStr")) {
+                    AttributePredicate copy = pred.copy();
+                    copy.setAtt("tags");
+                    return copy;
+                } else {
+                    return pred;
+                }
+            });
         }
 
-        if (Boolean.TRUE.equals(predicateDto.excludeTypes)) {
-            spec = spec.and((root, query, builder) ->
-                builder.notEqual(root.get("type"), "model/type"));
-        }
+        List<Predicate> andPredicates = new ArrayList<>();
+        andPredicates.add(predicate);
+        andPredicates.add(Predicates.in("type", ecosArtifactTypesService.getNonInternalTypes()));
+        andPredicates.add(Predicates.notEmpty("lastRev"));
+        andPredicates.add(Predicates.not(Predicates.eq("deleted", true)));
 
-        return spec.and(getNonDeletedWithLastRevSpec());
-    }
-
-    @Data
-    public static class PredicateDto {
-        private String name;
-        private String type;
-        private String tags;
-        private String tagsStr;
-        private String moduleId;
-        private Boolean system;
-        private Boolean excludeTypes;
+        return AndPredicate.of(andPredicates);
     }
 }

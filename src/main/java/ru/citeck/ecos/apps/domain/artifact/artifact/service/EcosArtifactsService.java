@@ -35,6 +35,7 @@ import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
+import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -609,8 +610,8 @@ public class EcosArtifactsService {
     }
 
     @Transactional(readOnly = true)
-    public List<EcosArtifactDto> getAllArtifacts(Predicate predicate, int skipCount, int maxItems) {
-        return artifactsDao.getAllLastRevisions(predicate, skipCount, maxItems)
+    public List<EcosArtifactDto> getAllArtifacts(Predicate predicate, int maxItems, int skipCount, List<SortBy> sort) {
+        return artifactsDao.getAllLastRevisions(predicate, maxItems, skipCount, sort)
             .stream()
             .map(this::toModule)
             .filter(Optional::isPresent)

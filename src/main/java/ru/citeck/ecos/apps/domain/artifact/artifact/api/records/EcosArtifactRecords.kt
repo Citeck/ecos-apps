@@ -13,6 +13,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
+import ru.citeck.ecos.apps.domain.utils.LegacyRecordsUtils
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
 import ru.citeck.ecos.commons.data.MLText
@@ -92,8 +93,9 @@ class EcosArtifactRecords(
             val predicate = recordsQuery.getQuery(Predicate::class.java)
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
+                recordsQuery.maxItems,
                 recordsQuery.skipCount,
-                recordsQuery.maxItems
+                LegacyRecordsUtils.mapLegacySortBy(recordsQuery.sortBy)
             )
             result.records = res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type)) }
             result.totalCount = ecosArtifactsService.getAllArtifactsCount(predicate)

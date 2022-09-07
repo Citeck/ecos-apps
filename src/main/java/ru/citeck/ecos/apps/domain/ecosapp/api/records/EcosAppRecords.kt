@@ -4,12 +4,14 @@ import ecos.com.fasterxml.jackson210.annotation.JsonProperty
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
+import ru.citeck.ecos.apps.domain.utils.LegacyRecordsUtils
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.records2.RecordMeta
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField
+import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records2.request.delete.RecordsDelResult
 import ru.citeck.ecos.records2.request.delete.RecordsDeletion
 import ru.citeck.ecos.records2.request.mutation.RecordsMutResult
@@ -51,8 +53,14 @@ class EcosAppRecords(
                 ArtifactsAppQueryRes(it, appByArtifacts[it] ?: RecordRef.EMPTY)
             }
         } else {
-
-            result.records = ecosAppService.getAll().map { EcosAppRecord(it, ecosAppService) }
+            val predicate = recordsQuery.getQuery(Predicate::class.java)
+            result.records = ecosAppService.getAll(
+                predicate,
+                recordsQuery.skipPage.maxItems,
+                recordsQuery.skipPage.skipCount,
+                LegacyRecordsUtils.mapLegacySortBy(recordsQuery.sortBy)
+            ).map { EcosAppRecord(it, ecosAppService) }
+            result.totalCount = ecosAppService.getCount(predicate)
         }
         return result
     }

@@ -3,6 +3,8 @@ id: ecos-artifacts
 name: { ru: Артефакты ECOS, en: ECOS Artifacts }
 
 system: true
+defaultFilters:
+  - { t: eq, att: system, val: false }
 
 actions:
   - uiserv/action@artifact-download-revisions
@@ -34,7 +36,14 @@ columns:
     name: { ru: Идентификатор источника, en: Source ID }
 
   - id: modifiedIso
+    type: DATETIME
     name: { ru: Дата изменения, en: Modified }
 
   - id: createdIso
+    type: DATETIME
     name: { ru: Дата создания, en: Created }
+
+  - id: system
+    type: BOOLEAN
+    name: { ru: Системный артефакт , en: System artifact }
+    visible: false

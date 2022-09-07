@@ -3,6 +3,7 @@ id: ecos-configs
 name: { ru: Конфигурация ECOS, en: ECOS Configuration }
 
 system: true
+properties: {}
 
 sourceId: eapps/config
 

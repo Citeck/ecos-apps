@@ -157,10 +157,12 @@ class EcosPatchTest {
         fun testComp(): TestComponent {
             return TestComponent()
         }
+
         @Bean
         fun statefulPatch(): TestWithState {
             return TestWithState()
         }
+
         @Bean
         fun dependsOnPatch(): DependentPatch {
             return DependentPatch(statefulPatch())

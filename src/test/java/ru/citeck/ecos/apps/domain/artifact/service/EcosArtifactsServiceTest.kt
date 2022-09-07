@@ -30,8 +30,10 @@ class EcosArtifactsServiceTest {
 
     @Autowired
     lateinit var ecosArtifactsService: EcosArtifactsService
+
     @Autowired
     lateinit var ecosArtifactTypesService: EcosArtifactTypesService
+
     @Autowired
     lateinit var artifactTypesProvider: ArtifactTypeProvider
 
