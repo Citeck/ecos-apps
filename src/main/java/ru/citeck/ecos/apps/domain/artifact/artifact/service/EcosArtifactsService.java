@@ -649,7 +649,7 @@ public class EcosArtifactsService {
             artifactRef,
             fromTime,
             0,
-            50
+            1000
         );
         if (revisions.isEmpty()) {
             revisions = artifactsDao.getArtifactRevisionsSince(
@@ -742,7 +742,7 @@ public class EcosArtifactsService {
 
         EcosArtifactRevEntity lastNotUserRev = lastRev;
 
-        int itCount = 100;
+        int itCount = 1000;
         while (--itCount > 0
                 && lastNotUserRev != null
                 && ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
