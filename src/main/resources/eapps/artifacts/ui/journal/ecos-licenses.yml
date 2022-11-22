@@ -1,0 +1,20 @@
+---
+id: ecos-licenses
+name: { ru: Лицензии ECOS, en: ECOS Licenses }
+
+system: true
+
+actions:
+  - uiserv/action@download-text-yml
+  - uiserv/action@delete
+  - uiserv/action@view-dashboard
+  - uiserv/action@edit-json
+
+columns:
+  - id: id
+  - id: issuedTo
+  - id: issuedAt
+  - id: validUntil
+  - id: isLicenseValid
+    name: { ru: Лицензия валидна, en: License valid }
+    type: BOOLEAN

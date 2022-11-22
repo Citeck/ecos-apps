@@ -1,0 +1,12 @@
+modelVersion: "1.0"
+
+name:
+  ru: Лицензия ECOS
+  en: ECOS License
+
+source-id: ""
+
+controller:
+  type: json
+  config:
+    format: yaml

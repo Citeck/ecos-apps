@@ -1,0 +1,60 @@
+---
+id: ecos-license
+name:
+  en: ECOS License
+  ru: Лицензия ECOS
+
+system: true
+
+sourceId: eapps/ecos-license
+journalRef: uiserv/journal@ecos-licenses
+
+inheritActions: false
+actions:
+  - uiserv/action@download-text-yml
+  - uiserv/action@delete
+  - uiserv/action@view-dashboard
+  - uiserv/action@edit-json
+
+defaultCreateVariant: false
+createVariants:
+  - id: upload
+    name: { ru: Загрузить, en: Upload }
+    formRef: 'uiserv/form@ecos-artifact-upload'
+
+model:
+  attributes:
+    - id: tenant
+      name:
+        ru: Тенант
+        en: Tenant
+    - id: issuedTo
+      name:
+        ru: Выдана на имя
+        en: Issued to
+    - id: issuedAt
+      name:
+        ru: Дата выдачи
+        en: Issued at
+      type: DATETIME
+    - id: validFrom
+      name:
+        ru: Валидна начиная с
+        en: Valid from
+      type: DATETIME
+    - id: validUntil
+      name:
+        ru: Валидна до
+        en: Valid until
+      type: DATETIME
+    - id: content
+      name:
+        ru: Содержимое
+        en: Content
+      type: JSON
+    - id: signatures
+      name:
+        ru: Подписи
+        en: Signatures
+      multiple: true
+      type: JSON
