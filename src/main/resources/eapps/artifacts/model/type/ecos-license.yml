@@ -28,6 +28,11 @@ model:
       name:
         ru: Тенант
         en: Tenant
+    - id: priority
+      name:
+        ru: Приоритет
+        en: Priority
+      type: NUMBER
     - id: issuedTo
       name:
         ru: Выдана на имя
