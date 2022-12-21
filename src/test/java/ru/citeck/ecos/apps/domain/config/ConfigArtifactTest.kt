@@ -14,8 +14,8 @@ import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.io.file.std.EcosStdFile
 import ru.citeck.ecos.commons.utils.TmplUtils
 import ru.citeck.ecos.records3.RecordsServiceFactory
-import ru.citeck.ecos.webapp.api.context.EcosWebAppContext
-import ru.citeck.ecos.webapp.api.properties.EcosWebAppProperties
+import ru.citeck.ecos.webapp.api.EcosWebAppApi
+import ru.citeck.ecos.webapp.api.properties.EcosWebAppProps
 import java.io.File
 
 class ConfigArtifactTest {
@@ -35,12 +35,12 @@ class ConfigArtifactTest {
     @Test
     fun templateTest() {
 
-        val webAppContext = Mockito.mock(EcosWebAppContext::class.java)
+        val webAppContext = Mockito.mock(EcosWebAppApi::class.java)
         Mockito.`when`(webAppContext.getProperties())
-            .thenReturn(EcosWebAppProperties("test-app", "123456"))
+            .thenReturn(EcosWebAppProps.create("test-app", "123456"))
 
         val recordsFactory = object : RecordsServiceFactory() {
-            override fun getEcosWebAppContext(): EcosWebAppContext? {
+            override fun getEcosWebAppApi(): EcosWebAppApi? {
                 return webAppContext
             }
         }
@@ -76,9 +76,9 @@ class ConfigArtifactTest {
         artifactsDir.createFile("app/config/config-with-scope.yml", configWithScope)
         artifactsDir.createFile("app/config/config-without-scope.yml", configWithoutScope)
 
-        val webAppContext = Mockito.mock(EcosWebAppContext::class.java)
+        val webAppContext = Mockito.mock(EcosWebAppApi::class.java)
         Mockito.`when`(webAppContext.getProperties())
-            .thenReturn(EcosWebAppProperties("test-app", "123456"))
+            .thenReturn(EcosWebAppProps.create("test-app", "123456"))
 
         val artifactsFactory = object : EcosAppsServiceFactory() {
             override fun createArtifactSourceProviders(): List<ArtifactSourceProvider> {
@@ -86,7 +86,7 @@ class ConfigArtifactTest {
             }
         }
         val recordsFactory = object : RecordsServiceFactory() {
-            override fun getEcosWebAppContext(): EcosWebAppContext? {
+            override fun getEcosWebAppApi(): EcosWebAppApi {
                 return webAppContext
             }
         }

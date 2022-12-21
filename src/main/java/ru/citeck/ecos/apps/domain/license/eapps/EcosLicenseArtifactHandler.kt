@@ -33,16 +33,18 @@ class EcosLicenseArtifactHandler(
 
     override fun listenChanges(listener: Consumer<DataValue>) {
         listOf(RecordChangedEvent.TYPE, RecordCreatedEvent.TYPE).forEach { eventType ->
-            events.addListener(ListenerConfig.create<RecordEventAtts> {
-                withDataClass(RecordEventAtts::class.java)
-                withEventType(eventType)
-                withAction { event ->
-                    val jsonNode = Json.mapper.toNonDefaultJson(event.json)
-                    listener.accept(DataValue.create(jsonNode))
+            events.addListener(
+                ListenerConfig.create<RecordEventAtts> {
+                    withDataClass(RecordEventAtts::class.java)
+                    withEventType(eventType)
+                    withAction { event ->
+                        val jsonNode = Json.mapper.toNonDefaultJson(event.json)
+                        listener.accept(DataValue.create(jsonNode))
+                    }
+                    withLocal(true)
+                    withFilter(Predicates.eq("typeDef.id", "ecos-license"))
                 }
-                withLocal(true)
-                withFilter(Predicates.eq("typeDef.id", "ecos-license"))
-            })
+            )
         }
     }
 

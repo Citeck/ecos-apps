@@ -46,22 +46,24 @@ class LicensesZkProviderInitializer(
     @PostConstruct
     fun init() {
 
-        val dao = dbDomainFactory.create(DbDomainConfig.create {
-            withRecordsDao(
-                DbRecordsDaoConfig.create()
-                    .withId(LIC_SRC_ID)
-                    .withTypeRef(TypeUtils.getTypeRef("ecos-license"))
-                    .build()
-            )
-            withDataService(
-                DbDataServiceConfig.create()
-                    .withAuthEnabled(true)
-                    .withTableRef(DbTableRef("public", "ecos_license"))
-                    .withTransactional(false)
-                    .withStoreTableMeta(true)
-                    .build()
-            )
-        }).withPermsComponent(object : DbPermsComponent {
+        val dao = dbDomainFactory.create(
+            DbDomainConfig.create {
+                withRecordsDao(
+                    DbRecordsDaoConfig.create()
+                        .withId(LIC_SRC_ID)
+                        .withTypeRef(TypeUtils.getTypeRef("ecos-license"))
+                        .build()
+                )
+                withDataService(
+                    DbDataServiceConfig.create()
+                        .withAuthEnabled(true)
+                        .withTableRef(DbTableRef("public", "ecos_license"))
+                        .withTransactional(false)
+                        .withStoreTableMeta(true)
+                        .build()
+                )
+            }
+        ).withPermsComponent(object : DbPermsComponent {
             override fun getRecordPerms(recordRef: EntityRef): DbRecordPerms {
                 return object : DbRecordPerms {
                     override fun getAuthoritiesWithReadPermission(): Set<String> {
@@ -91,11 +93,12 @@ class LicensesZkProviderInitializer(
 
         recordsService.register(dao)
 
-        val licensesQueryRes = recordsService.query(RecordsQuery.create()
-            .withSourceId(LIC_SRC_ID)
-            .withMaxItems(5000)
-            .withQuery(Predicates.alwaysTrue())
-            .build(),
+        val licensesQueryRes = recordsService.query(
+            RecordsQuery.create()
+                .withSourceId(LIC_SRC_ID)
+                .withMaxItems(5000)
+                .withQuery(Predicates.alwaysTrue())
+                .build(),
             mapOf("json" to ScalarType.JSON_SCHEMA)
         )
 
