@@ -7,6 +7,7 @@ import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.commons.task.schedule.Schedules
 import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
@@ -49,10 +50,12 @@ class EcosPatchService(
 
     @PostConstruct
     fun init() {
-        ecosTasksApi.getScheduler(SCHEDULER_ID).scheduleWithFixedDelay(
+        ecosTasksApi.getScheduler(SCHEDULER_ID).schedule(
             "Ecos patch task",
-            properties.job.initDelayDuration,
-            properties.job.delayDuration
+            Schedules.fixedDelay(
+                properties.job.initDelayDuration,
+                properties.job.delayDuration
+            )
         ) {
             val apps = watcherJob.activeApps
             log.trace { "Apply patches for apps: $apps" }
