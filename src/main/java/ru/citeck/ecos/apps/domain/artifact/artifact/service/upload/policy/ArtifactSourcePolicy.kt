@@ -6,8 +6,6 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactRevCo
 
 interface ArtifactSourcePolicy {
 
-    fun isPatchingAllowed(context: ArtifactContext): Boolean
-
     fun isUploadAllowed(context: ArtifactContext, newRev: ArtifactRevContext): Boolean
 
     fun getSourceType(): ArtifactSourceType

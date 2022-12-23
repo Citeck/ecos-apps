@@ -1,0 +1,248 @@
+{
+  "id": "ecos-artifact-patch",
+  "formKey": "",
+  "title": {
+    "ru": "Форма патча артефакта",
+    "en": "Artifact patch form"
+  },
+  "description": {},
+  "customModule": "",
+  "typeRef": "",
+  "width": "",
+  "system": false,
+  "i18n": {},
+  "definition": {
+    "components": [
+      {
+        "scrollableContent": true,
+        "key": "panel2",
+        "type": "panel",
+        "input": false,
+        "components": [
+          {
+            "label": {
+              "ru": "Columns"
+            },
+            "key": "columns",
+            "columns": [
+              {
+                "components": [
+                  {
+                    "label": {
+                      "ru": "Идентификатор",
+                      "en": "Identifier"
+                    },
+                    "key": "id",
+                    "defaultValue": "",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "type": "textfield",
+                    "input": true
+                  },
+                  {
+                    "label": {
+                      "ru": "Цель патча",
+                      "en": "Patch target"
+                    },
+                    "key": "target",
+                    "tooltip": {
+                      "ru": "Артефакт, который будет пропатчен. В общем случае цель формируется по типу артефакта + '$' + локальньному идентификатору артефакта. Например: model/type$custom-type\nПодробнее: https://citeck-ecos.readthedocs.io/ru/latest/settings_kb/ecos_artifacts.html#id3",
+                      "en": "The artifact to be patched. In general, the target is formed from artifact type + '$' + local artifact ID. For example: model/type$custom-type\nRead more: https://citeck-ecos.readthedocs.io/ru/latest/settings_kb/ecos_artifacts.html#id3"
+                    },
+                    "defaultValue": "",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "type": "textfield",
+                    "input": true
+                  }
+                ],
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "index": 0
+              },
+              {
+                "index": 1,
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "components": [
+                  {
+                    "label": {
+                      "ru": "Имя",
+                      "en": "Name"
+                    },
+                    "key": "name",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "type": "mlText",
+                    "input": true
+                  },
+                  {
+                    "label": {
+                      "ru": "Порядок",
+                      "en": "Order"
+                    },
+                    "key": "order",
+                    "tooltip": {
+                      "ru": "Порядок патча. Если в системе находится несколько патчей для одно и того же артефакта, то они сортируются сначала по порядку от меньшему к большему, а затем применяются по очереди. Если порядок не задан, то он равен нулю. Если порядок у двух патчей совпадает, то при сортировке сравниваются их идентификаторы.",
+                      "en": "Patch Order. If there are multiple patches for the same artifact in the system, they are sorted first in order from smallest to largest, and then applied one by one. If no order is specified, it is zero. If the order of two patches is the same, then their identifiers are compared when sorting."
+                    },
+                    "validate": {
+                      "integer": false
+                    },
+                    "isBigNumber": false,
+                    "delimiterValue": " ",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "defaultValue": "",
+                    "type": "number",
+                    "input": true
+                  },
+                  {
+                    "label": {
+                      "ru": "Включен",
+                      "en": "Enabled"
+                    },
+                    "key": "enabled",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "type": "checkbox",
+                    "input": true
+                  }
+                ]
+              }
+            ],
+            "oneColumnInViewMode": false,
+            "type": "columns",
+            "input": false
+          },
+          {
+            "label": {
+              "ru": "Тип патча",
+              "en": "Patch type"
+            },
+            "key": "type",
+            "defaultValue": "json",
+            "refreshOn": [],
+            "optionalWhenDisabled": false,
+            "type": "textfield",
+            "input": true
+          },
+          {
+            "label": {
+              "ru": "Конфигурация патча",
+              "en": "Patch config"
+            },
+            "key": "config",
+            "editor": "ace",
+            "wysiwyg": "",
+            "defaultValue": "",
+            "refreshOn": [],
+            "optionalWhenDisabled": false,
+            "type": "textarea",
+            "input": true,
+            "as": "json",
+            "properties": {
+              "dataType": "json"
+            }
+          }
+        ]
+      },
+      {
+        "label": {
+          "ru": "Columns"
+        },
+        "key": "columns2",
+        "columns": [
+          {
+            "components": [
+              {
+                "label": "Cancel",
+                "action": "event",
+                "state": "",
+                "showValidations": false,
+                "event": "cancel",
+                "block": true,
+                "type": "button",
+                "input": true,
+                "key": "submit2",
+                "conditional": {
+                  "show": null,
+                  "when": null
+                }
+              }
+            ],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "md": 3,
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 0
+          },
+          {
+            "components": [],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 1,
+            "md": 3
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "components": [],
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 2
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 3,
+            "components": [
+              {
+                "label": {
+                  "ru": "Создать",
+                  "en": "Submit"
+                },
+                "key": "submit",
+                "state": "",
+                "theme": "primary",
+                "block": true,
+                "disableOnInvalid": true,
+                "refreshOn": [],
+                "optionalWhenDisabled": false,
+                "type": "button",
+                "input": true
+              }
+            ]
+          }
+        ],
+        "oneColumnInViewMode": false,
+        "type": "columns",
+        "input": false
+      }
+    ]
+  },
+  "attributes": {}
+}

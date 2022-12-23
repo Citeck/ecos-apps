@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey;
+import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactService;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
@@ -92,7 +93,7 @@ public class EcosArtifactsService {
     }
 
     @Nullable
-    public Object getArtifactToPatch(ArtifactRef artifactRef) {
+    public EcosArtifactToPatch getArtifactToPatch(ArtifactRef artifactRef) {
 
         EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
         if (artifactEntity == null) {
@@ -115,16 +116,20 @@ public class EcosArtifactsService {
             log.error("Type is not found: " + typeId);
             return null;
         }
-        EcosArtifactContext artifactContext = new EcosArtifactContext(typeContext, artifactEntity);
-        ArtifactSourcePolicy uploadPolicy = uploadPolicyBySource.get(
-            ArtifactSourceType.valueOf(sourceType.toString())
-        );
 
-        if (uploadPolicy == null || !uploadPolicy.isPatchingAllowed(artifactContext)) {
-            return null;
+        Object artifactData = artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
+        ArtifactSourceType artifactSourceType;
+        switch (sourceType) {
+            case ECOS_APP: artifactSourceType = ArtifactSourceType.ECOS_APP; break;
+            case USER: artifactSourceType = ArtifactSourceType.USER; break;
+            default: artifactSourceType = ArtifactSourceType.APPLICATION;
         }
 
-        return artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
+        return new EcosArtifactToPatch(
+            artifactData,
+            artifactEntity.getPatchedRev() != null,
+            artifactSourceType
+        );
     }
 
     @Nullable
@@ -505,7 +510,11 @@ public class EcosArtifactsService {
 
                 List<DeployError> errors;
                 try {
-                    errors = deployer.deploy(type, revToDeploy.getContent().getData());
+                    ArtifactDeployMeta meta = ArtifactDeployMeta.create()
+                        .withSourceType(String.valueOf(revToDeploy.getSourceType()))
+                        .withSourceId(revToDeploy.getSourceId())
+                        .build();
+                    errors = deployer.deploy(type, revToDeploy.getContent().getData(), meta);
                 } catch (Exception e) {
                     log.error("Error while artifact deploying: "
                         + ArtifactRef.create(type, revToDeploy.getArtifact().getExtId())
@@ -661,6 +670,9 @@ public class EcosArtifactsService {
         }
 
         long lastRevId = artifact.getLastRev().getId();
+        if (artifact.getPatchedRev() != null) {
+            lastRevId = artifact.getPatchedRev().getId();
+        }
 
         for (EcosArtifactRevEntity revEntity : revisions) {
 
@@ -890,7 +902,13 @@ public class EcosArtifactsService {
     @Nullable
     @Transactional(readOnly = true)
     public EcosArtifactRev getLastArtifactRev(ArtifactRef artifactRef) {
-        EcosArtifactRevEntity lastModuleRev = artifactsDao.getLastArtifactRev(artifactRef);
+        return getLastArtifactRev(artifactRef, true);
+    }
+
+    @Nullable
+    @Transactional(readOnly = true)
+    public EcosArtifactRev getLastArtifactRev(ArtifactRef artifactRef, boolean includePatched) {
+        EcosArtifactRevEntity lastModuleRev = artifactsDao.getLastArtifactRev(artifactRef, includePatched);
         if (lastModuleRev == null) {
             return null;
         }

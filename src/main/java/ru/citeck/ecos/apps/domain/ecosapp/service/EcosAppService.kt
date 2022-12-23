@@ -196,7 +196,7 @@ class EcosAppService(
 
         for (ref in artifacts) {
             val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
-            val artifactRev = ecosArtifactsService.getLastArtifactRev(artifactRef)
+            val artifactRev = ecosArtifactsService.getLastArtifactRev(artifactRef, false)
             if (artifactRev != null) {
                 ZipUtils.extractZip(
                     ByteArrayInputStream(artifactRev.data),

@@ -6,6 +6,7 @@ import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommand
 import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommandResp
 import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
+import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppService
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppStatus
 import ru.citeck.ecos.apps.artifact.ArtifactService
@@ -257,9 +258,9 @@ class EcosApplicationsService(
         private val remoteAppService: RemoteAppService
     ) : ArtifactDeployer {
 
-        override fun deploy(type: String, artifact: ByteArray): List<DeployError> {
+        override fun deploy(type: String, artifact: ByteArray, meta: ArtifactDeployMeta): List<DeployError> {
 
-            val commandErrors = remoteAppService.deployArtifact(instanceId, type, artifact)
+            val commandErrors = remoteAppService.deployArtifact(instanceId, type, artifact, meta)
             return commandErrors.stream()
                 .map { DeployError(it.type, it.message, it.stackTrace) }
                 .collect(Collectors.toList())

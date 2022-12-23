@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.patch.repo
 
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
 import javax.persistence.*
 
@@ -25,4 +26,9 @@ class ArtifactPatchEntity : AbstractAuditingEntity() {
 
     lateinit var type: String
     lateinit var config: String
+
+    var enabled: Boolean = true
+
+    @Enumerated(EnumType.ORDINAL)
+    var sourceType: ArtifactSourceType? = null
 }

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.artifact.controller.patch.ArtifactPatch
@@ -16,6 +17,7 @@ import ru.citeck.ecos.apps.domain.artifact.patch.repo.ArtifactPatchSyncRepo
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
+import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
@@ -58,12 +60,12 @@ class EcosArtifactsPatchService(
         return artifacts.mapNotNull { toDto(it) }
     }
 
-    fun getCount(predicate: Predicate): Int {
-        return searchConv.getCount(patchRepo, predicate).toInt()
+    fun getCount(predicate: Predicate): Long {
+        return searchConv.getCount(patchRepo, predicate)
     }
 
-    fun getCount(): Int {
-        return patchRepo.count().toInt()
+    fun getCount(): Long {
+        return patchRepo.count()
     }
 
     fun getPatchById(id: String): ArtifactPatchDto? {
@@ -71,11 +73,18 @@ class EcosArtifactsPatchService(
     }
 
     fun save(patch: ArtifactPatchDto): ArtifactPatchDto? {
-        val current = toDto(patchRepo.findFirstByExtId(patch.id))
-        if (current != patch) {
-            val result = toDto(patchRepo.save(toEntity(patch)))
+        val patchToSave = ArtifactPatchDto(patch)
+        if (patchToSave.sourceType != ArtifactSourceType.USER &&
+            !AuthContext.isRunAsSystem() &&
+            AuthContext.getCurrentUser().isNotBlank()
+        ) {
+            patchToSave.sourceType = ArtifactSourceType.USER
+        }
+        val current = toDto(patchRepo.findFirstByExtId(patchToSave.id))
+        if (current != patchToSave) {
+            val result = toDto(patchRepo.save(toEntity(patchToSave)))
             changeListeners.forEach(Consumer { it.accept(result) })
-            updatePatchSyncTime(patch.target)
+            updatePatchSyncTime(patchToSave.target)
             return result
         }
         return current
@@ -138,17 +147,30 @@ class EcosArtifactsPatchService(
 
     private fun applyPatches(artifactRef: ArtifactRef): Boolean {
 
-        val artifactToPatch = ecosArtifactsService.getArtifactToPatch(artifactRef) ?: return false
-
-        val patches = getPatchesForArtifact(artifactRef)
-        if (patches.isEmpty()) {
+        val artifactToPatch = ecosArtifactsService.getArtifactToPatch(artifactRef)
+        if (artifactToPatch == null) {
+            log.info { "Artifact '$artifactRef' can't be patched" }
             return false
+        }
+
+        val patches = getPatchesForArtifact(artifactRef, artifactToPatch.sourceType)
+        if (patches.isEmpty()) {
+            return if (artifactToPatch.hasPatchedRev) {
+                log.info {
+                    "Artifact '$artifactRef' has patched revision but " +
+                        "all patches are gone. Let's remove patched revision"
+                }
+                ecosArtifactsService.setPatchedRev(artifactRef, null)
+                true
+            } else {
+                false
+            }
         }
 
         var wasChanged = false
         try {
-            val patchedArtifact = applyPatches(artifactToPatch, artifactRef, patches)
-            wasChanged = ecosArtifactsService.setPatchedRev(artifactRef, patchedArtifact) || wasChanged
+            val patchedArtifact = applyPatches(artifactToPatch.artifact, artifactRef, patches)
+            wasChanged = ecosArtifactsService.setPatchedRev(artifactRef, patchedArtifact)
         } catch (e: Exception) {
             log.error { "Patching error. Artifact: $artifactRef Patches: $patches" }
         }
@@ -166,15 +188,24 @@ class EcosArtifactsPatchService(
             patches,
             mapper.getListType(ArtifactPatch::class.java)
         )
-        if (artifactPatches == null || artifactPatches.isEmpty()) {
+        if (artifactPatches.isNullOrEmpty()) {
             return artifact
         }
         log.info("Apply " + artifactPatches.size + " patches to " + artifactRef)
         return artifactService.applyPatches(artifactRef.type, artifact, artifactPatches)
     }
 
-    private fun getPatchesForArtifact(artifactRef: ArtifactRef): List<ArtifactPatchDto> {
-        val patchEntities = patchRepo.findAllByTarget(artifactRef.toString())
+    private fun getPatchesForArtifact(artifactRef: ArtifactRef, sourceType: ArtifactSourceType): List<ArtifactPatchDto> {
+        val allowedPatchSourceTypes: List<ArtifactSourceType> = when (sourceType) {
+            ArtifactSourceType.APPLICATION -> emptyList() // any source
+            ArtifactSourceType.USER -> return emptyList() // user artifacts can't be patched
+            ArtifactSourceType.ECOS_APP -> listOf(ArtifactSourceType.ECOS_APP, ArtifactSourceType.USER)
+        }
+        val patchEntities = if (allowedPatchSourceTypes.isNotEmpty()) {
+            patchRepo.findAllByEnabledTrueAndTargetAndSourceTypeIn(artifactRef.toString(), allowedPatchSourceTypes)
+        } else {
+            patchRepo.findAllByEnabledTrueAndTarget(artifactRef.toString())
+        }
         return patchEntities.mapNotNull { toDto(it) }
             .sortedBy { it.id }
             .sortedBy { it.order }
@@ -203,6 +234,8 @@ class EcosArtifactsPatchService(
         result.order = entity.order
         result.target = ArtifactRef.valueOf(entity.target)
         result.type = entity.type
+        result.sourceType = entity.sourceType
+        result.enabled = entity.enabled
         return result
     }
 
@@ -217,6 +250,8 @@ class EcosArtifactsPatchService(
         entity.order = patch.order
         entity.target = patch.target.toString()
         entity.type = patch.type
+        entity.sourceType = patch.sourceType
+        entity.enabled = patch.enabled
         return entity
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.test.annotation.DirtiesContext
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.app.domain.artifact.source.*
 import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
+import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
@@ -117,7 +118,7 @@ class EcosArtifactsServiceTest {
 
         val deployer = object : ArtifactDeployer {
 
-            override fun deploy(type: String, artifact: ByteArray): List<DeployError> {
+            override fun deploy(type: String, artifact: ByteArray, meta: ArtifactDeployMeta): List<DeployError> {
                 deployedArtifacts.computeIfAbsent(type) { ArrayList() }
                     .add(artifactsService.readArtifactFromBytes(type, artifact))
                 return emptyList()

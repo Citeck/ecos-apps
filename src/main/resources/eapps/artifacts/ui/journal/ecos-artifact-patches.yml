@@ -1,25 +1,21 @@
 ---
-id: ecos-module-patches
+id: ecos-artifact-patches
 name: { ru: Патчи артефактов, en: Artifacts patches }
 
 system: true
-properties: {}
 
 actions:
-  - uiserv/action@ecos-module-download
+  - uiserv/action@download-text-yml
   - uiserv/action@delete
+  - uiserv/action@view-dashboard
   - uiserv/action@edit
+  - uiserv/action@edit-json
 
 columns:
 
-  - id: moduleId
+  - id: id
     name: { ru: Идентификатор, en: Id }
-
   - id: name
-    name: { ru: Имя, en: Name }
-
   - id: target
-    name: { ru: Цель патча, en: Patch target }
-
   - id: order
-    name: { ru: Порядок, en: Order }
+  - id: enabled

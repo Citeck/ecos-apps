@@ -1,0 +1,41 @@
+---
+id: ecos-artifact-patch
+
+name:
+  en: ECOS Artifact Patch
+  ru: Патч артефакта ECOS
+
+system: true
+
+sourceId: eapps/artifact-patch
+formRef: uiserv/form@ecos-artifact-patch
+journalRef: uiserv/journal@ecos-artifact-patches
+
+defaultCreateVariant: true
+
+createVariants:
+
+  - id: upload
+    name: { ru: Загрузить, en: Upload }
+    formRef: 'uiserv/form@ecos-artifact-upload'
+
+model:
+  attributes:
+    - id: name
+      name: { ru: Имя, en: Name }
+      type: MLTEXT
+    - id: target
+      name: { ru: Цель патча, en: Patch target }
+    - id: order
+      name: { ru: Порядок, en: Order }
+      type: NUMBER
+    - id: enabled
+      name: { ru: Включен, en: Enabled }
+      type: BOOLEAN
+    - id: sourceType
+      name: { ru: Тип источника, en: Source type }
+    - id: type
+      name: { ru: Тип, en: Type }
+    - id: config
+      name: { ru: Конфигурация, en: Config }
+      type: JSON

@@ -14,10 +14,6 @@ class EcosAppSourcePolicy : ArtifactSourcePolicy {
         val log = KotlinLogging.logger {}
     }
 
-    override fun isPatchingAllowed(context: ArtifactContext): Boolean {
-        return false
-    }
-
     override fun isUploadAllowed(context: ArtifactContext, newRev: ArtifactRevContext): Boolean {
 
         if (context.getEcosApp().isBlank()) {

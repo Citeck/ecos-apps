@@ -36,6 +36,12 @@
       "config": {
         "journalId": "ecos-licenses"
       }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "ecos-artifact-patches"
+      }
     }
   ]
 }

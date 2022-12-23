@@ -110,14 +110,20 @@ public class EcosArtifactsDao {
             .collect(Collectors.toList());
     }
 
-    public EcosArtifactRevEntity getLastArtifactRev(ArtifactRef moduleRef) {
+    public EcosArtifactRevEntity getLastArtifactRev(ArtifactRef artifactRef) {
+        return getLastArtifactRev(artifactRef, true);
+    }
+
+    public EcosArtifactRevEntity getLastArtifactRev(ArtifactRef moduleRef, boolean includePatched) {
         EcosArtifactEntity artifact = getArtifact(moduleRef);
         if (artifact == null) {
             return null;
         }
-        EcosArtifactRevEntity patchedRev = artifact.getPatchedRev();
-        if (patchedRev != null) {
-            return patchedRev;
+        if (includePatched) {
+            EcosArtifactRevEntity patchedRev = artifact.getPatchedRev();
+            if (patchedRev != null) {
+                return patchedRev;
+            }
         }
         return artifact.getLastRev();
     }

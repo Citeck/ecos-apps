@@ -8,10 +8,6 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.ArtifactRevCo
 @Component
 class UserSourcePolicy : ArtifactSourcePolicy {
 
-    override fun isPatchingAllowed(context: ArtifactContext): Boolean {
-        return false
-    }
-
     override fun isUploadAllowed(context: ArtifactContext, newRev: ArtifactRevContext): Boolean {
         return true
     }
