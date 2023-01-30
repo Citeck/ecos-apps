@@ -1,3 +1,2 @@
 ---
 type: 'maven-webapp'
-skipCleaning: true
