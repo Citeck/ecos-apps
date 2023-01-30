@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.domain.ecosapp.service
 
+import mu.KotlinLogging
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,13 +38,17 @@ class EcosAppService(
     private val ecosContentDao: EcosContentDao,
     private val applicationsWatcherJob: ApplicationsWatcherJob
 ) {
+    companion object {
+        private val log = KotlinLogging.logger {}
+    }
 
-
-    fun uploadZip(data: ByteArray) : EcosAppDef {
+    fun uploadZip(data: ByteArray): EcosAppDef {
 
         val appRoot = ZipUtils.extractZip(data)
-        val meta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
+        val appMeta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
             ?: error("Incorrect application: ${Base64.getEncoder().encodeToString(data)}")
+
+        log.info { "Upload application '" + appMeta.id + "'" }
 
         val artifactsDir = appRoot.getDir("artifacts")
         var artifactsContentEntity: EcosContentEntity? = null
@@ -51,11 +56,24 @@ class EcosAppService(
             artifactsContentEntity = ecosContentDao.upload(ZipUtils.writeZipAsBytes(artifactsDir))
         }
 
-        var entity = dtoToEntity(meta)
-        entity.artifactsDir = artifactsContentEntity
+        var entity = dtoToEntity(appMeta)
+        if (entity.artifactsDir?.id != artifactsContentEntity?.id) {
+            log.info {
+                "Application content changed. App ID: '${appMeta.id}' " +
+                "New content id: ${artifactsContentEntity?.id}"
+            }
+            entity.artifactsDir = artifactsContentEntity
+            entity.artifactsLastModifiedDate = Instant.now()
+        } else {
+            log.info {
+                "Application content doesn't change. App ID: '${appMeta.id}'"
+            }
+        }
         entity = ecosAppRepo.save(entity)
 
         applicationsWatcherJob.forceUpdate("eapps", appToSource(entity))
+
+        log.info { "Uploading of application '" + appMeta.id + "' completed" }
 
         return entityToDto(entity)
     }
@@ -174,7 +192,7 @@ class EcosAppService(
     // AdditionalSourceProvider
 
     private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
-        val lastModified = app.artifactsDir?.createdDate ?: Instant.EPOCH
+        val lastModified = app.artifactsLastModifiedDate ?: app.artifactsDir?.createdDate ?: Instant.EPOCH
         return ArtifactSourceInfo.create {
             withKey(app.extId, ArtifactSourceType.ECOS_APP)
             withLastModified(lastModified)
