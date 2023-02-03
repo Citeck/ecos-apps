@@ -23,7 +23,7 @@ data class EcosPatchArtifact(
             patchId = id,
             name = name,
             targetApp = targetApp,
-            date = Instant.now(),
+            date = date,
             manual = manual,
             dependsOn = getDependsOnWithApp(),
             dependsOnApps = dependsOnApps,
