@@ -10,6 +10,7 @@ model:
     - id: configId
       name:
         ru: Идентификатор
+        en: ID
     - id: scope
       name:
         ru: Область
