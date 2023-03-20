@@ -18,6 +18,7 @@ import ru.citeck.ecos.data.sql.records.listener.*
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
 import ru.citeck.ecos.records3.RecordsService
+import ru.citeck.ecos.records3.record.atts.dto.LocalRecordAtts
 import ru.citeck.ecos.records3.record.dao.RecordsDao
 import ru.citeck.ecos.records3.record.dao.impl.proxy.*
 import javax.sql.DataSource
@@ -93,6 +94,18 @@ class EcosConfigConfig(
                     configProxyProc.getConfigInnerIdByKey(ConfigKey.valueOf(it)) ?: ""
                 }
                 return super.getRecordsAtts(ids)
+            }
+
+            override fun mutate(records: List<LocalRecordAtts>): List<String> {
+                val result = ArrayList<String>()
+                for (record in records) {
+                    if (!record.hasAtt("_value")) {
+                        result.add(record.id)
+                    } else {
+                        result.add(super.mutate(listOf(record)).first())
+                    }
+                }
+                return result
             }
         }
         return recordsDao
