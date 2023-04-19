@@ -12,12 +12,12 @@ import ru.citeck.ecos.config.lib.dto.ConfigValueDef
 import ru.citeck.ecos.config.lib.zookeeper.ZkConfigProvider
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
-import ru.citeck.ecos.data.sql.dto.DbTableRef
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
 import ru.citeck.ecos.data.sql.records.listener.*
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
-import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
+import ru.citeck.ecos.model.lib.utils.ModelUtils
 import ru.citeck.ecos.records3.RecordsService
+import ru.citeck.ecos.records3.record.atts.dto.LocalRecordAtts
 import ru.citeck.ecos.records3.record.dao.RecordsDao
 import ru.citeck.ecos.records3.record.dao.impl.proxy.*
 import javax.sql.DataSource
@@ -44,19 +44,18 @@ class EcosConfigConfig(
                 .withRecordsDao(
                     DbRecordsDaoConfig.create {
                         withId(CONFIG_REPO_SRC_ID)
-                        withTypeRef(TypeUtils.getTypeRef("ecos-config"))
+                        withTypeRef(ModelUtils.getTypeRef("ecos-config"))
                     }
                 )
                 .withDataService(
                     DbDataServiceConfig.create {
-                        withAuthEnabled(false)
-                        withTableRef(DbTableRef("public", "ecos_config"))
-                        withTransactional(false)
+                        withTable("ecos_config")
                         withStoreTableMeta(true)
                     }
                 )
                 .build()
-        ).build()
+        ).withSchema("public")
+            .build()
 
         records.addAttributesMixin(ConfigRepoMixin())
 
@@ -70,16 +69,13 @@ class EcosConfigConfig(
                 ConfigValue(value, atts.valueDef)
             )
         }
-        records.addListener(object : DbRecordsListener {
+        records.addListener(object : DbRecordsListenerAdapter() {
             override fun onChanged(event: DbRecordChangedEvent) {
                 updateZkValue(event.record)
             }
             override fun onCreated(event: DbRecordCreatedEvent) {
                 updateZkValue(event.record)
             }
-            override fun onDeleted(event: DbRecordDeletedEvent) {}
-            override fun onDraftStatusChanged(event: DbRecordDraftStatusChangedEvent) {}
-            override fun onStatusChanged(event: DbRecordStatusChangedEvent) {}
         })
 
         return records
@@ -93,6 +89,18 @@ class EcosConfigConfig(
                     configProxyProc.getConfigInnerIdByKey(ConfigKey.valueOf(it)) ?: ""
                 }
                 return super.getRecordsAtts(ids)
+            }
+
+            override fun mutate(records: List<LocalRecordAtts>): List<String> {
+                val result = ArrayList<String>()
+                for (record in records) {
+                    if (!record.hasAtt("_value")) {
+                        result.add(record.id)
+                    } else {
+                        result.add(super.mutate(listOf(record)).first())
+                    }
+                }
+                return result
             }
         }
         return recordsDao
