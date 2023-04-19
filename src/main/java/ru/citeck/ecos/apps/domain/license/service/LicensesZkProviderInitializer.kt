@@ -7,14 +7,13 @@ import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.context.lib.auth.AuthRole
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
-import ru.citeck.ecos.data.sql.dto.DbTableRef
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
 import ru.citeck.ecos.data.sql.records.listener.*
 import ru.citeck.ecos.data.sql.records.perms.DbPermsComponent
 import ru.citeck.ecos.data.sql.records.perms.DbRecordPerms
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
 import ru.citeck.ecos.license.EcosLicenseInstance
-import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
+import ru.citeck.ecos.model.lib.utils.ModelUtils
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.atts.schema.ScalarType
@@ -22,7 +21,6 @@ import ru.citeck.ecos.records3.record.atts.value.AttValueCtx
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.mixin.AttMixin
 import ru.citeck.ecos.webapp.api.constants.WebAppProfile
-import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.zookeeper.EcosZooKeeper
 import javax.annotation.PostConstruct
 
@@ -51,36 +49,35 @@ class LicensesZkProviderInitializer(
                 withRecordsDao(
                     DbRecordsDaoConfig.create()
                         .withId(LIC_SRC_ID)
-                        .withTypeRef(TypeUtils.getTypeRef("ecos-license"))
+                        .withTypeRef(ModelUtils.getTypeRef("ecos-license"))
                         .build()
                 )
                 withDataService(
                     DbDataServiceConfig.create()
-                        .withAuthEnabled(true)
-                        .withTableRef(DbTableRef("public", "ecos_license"))
-                        .withTransactional(false)
+                        .withTable("ecos_license")
                         .withStoreTableMeta(true)
                         .build()
                 )
             }
-        ).withPermsComponent(object : DbPermsComponent {
-            override fun getRecordPerms(recordRef: EntityRef): DbRecordPerms {
-                return object : DbRecordPerms {
-                    override fun getAuthoritiesWithReadPermission(): Set<String> {
-                        return setOf(AuthRole.ADMIN)
-                    }
-                    override fun isCurrentUserHasAttReadPerms(name: String): Boolean {
-                        return AuthContext.isRunAsAdmin()
-                    }
-                    override fun isCurrentUserHasAttWritePerms(name: String): Boolean {
-                        return AuthContext.isRunAsAdmin()
-                    }
-                    override fun isCurrentUserHasWritePerms(): Boolean {
-                        return AuthContext.isRunAsAdmin()
+        ).withSchema("public")
+            .withPermsComponent(object : DbPermsComponent {
+                override fun getRecordPerms(record: Any): DbRecordPerms {
+                    return object : DbRecordPerms {
+                        override fun getAuthoritiesWithReadPermission(): Set<String> {
+                            return setOf(AuthRole.ADMIN)
+                        }
+                        override fun isCurrentUserHasAttReadPerms(name: String): Boolean {
+                            return AuthContext.isRunAsAdmin()
+                        }
+                        override fun isCurrentUserHasAttWritePerms(name: String): Boolean {
+                            return AuthContext.isRunAsAdmin()
+                        }
+                        override fun isCurrentUserHasWritePerms(): Boolean {
+                            return AuthContext.isRunAsAdmin()
+                        }
                     }
                 }
-            }
-        }).build()
+            }).build()
 
         dao.addAttributesMixin(object : AttMixin {
             override fun getAtt(path: String, value: AttValueCtx): Any {
@@ -118,7 +115,7 @@ class LicensesZkProviderInitializer(
             zooKeeper.deleteValue("/$it")
         }
 
-        dao.addListener(object : DbRecordsListener {
+        dao.addListener(object : DbRecordsListenerAdapter() {
             override fun onChanged(event: DbRecordChangedEvent) {
                 val json = recordsService.getAtt(event.record, ScalarType.JSON_SCHEMA)
                 zooKeeper.setValue("/" + json["id"].asText(), json.getAsNotNull(EcosLicenseInstance::class.java))
@@ -131,8 +128,6 @@ class LicensesZkProviderInitializer(
                 val recId = recordsService.getAtt(event.record, "id").asText()
                 zooKeeper.deleteValue("/$recId")
             }
-            override fun onDraftStatusChanged(event: DbRecordDraftStatusChangedEvent) {}
-            override fun onStatusChanged(event: DbRecordStatusChangedEvent) {}
         })
     }
 }

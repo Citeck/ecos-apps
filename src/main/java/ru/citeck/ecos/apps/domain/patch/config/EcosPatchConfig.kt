@@ -5,10 +5,9 @@ import org.springframework.context.annotation.Configuration
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchProperties
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
-import ru.citeck.ecos.data.sql.dto.DbTableRef
 import ru.citeck.ecos.data.sql.records.DbRecordsDaoConfig
 import ru.citeck.ecos.data.sql.service.DbDataServiceConfig
-import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
+import ru.citeck.ecos.model.lib.utils.ModelUtils
 import ru.citeck.ecos.records3.record.dao.RecordsDao
 import ru.citeck.ecos.webapp.lib.env.EcosWebAppEnvironment
 import javax.sql.DataSource
@@ -36,19 +35,18 @@ class EcosPatchConfig(
                 .withRecordsDao(
                     DbRecordsDaoConfig.create {
                         withId(REPO_ID)
-                        withTypeRef(TypeUtils.getTypeRef("ecos-patch"))
+                        withTypeRef(ModelUtils.getTypeRef("ecos-patch"))
                     }
                 )
                 .withDataService(
                     DbDataServiceConfig.create {
-                        withAuthEnabled(false)
-                        withTableRef(DbTableRef("public", "ecos_patch"))
-                        withTransactional(false)
+                        withTable("ecos_patch")
                         withStoreTableMeta(true)
                     }
                 )
                 .build()
-        ).build()
+        ).withSchema("public")
+            .build()
 
         return records
     }
