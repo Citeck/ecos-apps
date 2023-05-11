@@ -26,9 +26,9 @@ ecos:
 
     dataSources:
       main:
-        url: jdbc:postgresql://localhost:5437/eapps
-        username: eapps
-        password:
+        url: jdbc:postgresql://localhost:14523/ecos_apps
+        username: apps
+        password: appspassword
 
 # ===================================================================
 # Application specific properties
