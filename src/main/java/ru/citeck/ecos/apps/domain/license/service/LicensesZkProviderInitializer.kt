@@ -3,7 +3,6 @@ package ru.citeck.ecos.apps.domain.license.service
 import mu.KotlinLogging
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.context.lib.auth.AuthRole
 import ru.citeck.ecos.data.sql.domain.DbDomainConfig
 import ru.citeck.ecos.data.sql.domain.DbDomainFactory
@@ -61,19 +60,24 @@ class LicensesZkProviderInitializer(
             }
         ).withSchema("public")
             .withPermsComponent(object : DbPermsComponent {
-                override fun getRecordPerms(record: Any): DbRecordPerms {
+
+                override fun getRecordPerms(user: String, authorities: Set<String>, record: Any): DbRecordPerms {
+                    val isAdmin = authorities.contains(AuthRole.ADMIN)
                     return object : DbRecordPerms {
                         override fun getAuthoritiesWithReadPermission(): Set<String> {
                             return setOf(AuthRole.ADMIN)
                         }
-                        override fun isCurrentUserHasAttReadPerms(name: String): Boolean {
-                            return AuthContext.isRunAsAdmin()
+                        override fun hasAttReadPerms(name: String): Boolean {
+                            return isAdmin
                         }
-                        override fun isCurrentUserHasAttWritePerms(name: String): Boolean {
-                            return AuthContext.isRunAsAdmin()
+                        override fun hasAttWritePerms(name: String): Boolean {
+                            return isAdmin
                         }
-                        override fun isCurrentUserHasWritePerms(): Boolean {
-                            return AuthContext.isRunAsAdmin()
+                        override fun hasReadPerms(): Boolean {
+                            return isAdmin
+                        }
+                        override fun hasWritePerms(): Boolean {
+                            return isAdmin
                         }
                     }
                 }
