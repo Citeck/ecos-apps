@@ -1,45 +1,60 @@
-# ecosapps
+![Citeck ECOS Logo](https://raw.githubusercontent.com/Citeck/ecos-ui/develop/public/img/logo/ecos-logo.png)
 
-This application was generated using JHipster 5.8.1, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v5.8.1](https://www.jhipster.tech/documentation-archive/v5.8.1).
+# `ecos-apps`
 
-This is a "microservice" application intended to be part of a microservice architecture, please refer to the [Doing microservices with JHipster][] page of the documentation for more information.
+Welcome to the Citeck `ecos-apps` repository! This repository contains a collection of additional applications and modules for the Citeck ECOS platform. Citeck ECOS is a powerful and comprehensive enterprise content and operations system designed to streamline and automate business processes within organizations.
 
-This application is configured for Service Discovery and Configuration with the JHipster-Registry. On launch, it will refuse to start if it is not able to connect to the JHipster-Registry at [http://localhost:8761](http://localhost:8761). For more information, read our documentation on [Service Discovery and Configuration with the JHipster-Registry][].
+## Get started
+
+If you are new to ECOS platform and would like to load the software locally, we recommend you download the Dockerized version from [Demo repository](https://github.com/Citeck/ecos-community-demo).
+
+## Useful Links
+
+- [Documentation](https://citeck-ecos.readthedocs.io/ru/latest/index.html) provides more in-depth information.
+
+## Dependencies
+
+This application requires the following applications from ECOS deployment to work:
+
+* zookeeper
+* rabbitmq
+* ecos-model
+* ecos-registry
 
 ## Development
 
 To start your application in the dev profile, simply run:
 
-    ./mvnw
+```
+./mvnw spring-boot:run
+```
 
-For further instructions on how to develop with JHipster, have a look at [Using JHipster in development][].
+If your IDE supports starting Spring Boot applications directly, then you can easily run the class 'ru.citeck.ecos.apps.EcosAppsApp' without additional setup.
 
-## Building for production
+### Building for production
 
-To optimize the ecosapps application for production, run:
+To build the application for production, run:
 
-    ./mvnw -Pprod clean package
+```
+./mvnw -Pprod clean package jib:dockerBuild -Djib.docker.image.tag=custom 
+```
 
-To ensure everything worked, run:
+To ensure everything worked, stop original ecos-apps container and start ecos-apps:custom instead of it.
 
-    java -jar target/*.war
-
-Refer to [Using JHipster in production][] for more details.
-
-## Testing
+### Testing
 
 To launch your application's tests, run:
 
-    ./mvnw clean test
+```
+./mvnw clean test
+```
 
-For more information, refer to the [Running tests page][].
-
-### Code quality
+#### Code quality
 
 Sonar is used to analyse code quality. You can start a local Sonar server (accessible on http://localhost:9001) with:
 
 ```
-docker-compose -f src/main/docker/sonar.yml up -d
+docker compose -f docker/sonar.yml up -d
 ```
 
 Then, run a Sonar analysis:
@@ -48,43 +63,14 @@ Then, run a Sonar analysis:
 ./mvnw -Pprod clean test sonar:sonar
 ```
 
-For more information, refer to the [Code quality page][].
+## Contributing
 
-## Using Docker to simplify development (optional)
+We welcome contributions from the community to make ECOS even better. Everyone interacting in the Citeck project’s codebases, issue trackers, chat rooms, and forum is expected to follow the [contributor code of conduct](https://github.com/rubygems/rubygems/blob/master/CODE_OF_CONDUCT.md).
 
-You can use Docker to improve your JHipster development experience. A number of docker-compose configuration are available in the [src/main/docker](src/main/docker) folder to launch required third party services.
+## Support
 
-For example, to start a postgresql database in a docker container, run:
+If you need any assistance or have any questions regarding Citeck `ecos-apps`, please create an issue in this repository or reach out to our [support team](mailto:support@citeck.ru).
 
-    docker-compose -f src/main/docker/postgresql.yml up -d
+## License
 
-To stop it and remove the container, run:
-
-    docker-compose -f src/main/docker/postgresql.yml down
-
-You can also fully dockerize your application and all the services that it depends on.
-To achieve this, first build a docker image of your app by running:
-
-    ./mvnw package -Pprod verify jib:dockerBuild
-
-Then run:
-
-    docker-compose -f src/main/docker/app.yml up -d
-
-For more information refer to [Using Docker and Docker-Compose][], this page also contains information on the docker-compose sub-generator (`jhipster docker-compose`), which is able to generate docker configurations for one or several JHipster applications.
-
-## Continuous Integration (optional)
-
-To configure CI for your project, run the ci-cd sub-generator (`jhipster ci-cd`), this will let you generate configuration files for a number of Continuous Integration systems. Consult the [Setting up Continuous Integration][] page for more information.
-
-[jhipster homepage and latest documentation]: https://www.jhipster.tech
-[jhipster 5.8.1 archive]: https://www.jhipster.tech/documentation-archive/v5.8.1
-[doing microservices with jhipster]: https://www.jhipster.tech/documentation-archive/v5.8.1/microservices-architecture/
-[using jhipster in development]: https://www.jhipster.tech/documentation-archive/v5.8.1/development/
-[service discovery and configuration with the jhipster-registry]: https://www.jhipster.tech/documentation-archive/v5.8.1/microservices-architecture/#jhipster-registry
-[using docker and docker-compose]: https://www.jhipster.tech/documentation-archive/v5.8.1/docker-compose
-[using jhipster in production]: https://www.jhipster.tech/documentation-archive/v5.8.1/production/
-[running tests page]: https://www.jhipster.tech/documentation-archive/v5.8.1/running-tests/
-[code quality page]: https://www.jhipster.tech/documentation-archive/v5.8.1/code-quality/
-[setting up continuous integration]: https://www.jhipster.tech/documentation-archive/v5.8.1/setting-up-ci/
-##test
+Citeck `ecos-apps` is released under the [GNU Lesser General Public License](LICENSE).
