@@ -44,4 +44,3 @@ ecos:
 ecos-apps:
   modules-watcher:
     init-delay-ms: 10000
-

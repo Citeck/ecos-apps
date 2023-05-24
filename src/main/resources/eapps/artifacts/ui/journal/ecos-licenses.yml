@@ -3,6 +3,7 @@ id: ecos-licenses
 name: { ru: Лицензии ECOS, en: ECOS Licenses }
 
 system: true
+editable: false
 
 actions:
   - uiserv/action@download-text-yml
