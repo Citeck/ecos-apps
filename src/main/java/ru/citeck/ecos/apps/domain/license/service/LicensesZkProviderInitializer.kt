@@ -55,6 +55,8 @@ class LicensesZkProviderInitializer(
         const val LIC_REPO_SRC_ID = "ecos-license-repo"
         const val ATT_IS_LIC_VALID = "isLicenseValid"
 
+        private val licTypeRef = ModelUtils.getTypeRef("ecos-license")
+
         private val log = KotlinLogging.logger {}
     }
 
@@ -69,7 +71,7 @@ class LicensesZkProviderInitializer(
                 withRecordsDao(
                     DbRecordsDaoConfig.create()
                         .withId(LIC_REPO_SRC_ID)
-                        .withTypeRef(ModelUtils.getTypeRef("ecos-license"))
+                        .withTypeRef(licTypeRef)
                         .build()
                 )
                 withDataService(
@@ -302,6 +304,10 @@ class LicensesZkProviderInitializer(
                 return Perms()
             }
             return super.getAtt(name)
+        }
+
+        override fun getType(): Any {
+            return licTypeRef
         }
 
         inner class Perms : AttValue {
