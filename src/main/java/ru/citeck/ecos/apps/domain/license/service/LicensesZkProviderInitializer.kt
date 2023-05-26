@@ -213,13 +213,17 @@ class LicensesZkProviderInitializer(
             } else {
                 filteredLicensesFromProps
             }
-            val recordsRes = super.queryRecords(recsQuery.copy {
-                withSkipCount(skipCount)
-                withQuery(Predicates.and(
-                    srcPredicate,
-                    Predicates.not(Predicates.inVals("id", licensesFromProps.map { it.id }))
-                ))
-            }) ?: RecsQueryRes<Any>()
+            val recordsRes = super.queryRecords(
+                recsQuery.copy {
+                    withSkipCount(skipCount)
+                    withQuery(
+                        Predicates.and(
+                            srcPredicate,
+                            Predicates.not(Predicates.inVals("id", licensesFromProps.map { it.id }))
+                        )
+                    )
+                }
+            ) ?: RecsQueryRes<Any>()
 
             if (skippedLicFromProps.isEmpty()) {
                 return recordsRes
