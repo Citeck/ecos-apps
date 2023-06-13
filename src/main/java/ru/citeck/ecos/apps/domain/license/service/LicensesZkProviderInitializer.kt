@@ -87,6 +87,9 @@ class LicensesZkProviderInitializer(
                 override fun getRecordPerms(user: String, authorities: Set<String>, record: Any): DbRecordPerms {
                     val isAdmin = authorities.contains(AuthRole.ADMIN)
                     return object : DbRecordPerms {
+                        override fun getAdditionalPerms(): Set<String> {
+                            return emptySet()
+                        }
                         override fun getAuthoritiesWithReadPermission(): Set<String> {
                             return setOf(AuthRole.ADMIN)
                         }
