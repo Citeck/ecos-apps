@@ -23,7 +23,9 @@ import ru.citeck.ecos.records2.graphql.meta.annotation.MetaAtt
 import ru.citeck.ecos.records2.graphql.meta.value.EmptyValue
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField
 import ru.citeck.ecos.records2.predicate.PredicateService
+import ru.citeck.ecos.records2.predicate.PredicateUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records2.request.query.RecordsQuery
 import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
@@ -33,6 +35,7 @@ import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import ru.citeck.ecos.webapp.api.constants.AppName
 
 @Component
 class EcosArtifactRecords(
@@ -90,7 +93,15 @@ class EcosArtifactRecords(
             }.filter { it !== EmptyValue.INSTANCE }
         } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
-            val predicate = recordsQuery.getQuery(Predicate::class.java)
+            var predicate = recordsQuery.getQuery(Predicate::class.java)
+            predicate = PredicateUtils.mapValuePredicates(predicate) {
+                if (it.getAttribute() == "ecosAppRef") {
+                    val appName = EntityRef.valueOf(it.getValue().asText()).getLocalId()
+                    ValuePredicate("ecosApp", it.getType(), appName)
+                } else {
+                    it
+                }
+            }
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
                 recordsQuery.maxItems,
@@ -247,6 +258,13 @@ class EcosArtifactRecords(
 
         fun getCreatedIso(): String {
             return (artifact.created ?: Instant.EPOCH).toString()
+        }
+
+        fun getEcosAppRef(): EntityRef {
+            if (artifact.ecosApp.isBlank()) {
+                return EntityRef.EMPTY
+            }
+            return EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, artifact.ecosApp)
         }
     }
 
