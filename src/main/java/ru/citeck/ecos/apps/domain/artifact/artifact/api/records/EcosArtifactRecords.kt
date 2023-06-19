@@ -49,6 +49,8 @@ class EcosArtifactRecords(
 
     companion object {
         const val ID = "artifact"
+        private const val ECOS_APP_REF_ATTRIBUTE = "ecosAppRef"
+        private const val ECOS_APP_ATTRIBUTE = "ecosApp"
 
         private val log = KotlinLogging.logger {}
     }
@@ -95,9 +97,9 @@ class EcosArtifactRecords(
 
             var predicate = recordsQuery.getQuery(Predicate::class.java)
             predicate = PredicateUtils.mapValuePredicates(predicate) {
-                if (it.getAttribute() == "ecosAppRef") {
+                if (it.getAttribute() == ECOS_APP_REF_ATTRIBUTE) {
                     val appName = EntityRef.valueOf(it.getValue().asText()).getLocalId()
-                    ValuePredicate("ecosApp", it.getType(), appName)
+                    ValuePredicate(ECOS_APP_ATTRIBUTE, it.getType(), appName)
                 } else {
                     it
                 }

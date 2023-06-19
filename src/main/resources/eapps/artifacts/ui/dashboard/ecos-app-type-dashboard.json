@@ -217,10 +217,10 @@
               "v2": {
                 "onlyLinked": true,
                 "journalsListIds": [
-                  "uiserv/journal@ecos-app-updated-artifacts"
+                  "uiserv/journal@ecos-app-changed-artifacts"
                 ],
                 "journalSettingId": "",
-                "journalId": "ecos-app-updated-artifacts",
+                "journalId": "ecos-app-changed-artifacts",
                 "customJournalMode": false,
                 "customJournal": ""
               }

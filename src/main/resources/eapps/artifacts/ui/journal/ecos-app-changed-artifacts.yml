@@ -1,11 +1,9 @@
 ---
-id: ecos-app-updated-artifacts
+id: ecos-app-changed-artifacts
 name: { ru: Измененные артефакты приложения, en: Updated app artifacts }
 
 system: true
 sourceId: eapps/artifact
-defaultFilters:
-  - { t: eq, att: system, val: false }
 
 predicate:
     t: eq
@@ -43,3 +41,4 @@ columns:
   - id: ecosAppRef
     type: ASSOC
     name: { ru: Приложение , en: Application }
+    visible: false
