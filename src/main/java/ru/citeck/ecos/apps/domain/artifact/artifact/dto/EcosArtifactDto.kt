@@ -11,6 +11,7 @@ data class EcosArtifactDto(
     val tags: List<String>,
     val deployStatus: DeployStatus,
     val source: ArtifactRevSourceInfo,
+    val ecosApp: String,
     val system: Boolean,
     val revId: String,
     val modified: Instant?,

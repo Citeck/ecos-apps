@@ -958,6 +958,10 @@ public class EcosArtifactsService {
         if (sourceId == null) {
             sourceId = "";
         }
+        String ecosApp = entity.getArtifact().getEcosApp();
+        if (ecosApp == null) {
+            ecosApp = "";
+        }
 
         return Optional.of(new EcosArtifactDto(
             entity.getArtifact().getExtId(),
@@ -967,6 +971,7 @@ public class EcosArtifactsService {
             DataValue.create(entity.getArtifact().getTags()).asStrList(),
             deployStatus,
             new ArtifactRevSourceInfo(sourceId, sourceType),
+            ecosApp,
             Boolean.TRUE.equals(entity.getArtifact().getSystem()),
             entity.getExtId(),
             entity.getArtifact().getLastModifiedDate(),
