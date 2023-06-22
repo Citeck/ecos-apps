@@ -31,11 +31,11 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import ru.citeck.ecos.webapp.api.constants.AppName
 
 @Component
 class EcosArtifactRecords(

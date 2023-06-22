@@ -23,8 +23,11 @@ public class EcosAppsApp {
 
     public static final String NAME = "eapps";
 
-    public static void main(String[] args) {
+    static {
         EcosConfigBeanPostProcessor.excludePackages("ru.citeck.ecos.apps.domain.ecosapp");
+    }
+
+    public static void main(String[] args) {
         new EcosSpringApplication(EcosAppsApp.class).run(args);
     }
 }
