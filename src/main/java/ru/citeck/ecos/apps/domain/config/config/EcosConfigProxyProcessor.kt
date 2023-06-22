@@ -30,6 +30,8 @@ class EcosConfigProxyProcessor(
         private const val ATT_CONFIG_ID_ALIAS = "___configId"
         private const val ATT_SCOPE = "scope"
         private const val ATT_SCOPE_ALIAS = "___scopeId"
+
+        private const val ATT_MUT_VALUE = "_value"
     }
 
     override fun attsPostProcess(atts: List<ProxyRecordAtts>, context: ProxyProcContext): List<ProxyRecordAtts> {
@@ -96,15 +98,22 @@ class EcosConfigProxyProcessor(
 
     private fun preProcessBeforeMutate(id: String, atts: ObjectData): ObjectData {
 
-        val rawValue = atts["_value"]
-        if (rawValue.isNull()) {
-            error("_value is null")
+        if (!atts.has(ATT_MUT_VALUE)) {
+            error("$ATT_MUT_VALUE is missing")
         }
-
         val currentValueDto = recordsService.getAtts(
             RecordRef.create(EcosConfigConfig.CONFIG_REPO_SRC_ID, id),
             ConfigAtts::class.java
         )
+        val rawValue = atts[ATT_MUT_VALUE]
+        if (currentValueDto.valueDef.mandatory) {
+            if (rawValue.isNull()) {
+                error("$ATT_MUT_VALUE is null. Add valueDef.mandatory=false in your config to allow null value")
+            }
+            if (rawValue.isArray() && rawValue.isEmpty()) {
+                error("$ATT_MUT_VALUE is empty. Add valueDef.mandatory=false in your config to allow empty value")
+            }
+        }
 
         val value = convertNewValue(
             rawValue,
@@ -125,6 +134,13 @@ class EcosConfigProxyProcessor(
         type: ConfigValueType,
         multiple: Boolean
     ): DataValue {
+        if (value.isNull()) {
+            return if (multiple) {
+                DataValue.createArr()
+            } else {
+                value
+            }
+        }
         if (multiple) {
             val result = DataValue.createArr()
             val addElement: (DataValue) -> Unit = {

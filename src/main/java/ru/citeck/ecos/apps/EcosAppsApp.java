@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import ru.citeck.ecos.webapp.lib.spring.EcosSpringApplication;
+import ru.citeck.ecos.webapp.lib.spring.context.ecosconfig.EcosConfigBeanPostProcessor;
 
 @SpringBootApplication
 @EnableConfigurationProperties({
@@ -23,6 +24,7 @@ public class EcosAppsApp {
     public static final String NAME = "eapps";
 
     public static void main(String[] args) {
+        EcosConfigBeanPostProcessor.excludePackages("ru.citeck.ecos.apps.domain.ecosapp");
         new EcosSpringApplication(EcosAppsApp.class).run(args);
     }
 }
