@@ -129,16 +129,30 @@ class EcosConfigProxyProcessor(
         return newAtts
     }
 
+    private fun isConfigValueNull(value: DataValue, type: ConfigValueType): Boolean {
+        if (value.isNull()) {
+            return true
+        }
+        if (value.isTextual() &&
+            value.asText().isEmpty() &&
+            type != ConfigValueType.TEXT &&
+            type != ConfigValueType.MLTEXT
+        ) {
+            return true
+        }
+        return false
+    }
+
     private fun convertNewValue(
         value: DataValue,
         type: ConfigValueType,
         multiple: Boolean
     ): DataValue {
-        if (value.isNull()) {
+        if (isConfigValueNull(value, type)) {
             return if (multiple) {
                 DataValue.createArr()
             } else {
-                value
+                DataValue.NULL
             }
         }
         if (multiple) {
@@ -171,7 +185,11 @@ class EcosConfigProxyProcessor(
                     value.getAs(MLText::class.java)
                 } ?: error("Invalid mltext: $value")
             }
-            ConfigValueType.TEXT -> value.asText()
+            ConfigValueType.TEXT,
+            ConfigValueType.ASSOC,
+            ConfigValueType.AUTHORITY,
+            ConfigValueType.PERSON,
+            ConfigValueType.AUTHORITY_GROUP -> value.asText()
             ConfigValueType.BOOLEAN -> value.asBoolean()
             ConfigValueType.NUMBER -> value.asDouble()
             ConfigValueType.JSON -> {
@@ -181,7 +199,8 @@ class EcosConfigProxyProcessor(
                     value.asObjectData()
                 }
             }
-            else -> error("Unknown type: $type")
+            ConfigValueType.DATE,
+            ConfigValueType.DATETIME -> value.getAsInstant() ?: error("Invalid date or datetime value: $value")
         }
         return DataValue.create(convertedValue)
     }
