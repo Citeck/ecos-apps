@@ -15,11 +15,15 @@ import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.lock.LockContext
 import ru.citeck.ecos.webapp.api.task.EcosTasksApi
+import ru.citeck.ecos.webapp.lib.lock.EcosAppLockService
 import ru.citeck.ecos.webapp.lib.patch.EcosPatchCommandExecutor
+import ru.citeck.ecos.webapp.lib.patch.EcosPatchService
 import java.time.Duration
 import java.time.Instant
 import javax.annotation.PostConstruct
+import kotlin.reflect.jvm.jvmName
 
 @Service
 class EcosPatchService(
@@ -27,13 +31,16 @@ class EcosPatchService(
     val commandsService: CommandsService,
     val ecosTasksApi: EcosTasksApi,
     val watcherJob: ApplicationsWatcherJob,
-    val properties: EcosPatchProperties
+    val properties: EcosPatchProperties,
+    val ecosAppLockService: EcosAppLockService
 ) {
 
     companion object {
-        private val log = KotlinLogging.logger {}
 
         private const val SCHEDULER_ID = "ecos-patches"
+        private val ECOS_PATCHES_LOCK_KEY = EcosPatchService::class.jvmName + "-$SCHEDULER_ID-lock"
+
+        private val log = KotlinLogging.logger {}
 
         private val errorDelayDistribution = listOf(
             Duration.ofMinutes(1),
@@ -57,20 +64,26 @@ class EcosPatchService(
                 properties.job.delayDuration
             )
         ) {
-            val apps = watcherJob.activeApps
-            log.trace { "Apply patches for apps: $apps" }
-            apps.forEach {
-                applyPatches(it, apps)
+            ecosAppLockService.doInSyncOrSkip(ECOS_PATCHES_LOCK_KEY) { lockCtx ->
+                val apps = watcherJob.activeApps
+                log.trace { "Apply patches for apps: $apps" }
+                apps.forEach { applyPatches(it, lockCtx) }
             }
         }
     }
 
-    private fun applyPatches(appName: String, availableApps: Set<String>): Boolean {
-        var toApply = 10
-        while (toApply > 0 && applyPatch(appName, availableApps)) {
-            toApply--
+    private fun applyPatches(appName: String, lockCtx: LockContext) {
+        var iterationsLimit = 1000
+        while (lockCtx.isLocked() && iterationsLimit > 0) {
+            val availableApps = watcherJob.activeApps
+            if (!availableApps.contains(appName)) {
+                break
+            }
+            if (!applyPatch(appName, availableApps)) {
+                break
+            }
+            iterationsLimit--
         }
-        return toApply != 10
     }
 
     private fun applyPatch(appName: String, availableApps: Set<String>): Boolean {
@@ -116,7 +129,7 @@ class EcosPatchService(
         if (isAnyPatchNotApplied(patch.dependsOn)) {
             patch.status = EcosPatchStatus.DEPS_WAITING
             recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
-            return false
+            return true
         }
 
         val patchId = "${patch.targetApp}$${patch.patchId}"
@@ -132,7 +145,7 @@ class EcosPatchService(
                     patch.state
                 )
             )
-            withTtl(Duration.ofMinutes(10))
+            withTtl(Duration.ofSeconds(30))
         }
 
         log.info { "Patch command completed. Patch: $patchId" }
@@ -200,7 +213,7 @@ class EcosPatchService(
             }
         }
 
-        return false
+        return true
     }
 
     private fun isAppReadyToDeployPatches(appName: String): Boolean {
@@ -212,7 +225,7 @@ class EcosPatchService(
                     Predicates.eq("targetApp", appName),
                     Predicates.and(
                         Predicates.eq("status", EcosPatchStatus.PENDING),
-                        // apply only patches for app with last change more than 30 seconds ago
+                        // apply only patches for app with last change more than 10 seconds ago
                         // this delay required to collect patches for app from all sources
                         Predicates.gt(
                             RecordConstants.ATT_MODIFIED,

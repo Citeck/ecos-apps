@@ -107,11 +107,12 @@ class EcosConfigProxyProcessor(
         )
         val rawValue = atts[ATT_MUT_VALUE]
         if (currentValueDto.valueDef.mandatory) {
+            val configIdWithScope = currentValueDto.scope + "/" + currentValueDto.configId
             if (rawValue.isNull()) {
-                error("$ATT_MUT_VALUE is null. Add valueDef.mandatory=false in your config to allow null value")
+                error("$configIdWithScope: $ATT_MUT_VALUE is null. Add valueDef.mandatory=false in your config to allow null value")
             }
             if (rawValue.isArray() && rawValue.isEmpty()) {
-                error("$ATT_MUT_VALUE is empty. Add valueDef.mandatory=false in your config to allow empty value")
+                error("$configIdWithScope: $ATT_MUT_VALUE is empty. Add valueDef.mandatory=false in your config to allow empty value")
             }
         }
 
