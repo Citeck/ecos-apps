@@ -8,7 +8,7 @@ class EcosPatchProperties(
 ) {
 
     class EcosPatchJob(
-        val initDelayDuration: Duration = Duration.ofSeconds(30),
-        val delayDuration: Duration = Duration.ofSeconds(30)
+        val initDelayDuration: Duration = Duration.ofSeconds(10),
+        val delayDuration: Duration = Duration.ofSeconds(5)
     )
 }
