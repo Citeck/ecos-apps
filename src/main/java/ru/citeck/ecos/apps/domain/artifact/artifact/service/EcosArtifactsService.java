@@ -510,9 +510,15 @@ public class EcosArtifactsService {
 
                 List<DeployError> errors;
                 try {
+                    EcosArtifactRevEntity revToGetMeta;
+                    if (ArtifactRevSourceType.PATCH.equals(revToDeploy.getSourceType())) {
+                        revToGetMeta = revToDeploy.getArtifact().getLastRev();
+                    } else {
+                        revToGetMeta = revToDeploy;
+                    }
                     ArtifactDeployMeta meta = ArtifactDeployMeta.create()
-                        .withSourceType(String.valueOf(revToDeploy.getSourceType()))
-                        .withSourceId(revToDeploy.getSourceId())
+                        .withSourceType(String.valueOf(revToGetMeta.getSourceType()))
+                        .withSourceId(revToGetMeta.getSourceId())
                         .build();
                     errors = deployer.deploy(type, revToDeploy.getContent().getData(), meta);
                 } catch (Exception e) {
