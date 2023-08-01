@@ -1,0 +1,293 @@
+{
+  "id": "ecos-license-form",
+  "formKey": "",
+  "title": {
+    "en": "ECOS License"
+  },
+  "description": {},
+  "customModule": "",
+  "typeRef": "",
+  "width": "",
+  "system": true,
+  "definition": {
+    "components": [
+      {
+        "label": {
+          "ru": "ID",
+          "en": "ID"
+        },
+        "key": "id",
+        "disabled": true,
+        "inputMasks": [
+          {
+            "label": "",
+            "mask": ""
+          }
+        ],
+        "persistent": false,
+        "defaultValue": "",
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "value = _.get(data, \"licenseInfo.id\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "type": "textfield",
+        "input": true
+      },
+      {
+        "label": {
+          "ru": "Арендатор",
+          "en": "Tenant"
+        },
+        "key": "tenant",
+        "disabled": true,
+        "inputMasks": [
+          {
+            "label": "",
+            "mask": ""
+          }
+        ],
+        "persistent": false,
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "value = _.get(data, \"licenseInfo.tenant\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "customConditional": "const tenant = _.get(data, \"licenseInfo.tenant\");\n\nshow = !!tenant;",
+        "type": "textfield",
+        "input": true,
+        "defaultValue": ""
+      },
+      {
+        "label": {
+          "ru": "Выдана на имя",
+          "en": "Issued to"
+        },
+        "key": "issuedTo",
+        "disabled": true,
+        "inputMasks": [
+          {
+            "label": "",
+            "mask": ""
+          }
+        ],
+        "persistent": false,
+        "defaultValue": "",
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "value = _.get(data, \"licenseInfo.issuedTo\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "type": "textfield",
+        "input": true
+      },
+      {
+        "label": {
+          "ru": "Дата выдачи",
+          "en": "Issued at"
+        },
+        "key": "issuedAt",
+        "disabled": true,
+        "format": "dd.MM.yyyy HH:mm",
+        "persistent": false,
+        "datePicker": {
+          "minDate": "",
+          "maxDate": ""
+        },
+        "timePicker": {
+          "showMeridian": false
+        },
+        "defaultValue": "",
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "value = _.get(data, \"licenseInfo.issuedAt\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "type": "datetime",
+        "input": true,
+        "suffix": true
+      },
+      {
+        "label": {
+          "ru": "Валидна от",
+          "en": "Valid until"
+        },
+        "key": "validFrom",
+        "disabled": true,
+        "format": "dd.MM.yyyy HH:mm",
+        "persistent": false,
+        "datePicker": {
+          "minDate": "",
+          "maxDate": ""
+        },
+        "timePicker": {
+          "showMeridian": false
+        },
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "value = _.get(data, \"licenseInfo.validFrom\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "customConditional": "const validFrom = _.get(data, \"licenseInfo.validFrom\");\n\nshow = !!validFrom;",
+        "type": "datetime",
+        "input": true,
+        "suffix": true
+      },
+      {
+        "label": {
+          "ru": "Валидна до",
+          "en": "Valid until"
+        },
+        "key": "validUntil",
+        "disabled": true,
+        "format": "dd.MM.yyyy HH:mm",
+        "persistent": false,
+        "datePicker": {
+          "minDate": "",
+          "maxDate": ""
+        },
+        "timePicker": {
+          "showMeridian": false
+        },
+        "defaultValue": "",
+        "refreshOn": [],
+        "calculateValue": "value = _.get(data, \"licenseInfo.validUntil\");",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "type": "datetime",
+        "input": true,
+        "suffix": true
+      },
+      {
+        "label": {
+          "ru": "Лицензия валидна",
+          "en": "License is valid"
+        },
+        "key": "isValid",
+        "disabled": true,
+        "persistent": false,
+        "refreshOn": [],
+        "calculateValue": "if(moment.now() > validUntil) {\n  value = {\n    \"ru\": \"Нет\",\n    \"en\": \"No\"\n  };\n}\n\nvalue = {\n  \"ru\": \"Да\",\n  \"en\": \"Yes\"\n};",
+        "optionalWhenDisabled": false,
+        "type": "mlText",
+        "input": true
+      },
+      {
+        "label": {
+          "ru": "Контент",
+          "en": "Content"
+        },
+        "key": "cont",
+        "disabled": true,
+        "persistent": false,
+        "clearOnHide": false,
+        "defaultValue": "",
+        "refreshOn": [
+          "licenseInfo"
+        ],
+        "calculateValue": "const content = _.get(data, \"licenseInfo.content\");\r\n\r\nfunction stringifyObject(obj) {\r\n  if (Object.keys(obj).length === 0) {\r\n    return \";\";\r\n  } else {\r\n    const result = Object.keys(obj).map(key => {\r\n      const value = obj[key];\r\n      if (typeof value === \"object\" && Object.keys(value).length > 0) {\r\n        return `${key}: ${Object.keys(value).join(\", \")}`;\r\n      } else {\r\n        return `${key}: ${value}`;\r\n      }\r\n    });\r\n    return result.join(\"; \") + \";\";\r\n  }\r\n}\r\n\r\n\r\n\r\nvalue = stringifyObject(content);",
+        "allowCalculateOverride": true,
+        "optionalWhenDisabled": false,
+        "rows": 10,
+        "type": "textarea",
+        "input": true
+      },
+      {
+        "label": {
+          "ru": "Columns"
+        },
+        "key": "columns2",
+        "columns": [
+          {
+            "components": [],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "md": 3,
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 0
+          },
+          {
+            "components": [
+              {
+                "label": "license-info",
+                "source": {
+                  "type": "record",
+                  "forceLoad": true,
+                  "record": {
+                    "id": "{{recordId}}",
+                    "attributes": {
+                      "id": "id",
+                      "issuedTo": "issuedTo",
+                      "issuedAt": "issuedAt",
+                      "validUntil": "validUntil",
+                      "content": "content?json",
+                      "signatures": "signatures?json",
+                      "tenant": "tenant",
+                      "validFrom": "validFrom"
+                    }
+                  }
+                },
+                "update": {
+                  "type": "once"
+                },
+                "key": "licenseInfo",
+                "type": "asyncData",
+                "input": true
+              }
+            ],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 1,
+            "md": 3
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "components": [],
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 2
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 3,
+            "components": []
+          }
+        ],
+        "oneColumnInViewMode": false,
+        "type": "columns",
+        "input": false
+      }
+    ],
+    "formId": "ecos-license-form"
+  },
+  "attributes": {},
+  "notExists": false
+}

@@ -1,0 +1,188 @@
+{
+  "id": "ecos-license-dashboard",
+  "typeRef": "emodel/type@ecos-license",
+  "appliedToRef": "",
+  "authority": null,
+  "scope": "",
+  "priority": 0,
+  "config": {
+    "version": "v2",
+    "v2": {
+      "widgets": [
+        {
+          "dndId": "9b8f6180-1a68-4c8f-9e21-249ef2f1143d",
+          "name": "properties",
+          "label": "dashboard-settings.widget.properties",
+          "id": "ecbede90-a55d-423a-9b6b-3ac523600335",
+          "props": {
+            "maxHeightByContent": true,
+            "view": {
+              "options": [
+                {
+                  "value": "VIEW",
+                  "label": "widget-settings.form-condition.view"
+                },
+                {
+                  "value": "EDIT",
+                  "label": "widget-settings.form-condition.edit"
+                }
+              ],
+              "default": "VIEW"
+            },
+            "id": "ecbede90-a55d-423a-9b6b-3ac523600335",
+            "config": {
+              "formId": "uiserv/form@ecos-license-form",
+              "titleAsFormName": true
+            }
+          },
+          "description": {
+            "ru": "Основное",
+            "en": "General"
+          }
+        }
+      ],
+      "desktop": [
+        {
+          "id": "layout_799ac5e5-9eab-4c08-af80-5ed48d768229",
+          "tab": {
+            "label": {
+              "ru": "Основное",
+              "en": "General"
+            },
+            "idLayout": "layout_799ac5e5-9eab-4c08-af80-5ed48d768229"
+          },
+          "type": "1-column",
+          "columns": [
+            {
+              "widgets": [
+                "ecbede90-a55d-423a-9b6b-3ac523600335"
+              ]
+            }
+          ]
+        }
+      ],
+      "mobile": [
+        {
+          "id": "layout_b4b01e70-e01c-457d-abfa-aaaf0a4ca691",
+          "tab": {
+            "label": "Свойства",
+            "idLayout": "layout_b4b01e70-e01c-457d-abfa-aaaf0a4ca691"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": [
+                "ecbede90-a55d-423a-9b6b-3ac523600335"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "layout_4e345aef-8b21-47cb-a653-26e3e897bb5c",
+          "tab": {
+            "label": "Просмотр",
+            "idLayout": "layout_4e345aef-8b21-47cb-a653-26e3e897bb5c"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_c5b3186f-5a78-4d92-a730-1c8086562141",
+          "tab": {
+            "label": "Действия",
+            "idLayout": "layout_c5b3186f-5a78-4d92-a730-1c8086562141"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_69e552d9-1323-42b4-b8ac-af176a6084fc",
+          "tab": {
+            "label": "Документы",
+            "idLayout": "layout_69e552d9-1323-42b4-b8ac-af176a6084fc"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_07d39068-7d9b-4d4e-822a-c2db4913cb6d",
+          "tab": {
+            "label": "Связи документа",
+            "idLayout": "layout_07d39068-7d9b-4d4e-822a-c2db4913cb6d"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_b3a3755f-12c4-4b2c-9c87-10821681b76c",
+          "tab": {
+            "label": "Комментарии",
+            "idLayout": "layout_b3a3755f-12c4-4b2c-9c87-10821681b76c"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_0ae86778-b9a2-4f1b-8bb8-43891c1539cd",
+          "tab": {
+            "label": "История событий",
+            "idLayout": "layout_0ae86778-b9a2-4f1b-8bb8-43891c1539cd"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_8b060391-384f-4040-a16b-18ed74a8959f",
+          "tab": {
+            "label": "Журнал версий",
+            "idLayout": "layout_8b060391-384f-4040-a16b-18ed74a8959f"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        },
+        {
+          "id": "layout_0fe2383d-bce5-4003-b795-9eb284884932",
+          "tab": {
+            "label": "Предпросмотр",
+            "idLayout": "layout_0fe2383d-bce5-4003-b795-9eb284884932"
+          },
+          "type": "mobile",
+          "columns": [
+            {
+              "widgets": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "attributes": {}
+}
