@@ -8,6 +8,7 @@ system: true
 
 sourceId: eapps/ecos-license
 journalRef: uiserv/journal@ecos-licenses
+formRef: uiserv/form@ecos-license-form
 queryPermsPolicy: OWN
 
 dispNameTemplate:
