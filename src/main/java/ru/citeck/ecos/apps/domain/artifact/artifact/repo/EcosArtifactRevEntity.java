@@ -28,9 +28,9 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     @Getter @Setter private String extId;
 
     @Column(name="source")
-    @Getter @Setter private String sourceId;
+    private String sourceId;
     @Enumerated(EnumType.ORDINAL)
-    @Getter @Setter private ArtifactRevSourceType sourceType;
+    private ArtifactRevSourceType sourceType;
 
     @Getter @Setter private Long typeRevId;
     @Getter @Setter private String modelVersion;
@@ -38,4 +38,20 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")
     @Getter @Setter private EcosContentEntity content;
+
+    public String getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+        this.sourceId = sourceId;
+    }
+
+    public ArtifactRevSourceType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(ArtifactRevSourceType sourceType) {
+        this.sourceType = sourceType;
+    }
 }

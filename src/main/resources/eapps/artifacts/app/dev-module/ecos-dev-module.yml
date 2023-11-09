@@ -8,3 +8,4 @@ actions:
   - uiserv/action@alf-reset-webscripts-repo
   - uiserv/action@alf-reset-webscripts-share
   - uiserv/action@artifact-reset-all-user-revs
+  - uiserv/action@ecos-app-full-delete

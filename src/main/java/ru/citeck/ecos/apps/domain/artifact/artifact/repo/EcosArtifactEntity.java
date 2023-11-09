@@ -20,8 +20,8 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Getter @Setter private Long id;
 
     @Column(name="ext_id")
-    @Getter @Setter private String extId;
-    @Getter @Setter private String type;
+    private String extId;
+    private String type;
 
     @Getter @Setter private String name;
     @Getter @Setter private String tags;
@@ -60,5 +60,21 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     public boolean setDependencies(Set<EcosArtifactDepEntity> dependencies) {
         return EntityUtils.changeHibernateSet(this.dependencies, dependencies, EcosArtifactDepEntity::getTarget);
+    }
+
+    public String getExtId() {
+        return extId;
+    }
+
+    public void setExtId(String extId) {
+        this.extId = extId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

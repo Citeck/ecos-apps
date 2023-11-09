@@ -1,0 +1,168 @@
+{
+  "id": "ecos-app-full-delete-action",
+  "formKey": "",
+  "title": {
+    "en": "ECOS App full delete"
+  },
+  "description": {
+    "en": ""
+  },
+  "customModule": "",
+  "typeRef": "",
+  "width": "",
+  "system": false,
+  "i18n": {},
+  "definition": {
+    "components": [
+      {
+        "scrollableContent": true,
+        "key": "panel2",
+        "type": "panel",
+        "input": false,
+        "components": [
+          {
+            "label": {
+              "ru": "HTML"
+            },
+            "key": "html",
+            "className": "",
+            "content": {
+              "ru": "<h3>Введите идентификатор приложения вручную или выберите из журнала</h3>\n<h5 style=\"color: red;\">Все артефакты, которые загружены из указанных приложений будут возвращены с исходному состоянию</h5>",
+              "en": "<h3>Enter the application identifier manually or select from the journal</h3>\n<h5 style=\"color: red;\">All artifacts that are uploaded from the specified applications will be returned to the original state</h5>"
+            },
+            "refreshOnChange": false,
+            "refreshOn": [],
+            "optionalWhenDisabled": false,
+            "type": "htmlelement",
+            "input": false
+          },
+          {
+            "label": {
+              "en": "ECOS Applications",
+              "ru": "Приложения ECOS"
+            },
+            "key": "ecosAppId",
+            "multiple": true,
+            "defaultValue": "",
+            "refreshOn": [],
+            "optionalWhenDisabled": false,
+            "type": "textfield",
+            "input": true,
+            "reorder": false,
+            "inputMasks": [
+              {}
+            ]
+          },
+          {
+            "label": {
+              "ru": "Приложения ECOS",
+              "en": "ECOS Applications"
+            },
+            "key": "ecosAppRef",
+            "multiple": true,
+            "modalTitle": "",
+            "journalId": "ecos-apps",
+            "queryData": "",
+            "refreshOn": [],
+            "optionalWhenDisabled": false,
+            "type": "selectJournal",
+            "input": true
+          }
+        ]
+      },
+      {
+        "label": {
+          "ru": "Columns"
+        },
+        "key": "columns2",
+        "columns": [
+          {
+            "components": [
+              {
+                "label": "Cancel",
+                "action": "event",
+                "state": "",
+                "showValidations": false,
+                "event": "cancel",
+                "block": true,
+                "type": "button",
+                "input": true,
+                "key": "submit2",
+                "conditional": {
+                  "show": null,
+                  "when": null
+                }
+              }
+            ],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "md": 3,
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 0
+          },
+          {
+            "components": [],
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 1,
+            "md": 3
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "label": "Column",
+            "components": [],
+            "clearOnHide": true,
+            "conditional": {
+              "show": null,
+              "when": null
+            },
+            "index": 2
+          },
+          {
+            "md": 3,
+            "type": "column",
+            "input": false,
+            "key": "column",
+            "index": 3,
+            "components": [
+              {
+                "label": {
+                  "ru": "Удалить",
+                  "en": "Delete"
+                },
+                "key": "submit",
+                "state": "",
+                "theme": "primary",
+                "block": true,
+                "disableOnInvalid": true,
+                "refreshOn": [],
+                "optionalWhenDisabled": false,
+                "type": "button",
+                "input": true
+              }
+            ]
+          }
+        ],
+        "oneColumnInViewMode": false,
+        "type": "columns",
+        "input": false
+      }
+    ]
+  }
+}

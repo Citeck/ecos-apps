@@ -747,6 +747,10 @@ public class EcosArtifactsService {
     }
 
     public boolean resetUserRevision(EcosArtifactEntity artifact) {
+        return resetRevision(artifact, rev -> ArtifactRevSourceType.USER.equals(rev.getSourceType()));
+    }
+
+    public boolean resetRevision(EcosArtifactEntity artifact, Function1<EcosArtifactRevEntity, Boolean> resetWhile) {
 
         if (artifact.getLastRev() == null) {
             return false;
@@ -754,7 +758,7 @@ public class EcosArtifactsService {
 
         EcosArtifactRevEntity lastRev = artifact.getLastRev();
 
-        if (!ArtifactRevSourceType.USER.equals(lastRev.getSourceType())) {
+        if (!resetWhile.invoke(lastRev)) {
             return false;
         }
 
@@ -763,12 +767,12 @@ public class EcosArtifactsService {
         int itCount = 1000;
         while (--itCount > 0
                 && lastNotUserRev != null
-                && ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
+                && resetWhile.invoke(lastNotUserRev)) {
 
             lastNotUserRev = lastNotUserRev.getPrevRev();
         }
 
-        if (lastNotUserRev == null || ArtifactRevSourceType.USER.equals(lastNotUserRev.getSourceType())) {
+        if (lastNotUserRev == null || resetWhile.invoke(lastNotUserRev)) {
             return false;
         }
 
