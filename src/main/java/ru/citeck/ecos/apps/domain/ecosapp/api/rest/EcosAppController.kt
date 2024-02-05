@@ -55,8 +55,8 @@ class EcosAppController(
             val artifactsByApp = artifactsDao.getArtifactsByEcosApp(appToDeleteId)
             log.info { "Delete $appToDeleteId. Artifacts: ${artifactsByApp.size}" }
             val resetCondition: (EcosArtifactRevEntity) -> Boolean = {
-                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == appToDeleteId)
-                || it.sourceType == ArtifactRevSourceType.USER
+                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == appToDeleteId) ||
+                    it.sourceType == ArtifactRevSourceType.USER
             }
             for (artifact in artifactsByApp) {
                 val artifactRef = "${artifact.type}$${artifact.extId}"
