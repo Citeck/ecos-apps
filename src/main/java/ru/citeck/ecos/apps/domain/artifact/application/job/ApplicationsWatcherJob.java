@@ -1,9 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.application.job;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.event.ContextClosedEvent;
@@ -20,12 +17,15 @@ import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchServi
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
+import ru.citeck.ecos.micrometer.EcosMicrometerContext;
+import ru.citeck.ecos.micrometer.EcosObservation;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,6 +45,7 @@ public class ApplicationsWatcherJob {
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosArtifactsService ecosArtifactsService;
     private final EcosArtifactsPatchService ecosArtifactsPatchService;
+    private final EcosMicrometerContext ecosMicrometerContext;
 
     private final RemoteAppService remoteAppService;
     private final ApplicationProperties props;
@@ -59,9 +60,9 @@ public class ApplicationsWatcherJob {
     private long artifactsLastModifiedTime = 0;
 
     private boolean forceUpdate = false;
-    private CompletableFuture<Boolean> nextUpdateFuture = null;
+    private final AtomicReference<CompletableFuture<Boolean>> nextUpdateFuture = new AtomicReference<>();
 
-    private AtomicBoolean isContextClosed = new AtomicBoolean(false);
+    private final AtomicBoolean isContextClosed = new AtomicBoolean(false);
     private Thread watcherThread;
 
     private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
@@ -97,52 +98,58 @@ public class ApplicationsWatcherJob {
             log.error("Error", e);
         }
 
-        rootWhile:
         while (!isContextClosed.get()) {
+            EcosObservation observation = ecosMicrometerContext.createObservation("ecos.apps.watcher");
+            observation.observeJ(this::doWatcherJob);
+        }
+    }
 
+    @SneakyThrows
+    @SuppressWarnings("BusyWait")
+    private void doWatcherJob() {
+
+        try {
+
+            boolean forceUpdateChangedSources = this.forceUpdate;
+            this.forceUpdate = false;
+
+            updateAllApps();
+            if (isContextClosed.get()) {
+                return;
+            }
+            updateArtifacts(forceUpdateChangedSources);
+            if (isContextClosed.get()) {
+                return;
+            }
+
+            long waitingStart = System.currentTimeMillis();
+            while (!this.forceUpdate && (System.currentTimeMillis() - waitingStart) < CHECK_STATUS_PERIOD) {
+
+                Thread.sleep(100);
+
+                if (isContextClosed.get()) {
+                    return;
+                }
+            }
+
+        } catch (InterruptedException e) {
+            log.info("Watcher thread was interrupted");
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Throwable e) {
             try {
-
-                boolean forceUpdateChangedSources = this.forceUpdate;
-                this.forceUpdate = false;
-
-                updateAllApps();
-                if (isContextClosed.get()) {
-                    continue;
-                }
-                updateArtifacts(forceUpdateChangedSources);
-                if (isContextClosed.get()) {
-                    continue;
-                }
-
-                long waitingStart = System.currentTimeMillis();
-                while (!this.forceUpdate && (System.currentTimeMillis() - waitingStart) < CHECK_STATUS_PERIOD) {
-
-                    Thread.sleep(100);
-
-                    if (isContextClosed.get()) {
-                        continue rootWhile;
-                    }
-                }
-
-            } catch (InterruptedException e) {
-                log.info("Watcher thread was interrupted");
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Throwable e) {
-                try {
-                    if (lastError == null || !Arrays.equals(lastError.getStackTrace(), e.getStackTrace())) {
+                if (lastError == null || !Arrays.equals(lastError.getStackTrace(), e.getStackTrace())) {
+                    log.error("Watcher error", e);
+                    lastError = e;
+                } else {
+                    if (errorNextPrintTime - System.currentTimeMillis() <= 0) {
                         log.error("Watcher error", e);
-                        lastError = e;
-                    } else {
-                        if (errorNextPrintTime - System.currentTimeMillis() <= 0) {
-                            log.error("Watcher error", e);
-                            errorNextPrintTime = System.currentTimeMillis() + 60_000;
-                        }
+                        errorNextPrintTime = System.currentTimeMillis() + 60_000;
                     }
-                    Thread.sleep(2 * CHECK_STATUS_PERIOD);
-                } catch (Exception ex) {
-                    log.error("Exception handler failed", ex);
                 }
+                Thread.sleep(2 * CHECK_STATUS_PERIOD);
+            } catch (Exception ex) {
+                log.error("Exception handler failed", ex);
             }
         }
     }
@@ -152,14 +159,17 @@ public class ApplicationsWatcherJob {
     }
 
     public void forceUpdateSync() {
+        CompletableFuture<Boolean> future;
         synchronized (this) {
-            if (nextUpdateFuture == null) {
-                nextUpdateFuture = new CompletableFuture<>();
+            future = nextUpdateFuture.get();
+            if (future == null) {
+                future = new CompletableFuture<>();
+                nextUpdateFuture.set(future);
             }
             forceUpdate = true;
         }
         try {
-            nextUpdateFuture.get(10, TimeUnit.SECONDS);
+            future.get(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             ExceptionUtils.throwException(e);
         }
@@ -172,6 +182,8 @@ public class ApplicationsWatcherJob {
 
     @Synchronized
     private void updateAllApps() {
+
+        log.trace("All apps updating started");
 
         List<RemoteAppStatus> remoteStatuses = remoteAppService.getAppsStatus();
         Map<String, RemoteAppStatus> newStatuses = new HashMap<>();
@@ -204,6 +216,8 @@ public class ApplicationsWatcherJob {
 
     @Synchronized
     private void updateArtifacts(boolean forceUpdateChangedSources) {
+
+        log.trace("Artufacts updating started");
 
         long currentTime = System.currentTimeMillis();
         long typesChangeTime = ecosArtifactTypesService.getLastModified().toEpochMilli();
@@ -253,8 +267,7 @@ public class ApplicationsWatcherJob {
 
         ecosArtifactsService.updateFailedArtifacts();
 
-        CompletableFuture<Boolean> nextUpdateFuture = this.nextUpdateFuture;
-        this.nextUpdateFuture = null;
+        CompletableFuture<Boolean> nextUpdateFuture = this.nextUpdateFuture.getAndSet(null);
         if (nextUpdateFuture != null) {
             nextUpdateFuture.complete(true);
         }

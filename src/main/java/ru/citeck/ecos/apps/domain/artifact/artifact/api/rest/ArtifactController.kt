@@ -12,7 +12,7 @@ import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJo
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.AllUserRevisionsResetStatus
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.commons.utils.ZipUtils
-import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.OffsetDateTime
 
 @Component
@@ -28,14 +28,14 @@ class ArtifactController(
     }
 
     @PostMapping("deploy")
-    fun deployArtifact(@RequestParam(required = true) ref: RecordRef) {
-        artifactService.resetDeployStatus(ArtifactRef.valueOf(ref.id))
+    fun deployArtifact(@RequestParam(required = true) ref: EntityRef) {
+        artifactService.resetDeployStatus(ArtifactRef.valueOf(ref.getLocalId()))
         applicationsWatcherJob.forceUpdate()
     }
 
     @PostMapping("reset-user-rev")
-    fun resetUserRevision(@RequestParam(required = true) ref: RecordRef) {
-        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.id))
+    fun resetUserRevision(@RequestParam(required = true) ref: EntityRef) {
+        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.getLocalId()))
         applicationsWatcherJob.forceUpdate()
     }
 
@@ -48,11 +48,11 @@ class ArtifactController(
 
     @GetMapping("download-revisions")
     fun downloadRevisions(
-        @RequestParam(required = true) ref: RecordRef,
+        @RequestParam(required = true) ref: EntityRef,
         @RequestParam(required = true) fromTime: String
     ): HttpEntity<ByteArray> {
 
-        val artifactRef = ArtifactRef.valueOf(ref.id)
+        val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
         val fromTimeInstant = OffsetDateTime.parse(fromTime).toInstant()
 
         val dir = artifactService.getArtifactRevisions(artifactRef, fromTimeInstant)

@@ -7,7 +7,7 @@ import ru.citeck.ecos.apps.domain.devtools.devmodule.repo.DevModuleRepo
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.json.Json
-import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 @Service
 class DevModulesService(
@@ -33,7 +33,7 @@ class DevModulesService(
     private fun toDto(entity: DevModuleEntity): DevModuleDef {
         return DevModuleDef.create()
             .withId(entity.extId)
-            .withActions(DataValue.create(entity.actions).asList(RecordRef::class.java))
+            .withActions(DataValue.create(entity.actions).asList(EntityRef::class.java))
             .withName(Json.mapper.read(entity.name, MLText::class.java))
             .build()
     }
