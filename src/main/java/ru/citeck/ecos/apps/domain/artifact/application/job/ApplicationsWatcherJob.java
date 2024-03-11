@@ -18,7 +18,7 @@ import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesSe
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
 import ru.citeck.ecos.micrometer.EcosMicrometerContext;
-import ru.citeck.ecos.micrometer.EcosObservation;
+import ru.citeck.ecos.micrometer.obs.EcosObs;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -99,8 +99,7 @@ public class ApplicationsWatcherJob {
         }
 
         while (!isContextClosed.get()) {
-            EcosObservation observation = ecosMicrometerContext.createObservation("ecos.apps.watcher");
-            observation.observeJ(this::doWatcherJob);
+            doWatcherJob();
         }
     }
 
@@ -113,11 +112,17 @@ public class ApplicationsWatcherJob {
             boolean forceUpdateChangedSources = this.forceUpdate;
             this.forceUpdate = false;
 
-            updateAllApps();
-            if (isContextClosed.get()) {
-                return;
-            }
-            updateArtifacts(forceUpdateChangedSources);
+            EcosObs observation = ecosMicrometerContext.createObs("ecos.apps.watcher");
+
+            observation.observeJ(() -> {
+                if (!isContextClosed.get()) {
+                    updateAllApps();
+                }
+                if (!isContextClosed.get()) {
+                    updateArtifacts(forceUpdateChangedSources);
+                }
+            });
+
             if (isContextClosed.get()) {
                 return;
             }
