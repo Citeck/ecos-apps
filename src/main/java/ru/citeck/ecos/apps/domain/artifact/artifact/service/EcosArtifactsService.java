@@ -1076,11 +1076,11 @@ public class EcosArtifactsService {
 
         @Nullable
         @Override
-        public ArtifactRevContext getLastRevBySourceType(@NotNull ArtifactRevSourceType type) {
+        public ArtifactRevContext getLastRevBySourceType(@NotNull ArtifactRevSourceType... type) {
             List<EcosArtifactRevEntity> revs = artifactsRevRepo.getArtifactRevisions(
                 artifactEntity.getType(),
                 artifactEntity.getExtId(),
-                type,
+                Arrays.stream(type).collect(Collectors.toList()),
                 PageRequest.of(0, 1)
             );
             return revs.isEmpty() ? null : new RevContext(revs.get(0));

@@ -1,0 +1,51 @@
+---
+id: changed-artifacts
+name: { ru: Измененные артефакты, en: Updated artifacts }
+
+system: true
+sourceId: eapps/artifact
+
+predicate:
+    t: eq
+    att: sourceType
+    val: USER
+
+defaultSortBy:
+  - attribute: modifiedIso
+    ascending: false
+
+actions:
+  - uiserv/action@artifact-download-revisions
+  - uiserv/action@download-base64-data-zip
+  - uiserv/action@artifact-deploy
+  - uiserv/action@artifact-reset-user-rev
+
+columns:
+
+  - id: ecosAppRef
+    type: ASSOC
+    name: { ru: Приложение , en: Application }
+
+  - id: type
+    name: { ru: Тип, en: Type }
+
+  - id: type
+    name: { ru: Тип, en: Type }
+
+  - id: moduleId
+    name: { ru: Идентификатор, en: Id }
+
+  - id: name
+    name: { ru: Имя, en: Name }
+
+  - id: tagsStr
+    name: { ru: Тэги, en: Tags }
+
+  - id: modifiedIso
+    type: DATETIME
+    name: { ru: Дата изменения, en: Modified }
+
+  - id: createdIso
+    type: DATETIME
+    name: { ru: Дата создания, en: Created }
+    visible: false

@@ -8,7 +8,7 @@ interface ArtifactContext {
 
     fun getEcosApp(): String
 
-    fun getLastRevBySourceType(type: ArtifactRevSourceType): ArtifactRevContext?
+    fun getLastRevBySourceType(vararg types: ArtifactRevSourceType): ArtifactRevContext?
 
     fun isRevisionsEquals(rev0: ArtifactRevContext?, rev1: ArtifactRevContext?): Boolean
 
