@@ -10,6 +10,10 @@ predicate:
     att: sourceType
     val: USER
 
+defaultSortBy:
+  - attribute: modifiedIso
+    ascending: false
+
 actions:
   - uiserv/action@artifact-download-revisions
   - uiserv/action@download-base64-data-zip
@@ -44,3 +48,4 @@ columns:
   - id: createdIso
     type: DATETIME
     name: { ru: Дата создания, en: Created }
+    visible: false
