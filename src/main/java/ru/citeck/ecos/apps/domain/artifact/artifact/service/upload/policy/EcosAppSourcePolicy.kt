@@ -26,7 +26,10 @@ class EcosAppSourcePolicy : ArtifactSourcePolicy {
             }
             return false
         }
-        val prevContent = context.getLastRevBySourceType(ArtifactRevSourceType.ECOS_APP)
+        val prevContent = context.getLastRevBySourceType(
+            ArtifactRevSourceType.ECOS_APP,
+            ArtifactRevSourceType.APPLICATION
+        )
 
         return !context.isRevisionsEquals(prevContent, newRev)
     }

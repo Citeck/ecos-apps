@@ -32,12 +32,12 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
            "JOIN rev.artifact module " +
            "WHERE module.type = ?1 AND module.extId = ?2 " +
-                "AND rev.sourceType = ?3 " +
+                "AND rev.sourceType in ?3 " +
                 "AND module.deleted = false " +
            "ORDER BY rev.createdDate DESC")
     List<EcosArtifactRevEntity> getArtifactRevisions(String type,
                                                      String artifactId,
-                                                     ArtifactRevSourceType sourceType,
+                                                     List<ArtifactRevSourceType> sourceType,
                                                      Pageable pageable);
 
     @Query("SELECT m FROM EcosArtifactRevEntity m " +
