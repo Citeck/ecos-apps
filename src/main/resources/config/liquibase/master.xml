@@ -25,6 +25,7 @@
     <include file="changelog/20210513000000_create_dev_module.xml" relativeToChangelogFile="true"/>
     <include file="changelog/20220719000000_update_ecos_apps.xml" relativeToChangelogFile="true"/>
     <include file="changelog/20221222000000_update_artifact_patch.xml" relativeToChangelogFile="true"/>
+    <include file="changelog/20240105000000_rename_ecos_content.xml" relativeToChangelogFile="true"/>
 
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->

@@ -28,7 +28,6 @@ import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
 import ru.citeck.ecos.commons.utils.ZipUtils
 import ru.citeck.ecos.model.lib.type.service.utils.TypeUtils
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.entity.EntityRef
@@ -171,13 +170,13 @@ class EcosAppService(
         ecosArtifactsService.removeEcosApp(id)
     }
 
-    fun getAppForArtifacts(list: List<RecordRef>): Map<RecordRef, RecordRef> {
+    fun getAppForArtifacts(list: List<EntityRef>): Map<EntityRef, EntityRef> {
 /*
-        val result = mutableMapOf<RecordRef, RecordRef>()
+        val result = mutableMapOf<EntityRef, EntityRef>()
         ecosAppContentRepo.findAllByArtifactIsIn(list.map { it.toString() }).forEach {
             val appId = it.app.extId
             if (appId != null) {
-                result[RecordRef.valueOf(it.artifact)] = RecordRef.create("eapps", "ecos-app", appId)
+                result[EntityRef.valueOf(it.artifact)] = EntityRef.create("eapps", "ecos-app", appId)
             }
         }*/
         return emptyMap() // result
@@ -256,7 +255,7 @@ class EcosAppService(
     }
 
     private fun typeRefToArtifactRef(typeRef: EntityRef): EntityRef {
-        return RecordRef.create("eapps", EcosArtifactRecords.ID, "model/type$${typeRef.getLocalId()}")
+        return EntityRef.create("eapps", EcosArtifactRecords.ID, "model/type$${typeRef.getLocalId()}")
     }
 
     // AdditionalSourceProvider

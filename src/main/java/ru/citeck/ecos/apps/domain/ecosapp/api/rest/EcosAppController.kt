@@ -11,7 +11,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsDao
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.context.lib.auth.AuthContext
-import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 @Component
 @RestController
@@ -55,8 +55,8 @@ class EcosAppController(
             val artifactsByApp = artifactsDao.getArtifactsByEcosApp(appToDeleteId)
             log.info { "Delete $appToDeleteId. Artifacts: ${artifactsByApp.size}" }
             val resetCondition: (EcosArtifactRevEntity) -> Boolean = {
-                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == appToDeleteId)
-                || it.sourceType == ArtifactRevSourceType.USER
+                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == appToDeleteId) ||
+                    it.sourceType == ArtifactRevSourceType.USER
             }
             for (artifact in artifactsByApp) {
                 val artifactRef = "${artifact.type}$${artifact.extId}"
@@ -82,7 +82,7 @@ class EcosAppController(
     }
 
     class EcosAppFullDeleteBody(
-        val ecosAppRef: List<RecordRef>? = null,
+        val ecosAppRef: List<EntityRef>? = null,
         val ecosAppId: List<String>? = null
     )
 }

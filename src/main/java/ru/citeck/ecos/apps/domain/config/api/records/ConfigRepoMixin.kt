@@ -3,10 +3,10 @@ package ru.citeck.ecos.apps.domain.config.api.records
 import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.records2.RecordConstants
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
 import ru.citeck.ecos.records3.record.atts.value.AttValueCtx
 import ru.citeck.ecos.records3.record.mixin.AttMixin
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 class ConfigRepoMixin : AttMixin {
 
@@ -25,9 +25,9 @@ class ConfigRepoMixin : AttMixin {
             RecordConstants.ATT_FORM_REF -> {
                 val atts = value.getAtts(FormRefAtts::class.java)
                 var ref = atts.formRef
-                if (RecordRef.isEmpty(atts.formRef)) {
+                if (EntityRef.isEmpty(atts.formRef)) {
                     val key = ConfigKey.create(atts.scope, atts.configId)
-                    ref = RecordRef.create("uiserv", "form", "config$$key")
+                    ref = EntityRef.create("uiserv", "form", "config$$key")
                 }
                 ref
             }
@@ -43,7 +43,7 @@ class ConfigRepoMixin : AttMixin {
 
     data class FormRefAtts(
         @AttName("valueDef.formRef?id")
-        val formRef: RecordRef,
+        val formRef: EntityRef,
         val scope: String,
         val configId: String
     )

@@ -8,7 +8,6 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.dto.ConfigKey
 import ru.citeck.ecos.config.lib.dto.ConfigValueDef
 import ru.citeck.ecos.config.lib.dto.ConfigValueType
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.atts.dto.LocalRecordAtts
@@ -19,6 +18,7 @@ import ru.citeck.ecos.records3.record.dao.impl.proxy.MutateProxyProcessor
 import ru.citeck.ecos.records3.record.dao.impl.proxy.ProxyProcContext
 import ru.citeck.ecos.records3.record.dao.impl.proxy.ProxyRecordAtts
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 @Component
 class EcosConfigProxyProcessor(
@@ -39,7 +39,7 @@ class EcosConfigProxyProcessor(
             val configId = it.atts.getAtt(ATT_CONFIG_ID_ALIAS)[ScalarType.STR.schema].asText()
             val scope = it.atts.getAtt(ATT_SCOPE_ALIAS)[ScalarType.STR.schema].asText()
             it.copy(
-                atts = it.atts.withId(it.atts.getId().withId(ConfigKey.create(scope, configId).toString()))
+                atts = it.atts.withId(it.atts.getId().withLocalId(ConfigKey.create(scope, configId).toString()))
             )
         }
     }
@@ -63,7 +63,7 @@ class EcosConfigProxyProcessor(
         return newAtts
     }
 
-    override fun mutatePostProcess(records: List<RecordRef>, context: ProxyProcContext): List<RecordRef> {
+    override fun mutatePostProcess(records: List<EntityRef>, context: ProxyProcContext): List<EntityRef> {
         return records
     }
 
@@ -78,7 +78,7 @@ class EcosConfigProxyProcessor(
                     )
                 )
             }
-        )?.id
+        )?.getLocalId()
     }
 
     override fun mutatePreProcess(
@@ -102,7 +102,7 @@ class EcosConfigProxyProcessor(
             error("$ATT_MUT_VALUE is missing")
         }
         val currentValueDto = recordsService.getAtts(
-            RecordRef.create(EcosConfigConfig.CONFIG_REPO_SRC_ID, id),
+            EntityRef.create(EcosConfigConfig.CONFIG_REPO_SRC_ID, id),
             ConfigAtts::class.java
         )
         val rawValue = atts[ATT_MUT_VALUE]

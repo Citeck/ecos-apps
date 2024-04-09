@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.app.domain.buildinfo.dto.BuildInfo;
 import ru.citeck.ecos.apps.app.domain.buildinfo.dto.CommitInfo;
 import ru.citeck.ecos.records2.RecordMeta;
-import ru.citeck.ecos.records2.RecordRef;
-import ru.citeck.ecos.records2.graphql.meta.value.EmptyValue;
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField;
 import ru.citeck.ecos.records2.predicate.PredicateService;
 import ru.citeck.ecos.records2.predicate.RecordElement;
@@ -19,6 +17,8 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult;
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao;
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao;
+import ru.citeck.ecos.records3.record.atts.value.impl.EmptyAttValue;
+import ru.citeck.ecos.webapp.api.entity.EntityRef;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,10 +73,10 @@ public class BuildCommitsRecords extends LocalRecordsDao
     }
 
     @Override
-    public List<Object> getLocalRecordsMeta(@NotNull List<RecordRef> records,
+    public List<Object> getLocalRecordsMeta(@NotNull List<EntityRef> records,
                                             @NotNull MetaField metaField) {
 
-        return records.stream().map(it -> EmptyValue.INSTANCE).collect(Collectors.toList());
+        return records.stream().map(it -> EmptyAttValue.INSTANCE).collect(Collectors.toList());
     }
 
     @Override

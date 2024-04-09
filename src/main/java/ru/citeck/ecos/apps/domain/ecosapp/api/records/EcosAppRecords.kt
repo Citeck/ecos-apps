@@ -9,7 +9,6 @@ import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.records2.RecordMeta
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records2.request.delete.RecordsDelResult
@@ -21,6 +20,7 @@ import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.MutableRecordsLocalDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.util.*
 import java.util.regex.Pattern
 
@@ -50,7 +50,7 @@ class EcosAppRecords(
             val appByArtifacts = ecosAppService.getAppForArtifacts(query.artifacts)
 
             result.records = query.artifacts.map {
-                ArtifactsAppQueryRes(it, appByArtifacts[it] ?: RecordRef.EMPTY)
+                ArtifactsAppQueryRes(it, appByArtifacts[it] ?: EntityRef.EMPTY)
             }
         } else {
             val predicate = recordsQuery.getQuery(Predicate::class.java)
@@ -65,9 +65,9 @@ class EcosAppRecords(
         return result
     }
 
-    override fun getLocalRecordsMeta(records: List<RecordRef>, metaField: MetaField): List<Any> {
+    override fun getLocalRecordsMeta(records: List<EntityRef>, metaField: MetaField): List<Any> {
         return records.map { record ->
-            ecosAppService.getById(record.id) ?: EcosAppDef.create {}
+            ecosAppService.getById(record.getLocalId()) ?: EcosAppDef.create {}
         }.map {
             EcosAppRecord(it, ecosAppService)
         }
@@ -77,7 +77,7 @@ class EcosAppRecords(
         val records = values.map {
             val appData = it.appData
             RecordMeta(
-                RecordRef.create(
+                EntityRef.create(
                     ID,
                     if (appData != null) {
                         ecosAppService.uploadZip(appData).id
@@ -92,12 +92,12 @@ class EcosAppRecords(
         return result
     }
 
-    override fun getValuesToMutate(records: List<RecordRef>): List<EcosAppRecord> {
+    override fun getValuesToMutate(records: List<EntityRef>): List<EcosAppRecord> {
         return records.map { record ->
-            if (record.id.isBlank()) {
+            if (record.getLocalId().isBlank()) {
                 EcosAppRecord(EcosAppDef.create {}, ecosAppService)
             } else {
-                EcosAppRecord(ecosAppService.getById(record.id)!!, ecosAppService)
+                EcosAppRecord(ecosAppService.getById(record.getLocalId())!!, ecosAppService)
             }
         }
     }
@@ -106,7 +106,7 @@ class EcosAppRecords(
 
         val result = RecordsDelResult()
         result.records = deletion.records.map {
-            ecosAppService.delete(it.id)
+            ecosAppService.delete(it.getLocalId())
             it
         }.map { RecordMeta(it) }
 
@@ -129,8 +129,8 @@ class EcosAppRecords(
             return appDef.id
         }
 
-        fun getEcosType(): RecordRef {
-            return RecordRef.valueOf("emodel/type@ecos-app")
+        fun getEcosType(): EntityRef {
+            return EntityRef.valueOf("emodel/type@ecos-app")
         }
 
         fun getDisplayName(): String {
@@ -155,15 +155,15 @@ class EcosAppRecords(
     }
 
     data class TypeArtifactsQuery(
-        val typeRefs: List<RecordRef>
+        val typeRefs: List<EntityRef>
     )
 
     data class ArtifactsAppQuery(
-        val artifacts: List<RecordRef>
+        val artifacts: List<EntityRef>
     )
 
     data class ArtifactsAppQueryRes(
-        val artifact: RecordRef,
-        val ecosApp: RecordRef
+        val artifact: EntityRef,
+        val ecosApp: EntityRef
     )
 }

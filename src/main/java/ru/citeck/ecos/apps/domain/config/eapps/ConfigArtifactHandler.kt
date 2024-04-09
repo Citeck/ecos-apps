@@ -7,12 +7,12 @@ import ru.citeck.ecos.apps.domain.config.service.EcosConfigAppConstants
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.config.lib.artifact.provider.ConfigArtifactUtils
 import ru.citeck.ecos.config.lib.dto.ConfigValueDef
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.atts.dto.RecordAtts
 import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.util.function.Consumer
 
 @Component
@@ -46,7 +46,7 @@ class ConfigArtifactHandler(
         if (existingConfig != null) {
             recordAtts.setId(existingConfig.ref)
         } else {
-            recordAtts.setId(RecordRef.create("config-repo", ""))
+            recordAtts.setId(EntityRef.create("config-repo", ""))
         }
 
         val attributes = ObjectData.create(configDef)
@@ -74,12 +74,12 @@ class ConfigArtifactHandler(
     }
 
     override fun deleteArtifact(artifactId: String) {
-        recordsService.delete(RecordRef.create("config", artifactId))
+        recordsService.delete(EntityRef.create("config", artifactId))
     }
 
     data class ExistingConfigQueryAtts(
         @AttName("?id")
-        val ref: RecordRef,
+        val ref: EntityRef,
         val version: Int,
         val value: ObjectData,
         val valueDef: ConfigValueDef

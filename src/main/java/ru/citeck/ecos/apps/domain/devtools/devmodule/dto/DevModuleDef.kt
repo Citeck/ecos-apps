@@ -3,14 +3,14 @@ package ru.citeck.ecos.apps.domain.devtools.devmodule.dto
 import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.json.serialization.annotation.IncludeNonDefault
-import ru.citeck.ecos.records2.RecordRef
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 @IncludeNonDefault
 @JsonDeserialize(builder = DevModuleDef.Builder::class)
 data class DevModuleDef(
     val id: String,
     val name: MLText,
-    val actions: List<RecordRef>
+    val actions: List<EntityRef>
 ) {
 
     companion object {
@@ -32,7 +32,7 @@ data class DevModuleDef(
 
         var id: String = ""
         var name: MLText = MLText.EMPTY
-        var actions: List<RecordRef> = emptyList()
+        var actions: List<EntityRef> = emptyList()
 
         constructor(base: DevModuleDef) : this() {
             this.id = base.id
@@ -50,7 +50,7 @@ data class DevModuleDef(
             return this
         }
 
-        fun withActions(actions: List<RecordRef>?): Builder {
+        fun withActions(actions: List<EntityRef>?): Builder {
             this.actions = actions ?: emptyList()
             return this
         }

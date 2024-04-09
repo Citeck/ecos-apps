@@ -18,9 +18,7 @@ import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.records2.QueryContext
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.graphql.meta.annotation.MetaAtt
-import ru.citeck.ecos.records2.graphql.meta.value.EmptyValue
 import ru.citeck.ecos.records2.graphql.meta.value.MetaField
 import ru.citeck.ecos.records2.predicate.PredicateService
 import ru.citeck.ecos.records2.predicate.PredicateUtils
@@ -31,6 +29,7 @@ import ru.citeck.ecos.records2.request.query.RecordsQueryResult
 import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
 import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.records3.record.atts.value.impl.EmptyAttValue
 import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
@@ -59,13 +58,13 @@ class EcosArtifactRecords(
         id = ID
     }
 
-    override fun getLocalRecordsMeta(records: List<RecordRef>, metaField: MetaField): List<Any> {
+    override fun getLocalRecordsMeta(records: List<EntityRef>, metaField: MetaField): List<Any> {
 
         return records.map {
-            ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(it.id))
+            ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(it.getLocalId()))
         }.map {
             if (it == null) {
-                EmptyValue.INSTANCE
+                EmptyAttValue.INSTANCE
             } else {
                 EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type))
             }
@@ -84,7 +83,7 @@ class EcosArtifactRecords(
 
             result.records = artifacts.map {
                 val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
-                var moduleRes: Any = EmptyValue.INSTANCE
+                var moduleRes: Any = EmptyAttValue.INSTANCE
                 if (type.isNotEmpty()) {
                     val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
                     if (artifact != null && !artifact.system) {
@@ -92,7 +91,7 @@ class EcosArtifactRecords(
                     }
                 }
                 moduleRes
-            }.filter { it !== EmptyValue.INSTANCE }
+            }.filter { it !== EmptyAttValue.INSTANCE }
         } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
             var predicate = recordsQuery.getQuery(Predicate::class.java)
@@ -213,8 +212,8 @@ class EcosArtifactRecords(
         }
 
         @MetaAtt(".type")
-        fun getEcosType(): RecordRef {
-            return RecordRef.valueOf("emodel/type@ecos-artifact")
+        fun getEcosType(): EntityRef {
+            return EntityRef.valueOf("emodel/type@ecos-artifact")
         }
 
         @MetaAtt(".disp")

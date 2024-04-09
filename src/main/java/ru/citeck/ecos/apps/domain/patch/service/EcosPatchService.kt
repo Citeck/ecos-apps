@@ -9,12 +9,12 @@ import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.task.schedule.Schedules
 import ru.citeck.ecos.records2.RecordConstants
-import ru.citeck.ecos.records2.RecordRef
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.api.lock.LockContext
 import ru.citeck.ecos.webapp.api.task.EcosTasksApi
 import ru.citeck.ecos.webapp.lib.lock.EcosAppLockService
@@ -128,7 +128,7 @@ class EcosPatchService(
 
         if (isAnyPatchNotApplied(patch.dependsOn)) {
             patch.status = EcosPatchStatus.DEPS_WAITING
-            recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
+            recordsService.mutate(EntityRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
             return true
         }
 
@@ -164,7 +164,7 @@ class EcosPatchService(
             }
             patch.lastError = errorMsg
             patch.status = EcosPatchStatus.FAILED
-            recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
+            recordsService.mutate(EntityRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
             log.info { "Patch '$patchId' completed with error: $errorMsg" }
         } else {
             patch.state = commRes?.result?.state ?: ObjectData.create()
@@ -178,7 +178,7 @@ class EcosPatchService(
                 EcosPatchStatus.IN_PROGRESS
             }
             patch.patchResult = DataValue.create(commRes?.result)
-            recordsService.mutate(RecordRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
+            recordsService.mutate(EntityRef.create(EcosPatchConfig.REPO_ID, patch.id), patch)
             log.info {
                 val msg = "Patch '$patchId' "
                 if (patch.status == EcosPatchStatus.APPLIED) {
@@ -205,7 +205,7 @@ class EcosPatchService(
                     if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
                         depsWaitingPatch.status = EcosPatchStatus.PENDING
                         recordsService.mutate(
-                            RecordRef.create(EcosPatchConfig.REPO_ID, depsWaitingPatch.id),
+                            EntityRef.create(EcosPatchConfig.REPO_ID, depsWaitingPatch.id),
                             depsWaitingPatch
                         )
                     }

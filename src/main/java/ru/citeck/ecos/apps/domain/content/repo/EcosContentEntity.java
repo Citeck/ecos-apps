@@ -10,7 +10,7 @@ import javax.persistence.*;
  * EcosContentEntity - immutable store for content
  */
 @Entity
-@Table(name = "ecos_content")
+@Table(name = "ecos_apps_content")
 public class EcosContentEntity extends AbstractImmutableEntity {
 
     @Id

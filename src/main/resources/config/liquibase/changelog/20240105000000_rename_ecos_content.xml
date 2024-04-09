@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20240105000000" author="citeck">
+
+        <!-- table 'ecos_content' used in ecos-data and should be renamed here -->
+        <renameTable oldTableName="ecos_content" newTableName="ecos_apps_content" />
+
+    </changeSet>
+
+</databaseChangeLog>
