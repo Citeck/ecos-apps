@@ -7,8 +7,8 @@ import javax.persistence.*
 class ArtifactPatchSyncEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_artifact_patch_sync_id_gen")
-    @SequenceGenerator(name = "ecos_artifact_patch_sync_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     var id: Long? = null
 
     lateinit var artifactType: String

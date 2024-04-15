@@ -9,8 +9,8 @@ import javax.persistence.*
 class EcosArtifactTypeEntity : AbstractAuditingEntity() {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_artifact_type_id_gen")
-    @SequenceGenerator(name = "ecos_artifact_type_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     private val id: Long? = null
 
     override fun getId() = id

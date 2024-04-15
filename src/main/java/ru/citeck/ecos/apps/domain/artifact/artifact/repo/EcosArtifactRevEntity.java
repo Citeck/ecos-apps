@@ -13,8 +13,8 @@ import javax.persistence.*;
 public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_module_rev_id_gen")
-    @SequenceGenerator(name = "ecos_module_rev_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     @Getter @Setter private Long id;
 
     @ManyToOne

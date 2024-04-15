@@ -29,6 +29,10 @@ ecos:
         url: jdbc:postgresql://localhost:14523/ecos_apps
         username: apps
         password: appspassword
+      main-xa-aware:
+        url: jdbc:postgresql://localhost:14523/ecos_apps
+        username: apps
+        password: appspassword
 
 # ===================================================================
 # Application specific properties

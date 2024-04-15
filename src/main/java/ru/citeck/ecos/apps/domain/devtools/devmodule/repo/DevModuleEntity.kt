@@ -8,8 +8,8 @@ import javax.persistence.*
 class DevModuleEntity : AbstractAuditingEntity() {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_dev_module_seq_gen")
-    @SequenceGenerator(name = "ecos_dev_module_seq_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     private val id: Long? = null
 
     @Column(unique = true)

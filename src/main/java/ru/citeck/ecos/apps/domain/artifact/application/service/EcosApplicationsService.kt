@@ -181,7 +181,7 @@ class EcosApplicationsService(
 
             val currentSource = sources[key]
             if (currentSource == null || currentSource.getLastModified()
-                .isBefore(appSourceInfo.sourceInfo.lastModified)
+                    .isBefore(appSourceInfo.sourceInfo.lastModified)
             ) {
 
                 val appKey = AppKey(appSourceInfo.appStatus.appName, appSourceInfo.appStatus.appInstanceId)

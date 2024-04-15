@@ -14,8 +14,8 @@ import javax.persistence.*;
 public class EcosContentEntity extends AbstractImmutableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_content_id_gen")
-    @SequenceGenerator(name = "ecos_content_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     @Getter @Setter private Long id;
 
     @Getter @Setter private Long size;

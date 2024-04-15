@@ -9,8 +9,8 @@ import javax.persistence.*
 open class ArtifactSourceMetaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ecos_artifact_source_meta_id_gen")
-    @SequenceGenerator(name = "ecos_artifact_source_meta_id_gen")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hibernate_sequence")
+    @SequenceGenerator(name = "hibernate_sequence")
     open var id: Long? = null
 
     open lateinit var appName: String
