@@ -132,7 +132,11 @@ class EcosArtifactsPatchService(
 
         for (sync in outOfSync) {
 
-            val artifactRef = ArtifactRef.create(sync.artifactType, sync.artifactExtId)
+            val artifactRef = if (sync.artifactType.isBlank() || sync.artifactExtId.isBlank()) {
+                ArtifactRef.EMPTY
+            } else {
+                ArtifactRef.create(sync.artifactType, sync.artifactExtId)
+            }
             changed = applyPatches(artifactRef) || changed
             val lastModified = sync.artifactLastModified.coerceAtLeast(sync.patchLastModified)
 
@@ -146,6 +150,10 @@ class EcosArtifactsPatchService(
     }
 
     private fun applyPatches(artifactRef: ArtifactRef): Boolean {
+
+        if (artifactRef === ArtifactRef.EMPTY) {
+            return false
+        }
 
         val artifactToPatch = ecosArtifactsService.getArtifactToPatch(artifactRef)
         if (artifactToPatch == null) {
