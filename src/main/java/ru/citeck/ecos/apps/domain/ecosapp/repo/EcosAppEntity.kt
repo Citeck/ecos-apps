@@ -19,6 +19,7 @@ class EcosAppEntity : AbstractAuditingEntity() {
 
     var name: String? = null
     var version: String? = null
+    var repositoryEndpoint: String? = null
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "artifacts_dir_content_id")

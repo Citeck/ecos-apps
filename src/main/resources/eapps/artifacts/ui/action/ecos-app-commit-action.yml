@@ -1,0 +1,22 @@
+---
+id: ecos-object-commit-action
+name:
+  ru: Зафиксировать изменения в Git
+  en: Commit changes
+type: mutate
+confirm:
+  title:
+    ru: Подтверждение
+    en: Confirmation
+  formRef: uiserv/form@ecos-object-commit-changes-form
+  attributesMapping:
+    record.attributes.commitMessage: commitMessage
+    record.attributes.branch: branch
+    record.attributes.newBranch: newBranch
+    record.attributes.newBranchName: newBranchName
+    record.attributes.newBranchFrom: newBranchFrom
+config:
+  record:
+    id: "eapps/git@${recordRef}"
+    attributes:
+      action: COMMIT

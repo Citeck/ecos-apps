@@ -48,7 +48,7 @@ class EcosArtifactRecords(
 
     companion object {
         const val ID = "artifact"
-        private const val ECOS_APP_REF_ATTRIBUTE = "ecosAppRef"
+        const val ECOS_APP_REF_ATTRIBUTE = "ecosAppRef"
         private const val ECOS_APP_ATTRIBUTE = "ecosApp"
 
         private val log = KotlinLogging.logger {}

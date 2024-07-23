@@ -13,6 +13,7 @@ data class EcosAppDef(
     val id: String,
     val name: MLText,
     val version: Version,
+    var repositoryEndpoint: EntityRef,
     val typeRefs: List<EntityRef>,
     val artifacts: List<EntityRef>
 ) {
@@ -47,6 +48,7 @@ data class EcosAppDef(
         var id: String = ""
         var name: MLText = MLText()
         var version: Version = Version.valueOf("1.0")
+        var repositoryEndpoint: EntityRef = EntityRef.EMPTY
         var typeRefs: List<EntityRef> = emptyList()
         var artifacts: List<EntityRef> = emptyList()
 
@@ -54,6 +56,7 @@ data class EcosAppDef(
             id = base.id
             name = base.name
             version = base.version
+            repositoryEndpoint = base.repositoryEndpoint
             typeRefs = DataValue.create(base.typeRefs).asList(EntityRef::class.java)
             artifacts = DataValue.create(base.artifacts).asList(EntityRef::class.java)
         }
@@ -73,6 +76,11 @@ data class EcosAppDef(
             return this
         }
 
+        fun withRepositoryEndpoint(repositoryEndpoint: EntityRef): Builder {
+            this.repositoryEndpoint = repositoryEndpoint
+            return this
+        }
+
         fun withTypeRefs(typeRefs: List<EntityRef>): Builder {
             this.typeRefs = typeRefs
             return this
@@ -88,6 +96,7 @@ data class EcosAppDef(
                 id,
                 name,
                 version,
+                repositoryEndpoint,
                 typeRefs,
                 artifacts
             )

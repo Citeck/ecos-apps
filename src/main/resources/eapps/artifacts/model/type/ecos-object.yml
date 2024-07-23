@@ -1,0 +1,13 @@
+---
+id: ecos-object
+
+name:
+  en: ECOS Object
+  ru: Объект ECOS
+
+system: true
+
+actions:
+  - uiserv/action@ecos-object-commit-action
+
+sourceId: eapps/ecos-object
