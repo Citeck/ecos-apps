@@ -1,8 +1,8 @@
 package ru.citeck.ecos.apps.domain.artifact.source.repo
 
+import jakarta.persistence.*
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import java.time.Instant
-import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_artifact_source_meta")

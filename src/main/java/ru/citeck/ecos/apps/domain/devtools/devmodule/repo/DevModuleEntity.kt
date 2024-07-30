@@ -1,7 +1,7 @@
 package ru.citeck.ecos.apps.domain.devtools.devmodule.repo
 
+import jakarta.persistence.*
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
-import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_dev_module")

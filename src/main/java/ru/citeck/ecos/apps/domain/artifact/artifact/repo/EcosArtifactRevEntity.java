@@ -6,7 +6,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType;
 import ru.citeck.ecos.apps.domain.common.repo.AbstractImmutableEntity;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ecos_artifact_rev")

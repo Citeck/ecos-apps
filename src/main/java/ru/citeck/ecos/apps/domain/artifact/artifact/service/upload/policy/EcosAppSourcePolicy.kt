@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.service.upload.policy
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType

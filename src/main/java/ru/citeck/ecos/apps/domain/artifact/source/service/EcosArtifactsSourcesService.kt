@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.source.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey

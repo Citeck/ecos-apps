@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.domain.patch.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
@@ -22,7 +23,6 @@ import ru.citeck.ecos.webapp.lib.patch.EcosPatchCommandExecutor
 import ru.citeck.ecos.webapp.lib.patch.EcosPatchService
 import java.time.Duration
 import java.time.Instant
-import javax.annotation.PostConstruct
 import kotlin.reflect.jvm.jvmName
 
 @Service
