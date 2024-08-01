@@ -13,7 +13,6 @@ import ru.citeck.ecos.webapp.lib.spring.context.ecosconfig.EcosConfigBeanPostPro
 @EnableConfigurationProperties({
     ApplicationProperties.class
 })
-@EnableDiscoveryClient
 @EnableJpaRepositories({
     "ru.citeck.ecos.apps.app.*.repo",
     "ru.citeck.ecos.apps.domain.*.repo",

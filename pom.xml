@@ -13,6 +13,15 @@
         <version>3.0.0-SNAPSHOT</version>
     </parent>
 
+    <dependencies>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
+    </dependencies>
+
     <repositories>
         <repository>
             <id>citeck-public</id>
