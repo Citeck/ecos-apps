@@ -6,7 +6,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus;
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity;
 import ru.citeck.ecos.apps.domain.common.repo.utils.EntityUtils;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 

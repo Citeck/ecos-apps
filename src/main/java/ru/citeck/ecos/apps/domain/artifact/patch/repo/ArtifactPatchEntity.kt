@@ -1,8 +1,8 @@
 package ru.citeck.ecos.apps.domain.artifact.patch.repo
 
+import jakarta.persistence.*
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
-import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_artifact_patch")

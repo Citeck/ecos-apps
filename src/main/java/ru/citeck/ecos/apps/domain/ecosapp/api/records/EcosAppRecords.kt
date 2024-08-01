@@ -1,25 +1,21 @@
 package ru.citeck.ecos.apps.domain.ecosapp.api.records
 
-import ecos.com.fasterxml.jackson210.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
-import ru.citeck.ecos.apps.domain.utils.LegacyRecordsUtils
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.i18n.I18nContext
-import ru.citeck.ecos.records2.RecordMeta
-import ru.citeck.ecos.records2.graphql.meta.value.MetaField
 import ru.citeck.ecos.records2.predicate.model.Predicate
-import ru.citeck.ecos.records2.request.delete.RecordsDelResult
-import ru.citeck.ecos.records2.request.delete.RecordsDeletion
-import ru.citeck.ecos.records2.request.mutation.RecordsMutResult
-import ru.citeck.ecos.records2.request.query.RecordsQuery
-import ru.citeck.ecos.records2.request.query.RecordsQueryResult
-import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
-import ru.citeck.ecos.records2.source.dao.local.MutableRecordsLocalDao
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.records3.record.dao.AbstractRecordsDao
+import ru.citeck.ecos.records3.record.dao.atts.RecordAttsDao
+import ru.citeck.ecos.records3.record.dao.delete.DelStatus
+import ru.citeck.ecos.records3.record.dao.delete.RecordsDeleteDao
+import ru.citeck.ecos.records3.record.dao.mutate.RecordMutateDtoDao
+import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
+import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
+import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.util.*
 import java.util.regex.Pattern
@@ -27,90 +23,74 @@ import java.util.regex.Pattern
 @Component
 class EcosAppRecords(
     private val ecosAppService: EcosAppService
-) : LocalRecordsDao(),
-    LocalRecordsMetaDao<Any>,
-    LocalRecordsQueryWithMetaDao<Any>,
-    MutableRecordsLocalDao<EcosAppRecords.EcosAppRecord> {
+) : AbstractRecordsDao(),
+    RecordAttsDao,
+    RecordsQueryDao,
+    RecordsDeleteDao,
+    RecordMutateDtoDao<EcosAppRecords.EcosAppRecord> {
 
     companion object {
         const val ID = "ecosapp"
     }
 
-    init {
-        id = ID
+    override fun getRecordAtts(recordId: String): Any? {
+        return EcosAppRecord(ecosAppService.getById(recordId) ?: EcosAppDef.create {}, ecosAppService)
     }
 
-    override fun queryLocalRecords(recordsQuery: RecordsQuery, field: MetaField): RecordsQueryResult<Any> {
+    override fun queryRecords(recsQuery: RecordsQuery): Any? {
+        val result = RecsQueryRes<Any>()
 
-        val result = RecordsQueryResult<Any>()
+        if (recsQuery.language == "artifacts-app") {
 
-        if (recordsQuery.language == "artifacts-app") {
-
-            val query = recordsQuery.getQuery(ArtifactsAppQuery::class.java)
+            val query = recsQuery.getQuery(ArtifactsAppQuery::class.java)
             val appByArtifacts = ecosAppService.getAppForArtifacts(query.artifacts)
 
-            result.records = query.artifacts.map {
-                ArtifactsAppQueryRes(it, appByArtifacts[it] ?: EntityRef.EMPTY)
-            }
-        } else {
-            val predicate = recordsQuery.getQuery(Predicate::class.java)
-            result.records = ecosAppService.getAll(
-                predicate,
-                recordsQuery.skipPage.maxItems,
-                recordsQuery.skipPage.skipCount,
-                LegacyRecordsUtils.mapLegacySortBy(recordsQuery.sortBy)
-            ).map { EcosAppRecord(it, ecosAppService) }
-            result.totalCount = ecosAppService.getCount(predicate)
-        }
-        return result
-    }
-
-    override fun getLocalRecordsMeta(records: List<EntityRef>, metaField: MetaField): List<Any> {
-        return records.map { record ->
-            ecosAppService.getById(record.getLocalId()) ?: EcosAppDef.create {}
-        }.map {
-            EcosAppRecord(it, ecosAppService)
-        }
-    }
-
-    override fun save(values: MutableList<EcosAppRecord>): RecordsMutResult {
-        val records = values.map {
-            val appData = it.appData
-            RecordMeta(
-                EntityRef.create(
-                    ID,
-                    if (appData != null) {
-                        ecosAppService.uploadZip(appData).id
-                    } else {
-                        ecosAppService.save(it.build()).id
-                    }
-                )
+            result.setRecords(
+                query.artifacts.map {
+                    ArtifactsAppQueryRes(it, appByArtifacts[it] ?: EntityRef.EMPTY)
+                }
             )
+        } else {
+            val predicate = recsQuery.getQuery(Predicate::class.java)
+            result.setRecords(
+                ecosAppService.getAll(
+                    predicate,
+                    recsQuery.page.maxItems,
+                    recsQuery.page.skipCount,
+                    recsQuery.sortBy
+                ).map { EcosAppRecord(it, ecosAppService) }
+            )
+            result.setTotalCount(ecosAppService.getCount(predicate))
         }
-        val result = RecordsMutResult()
-        result.records = records
         return result
     }
 
-    override fun getValuesToMutate(records: List<EntityRef>): List<EcosAppRecord> {
-        return records.map { record ->
-            if (record.getLocalId().isBlank()) {
-                EcosAppRecord(EcosAppDef.create {}, ecosAppService)
-            } else {
-                EcosAppRecord(ecosAppService.getById(record.getLocalId())!!, ecosAppService)
-            }
+    override fun saveMutatedRec(record: EcosAppRecord): String {
+        val appData = record.appData
+        return if (appData != null) {
+            ecosAppService.uploadZip(appData).id
+        } else {
+            ecosAppService.save(record.build()).id
         }
     }
 
-    override fun delete(deletion: RecordsDeletion): RecordsDelResult {
+    override fun getRecToMutate(recordId: String): EcosAppRecord {
+        return if (recordId.isBlank()) {
+            EcosAppRecord(EcosAppDef.create {}, ecosAppService)
+        } else {
+            EcosAppRecord(ecosAppService.getById(recordId)!!, ecosAppService)
+        }
+    }
 
-        val result = RecordsDelResult()
-        result.records = deletion.records.map {
-            ecosAppService.delete(it.getLocalId())
-            it
-        }.map { RecordMeta(it) }
+    override fun delete(recordIds: List<String>): List<DelStatus> {
+        return recordIds.map {
+            ecosAppService.delete(it)
+            DelStatus.OK
+        }
+    }
 
-        return result
+    override fun getId(): String {
+        return ID
     }
 
     class EcosAppRecord(private val appDef: EcosAppDef, val ecosAppService: EcosAppService) : EcosAppDef.Builder(appDef) {

@@ -41,7 +41,10 @@ class DevModulesService(
     private fun toEntity(def: DevModuleDef): DevModuleEntity {
 
         val entity: DevModuleEntity = repo.findByExtId(def.id)
-            ?: DevModuleEntity().let { it.extId = def.id; it }
+            ?: DevModuleEntity().let {
+                it.extId = def.id
+                it
+            }
 
         entity.name = Json.mapper.toString(def.name)
         entity.actions = Json.mapper.toString(def.actions)

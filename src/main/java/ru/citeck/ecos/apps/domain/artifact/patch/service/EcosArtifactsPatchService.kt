@@ -1,7 +1,8 @@
 package ru.citeck.ecos.apps.domain.artifact.patch.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
 import lombok.extern.slf4j.Slf4j
-import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
@@ -24,7 +25,6 @@ import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchCon
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
-import javax.annotation.PostConstruct
 
 @Slf4j
 @Service
@@ -199,7 +199,7 @@ class EcosArtifactsPatchService(
         if (artifactPatches.isNullOrEmpty()) {
             return artifact
         }
-        log.info("Apply " + artifactPatches.size + " patches to " + artifactRef)
+        log.info { "Apply " + artifactPatches.size + " patches to " + artifactRef }
         return artifactService.applyPatches(artifactRef.type, artifact, artifactPatches)
     }
 

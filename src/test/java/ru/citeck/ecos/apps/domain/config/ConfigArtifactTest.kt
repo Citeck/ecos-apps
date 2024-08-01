@@ -47,7 +47,7 @@ class ConfigArtifactTest {
 
         val assertTemplate = { template: String, value: Any?, expectedRes: String ->
             val templateAtts = TmplUtils.getAtts(template)
-            val atts = recordsFactory.recordsServiceV1.getAtts(value, templateAtts)
+            val atts = recordsFactory.recordsService.getAtts(value, templateAtts)
             assertThat(TmplUtils.applyAtts(template, atts.getAtts()).asText()).isEqualTo(expectedRes)
         }
 

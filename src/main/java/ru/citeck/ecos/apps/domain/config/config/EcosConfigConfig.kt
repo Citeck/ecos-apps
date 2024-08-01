@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.config.config
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.citeck.ecos.apps.domain.config.api.records.ConfigRepoMixin

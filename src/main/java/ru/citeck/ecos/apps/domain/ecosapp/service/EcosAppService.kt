@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.domain.ecosapp.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
 import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -35,7 +36,6 @@ import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchCon
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.time.Instant
 import java.util.*
-import javax.annotation.PostConstruct
 
 @Service
 @Transactional

@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.application.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommand
 import ru.citeck.ecos.apps.app.api.GetAppBuildInfoCommandResp
@@ -73,7 +73,7 @@ class EcosApplicationsService(
                 try {
                     loadBuildInfo(appFullName, lastStatus)
                 } catch (e: Exception) {
-                    log.error("Error in build info request for app $appFullName", e)
+                    log.error(e) { "Error in build info request for app $appFullName" }
                 }
             }
         }
@@ -205,7 +205,7 @@ class EcosApplicationsService(
 
     private fun loadBuildInfo(appFullName: String, app: RemoteAppStatus) {
 
-        log.info("Send build info request to $appFullName")
+        log.info { "Send build info request to $appFullName" }
 
         val comRes: CommandResult = commandsService.execute(
             commandsService.buildCommand {
@@ -225,10 +225,10 @@ class EcosApplicationsService(
                     "\"branch\": \"${info.branch}\", " +
                     "\"buildDate\": \"${info.buildDate}\""
             } + "]"
-            log.info("Register new build info for app $appFullName $info")
+            log.info { "Register new build info for app $appFullName $info" }
             buildInfoRecords.register(app, resp.buildInfo)
         } else {
-            log.error("Build info is null for app $appFullName")
+            log.error { "Build info is null for app $appFullName" }
         }
     }
 

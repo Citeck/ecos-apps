@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.api.records
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommand
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommandResponse
@@ -13,23 +13,22 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
-import ru.citeck.ecos.apps.domain.utils.LegacyRecordsUtils
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
 import ru.citeck.ecos.commons.data.MLText
-import ru.citeck.ecos.records2.QueryContext
-import ru.citeck.ecos.records2.graphql.meta.annotation.MetaAtt
-import ru.citeck.ecos.records2.graphql.meta.value.MetaField
+import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.records2.predicate.PredicateService
 import ru.citeck.ecos.records2.predicate.PredicateUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records2.predicate.model.ValuePredicate
-import ru.citeck.ecos.records2.request.query.RecordsQuery
-import ru.citeck.ecos.records2.request.query.RecordsQueryResult
-import ru.citeck.ecos.records2.source.dao.local.LocalRecordsDao
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsMetaDao
-import ru.citeck.ecos.records2.source.dao.local.v2.LocalRecordsQueryWithMetaDao
+import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
 import ru.citeck.ecos.records3.record.atts.value.impl.EmptyAttValue
+import ru.citeck.ecos.records3.record.dao.AbstractRecordsDao
+import ru.citeck.ecos.records3.record.dao.atts.RecordAttsDao
+import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
+import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
+import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
 import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import java.time.Instant
@@ -42,9 +41,7 @@ class EcosArtifactRecords(
     private val commandsService: CommandsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService,
     private val applicationsService: EcosApplicationsService
-) : LocalRecordsDao(),
-    LocalRecordsMetaDao<Any>,
-    LocalRecordsQueryWithMetaDao<Any> {
+) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao {
 
     companion object {
         const val ID = "artifact"
@@ -54,47 +51,38 @@ class EcosArtifactRecords(
         private val log = KotlinLogging.logger {}
     }
 
-    init {
-        id = ID
+    override fun getRecordAtts(recordId: String): Any? {
+        return ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(recordId))?.let {
+            EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type))
+        } ?: EmptyAttValue.INSTANCE
     }
 
-    override fun getLocalRecordsMeta(records: List<EntityRef>, metaField: MetaField): List<Any> {
+    override fun queryRecords(recsQuery: RecordsQuery): Any? {
 
-        return records.map {
-            ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(it.getLocalId()))
-        }.map {
-            if (it == null) {
-                EmptyAttValue.INSTANCE
-            } else {
-                EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type))
-            }
-        }
-    }
+        val result = RecsQueryRes<Any>()
 
-    override fun queryLocalRecords(recordsQuery: RecordsQuery, field: MetaField): RecordsQueryResult<Any> {
+        if (recsQuery.language == "type-artifacts") {
 
-        val result = RecordsQueryResult<Any>()
-
-        if (recordsQuery.language == "type-artifacts") {
-
-            val typeArtifactsQuery = recordsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
+            val typeArtifactsQuery = recsQuery.getQuery(EcosAppRecords.TypeArtifactsQuery::class.java)
             val artifacts = getArtifactsForTypes(typeArtifactsQuery.typeRefs, HashSet())
             artifacts.removeAll(typeArtifactsQuery.typeRefs)
 
-            result.records = artifacts.map {
-                val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
-                var moduleRes: Any = EmptyAttValue.INSTANCE
-                if (type.isNotEmpty()) {
-                    val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
-                    if (artifact != null && !artifact.system) {
-                        moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
+            result.setRecords(
+                artifacts.map {
+                    val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
+                    var moduleRes: Any = EmptyAttValue.INSTANCE
+                    if (type.isNotEmpty()) {
+                        val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
+                        if (artifact != null && !artifact.system) {
+                            moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
+                        }
                     }
-                }
-                moduleRes
-            }.filter { it !== EmptyAttValue.INSTANCE }
-        } else if (recordsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
+                    moduleRes
+                }.filter { it !== EmptyAttValue.INSTANCE }
+            )
+        } else if (recsQuery.language == PredicateService.LANGUAGE_PREDICATE) {
 
-            var predicate = recordsQuery.getQuery(Predicate::class.java)
+            var predicate = recsQuery.getQuery(Predicate::class.java)
             predicate = PredicateUtils.mapValuePredicates(predicate) {
                 if (it.getAttribute() == ECOS_APP_REF_ATTRIBUTE) {
                     val appName = EntityRef.valueOf(it.getValue().asText()).getLocalId()
@@ -102,15 +90,15 @@ class EcosArtifactRecords(
                 } else {
                     it
                 }
-            }
+            } ?: Predicates.alwaysTrue()
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
-                recordsQuery.maxItems,
-                recordsQuery.skipCount,
-                LegacyRecordsUtils.mapLegacySortBy(recordsQuery.sortBy)
+                recsQuery.page.maxItems,
+                recsQuery.page.skipCount,
+                recsQuery.sortBy
             )
-            result.records = res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type)) }
-            result.totalCount = ecosArtifactsService.getAllArtifactsCount(predicate)
+            result.setRecords(res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type)) })
+            result.setTotalCount(ecosArtifactsService.getAllArtifactsCount(predicate))
         }
 
         return result
@@ -126,18 +114,16 @@ class EcosArtifactRecords(
         }
 
         checkedTypes.addAll(typeRefs)
+        val query = HashMap<String, Any>()
+        query["typeRefs"] = typeRefs
 
-        val expandTypesQuery = RecordsQuery().apply {
+        val expandTypesQuery = RecordsQuery.create()
+            .withSourceId("emodel/type")
+            .withLanguage("expand-types")
+            .withQuery(query)
+            .build()
 
-            this.sourceId = "emodel/type"
-            this.language = "expand-types"
-
-            val query = HashMap<String, Any>()
-            query["typeRefs"] = typeRefs
-            this.query = query
-        }
-
-        val expandedTypes = recordsService.queryRecords(expandTypesQuery).records
+        val expandedTypes = recordsService.query(expandTypesQuery).getRecords()
         if (expandedTypes.isEmpty()) {
             return mutableSetOf()
         }
@@ -158,7 +144,7 @@ class EcosArtifactRecords(
             try {
                 results.add(future.value.get(2, TimeUnit.SECONDS))
             } catch (e: TimeoutException) {
-                log.warn("Service doesn't respond in 2 seconds: '${appNames[future.index]}'")
+                log.warn { "Service doesn't respond in 2 seconds: '${appNames[future.index]}'" }
             } catch (e: Exception) {
                 log.error(e) { "Exception while future waiting for app: '${appNames[future.index]}'" }
             }
@@ -180,6 +166,10 @@ class EcosArtifactRecords(
         }
 
         return artifactsSet
+    }
+
+    override fun getId(): String {
+        return ID
     }
 
     inner class EcosArtifactRecord(
@@ -211,16 +201,15 @@ class EcosArtifactRecords(
             return artifact.name
         }
 
-        @MetaAtt(".type")
+        @AttName("_type")
         fun getEcosType(): EntityRef {
             return EntityRef.valueOf("emodel/type@ecos-artifact")
         }
 
-        @MetaAtt(".disp")
+        @AttName("?disp")
         fun getDisplayName(): String {
 
-            val locale = QueryContext.getCurrent<QueryContext>().locale
-
+            val locale = I18nContext.getLocale()
             var name = MLText.getClosestValue(artifact.name, locale)
             if (name.isBlank()) {
                 name = artifact.id
@@ -271,18 +260,14 @@ class EcosArtifactRecords(
 
     class ArtifactTypeInfo(private val typeContext: EcosArtifactTypeContext) {
 
-        @MetaAtt(".disp")
+        @AttName("?disp")
         fun getDisplayName(): String {
-            val locale = QueryContext.getCurrent<QueryContext>().locale
+            val locale = I18nContext.getLocale()
             val name = MLText.getClosestValue(typeContext.getMeta().name, locale)
-            return if (name.isNotBlank()) {
-                name
-            } else {
-                typeContext.getId()
-            }
+            return name.ifBlank { typeContext.getId() }
         }
 
-        @MetaAtt(".str")
+        @AttName("?str")
         fun getString(): String {
             return typeContext.getId()
         }

@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.patch.repo
 
-import javax.persistence.*
+import jakarta.persistence.*
 
 @Entity
 @Table(name = "ecos_artifact_patch_sync")

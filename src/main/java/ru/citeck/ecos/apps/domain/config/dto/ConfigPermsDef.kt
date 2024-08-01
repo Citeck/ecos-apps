@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.config.dto
 
-import ecos.com.fasterxml.jackson210.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import ru.citeck.ecos.commons.json.serialization.annotation.IncludeNonDefault
 
 @IncludeNonDefault

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import ru.citeck.ecos.apps.domain.common.repo.AbstractImmutableEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * EcosContentEntity - immutable store for content

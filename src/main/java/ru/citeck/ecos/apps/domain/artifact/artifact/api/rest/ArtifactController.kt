@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.artifact.artifact.api.rest
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders

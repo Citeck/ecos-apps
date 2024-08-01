@@ -1,9 +1,9 @@
 package ru.citeck.ecos.apps.domain.ecosapp.repo
 
+import jakarta.persistence.*
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.webapp.lib.spring.hibernate.entity.AbstractAuditingEntity
 import java.time.Instant
-import javax.persistence.*
 
 @Entity
 @Table(name = "ecos_app")

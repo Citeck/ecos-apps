@@ -1,6 +1,7 @@
 package ru.citeck.ecos.apps.domain.license.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.annotation.PostConstruct
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import ru.citeck.ecos.commons.json.Json
@@ -37,7 +38,6 @@ import ru.citeck.ecos.records3.record.mixin.AttMixin
 import ru.citeck.ecos.webapp.api.constants.WebAppProfile
 import ru.citeck.ecos.webapp.lib.env.EcosWebAppEnvironment
 import ru.citeck.ecos.zookeeper.EcosZooKeeper
-import javax.annotation.PostConstruct
 
 @Configuration
 @Profile("!${WebAppProfile.TEST}")
