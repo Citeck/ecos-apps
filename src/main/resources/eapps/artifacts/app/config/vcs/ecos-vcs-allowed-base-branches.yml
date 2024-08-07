@@ -1,0 +1,6 @@
+---
+id: ecos-vcs-allowed-base-branches
+name:
+  ru: Регулярное выражение для разрешенных базовых веток
+  en: Regex for allowed base branches
+value: '(ecos/.*|develop|master|main)'

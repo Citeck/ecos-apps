@@ -1,6 +1,6 @@
 package ru.citeck.ecos.apps.domain.git.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription
 import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository
@@ -10,16 +10,21 @@ import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
-import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppUtils
+import ru.citeck.ecos.apps.domain.ecosapp.service.ArtifactUtils
+import ru.citeck.ecos.commons.data.DataValue
+import ru.citeck.ecos.commons.io.file.EcosFile
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.io.file.std.EcosStdFile
+import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
-import ru.citeck.ecos.commons.utils.ZipUtils
+import ru.citeck.ecos.config.lib.consumer.bean.EcosConfig
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.endpoints.lib.EcosEndpoints
 import ru.citeck.ecos.records3.RecordsService
@@ -30,37 +35,64 @@ import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.api.entity.toEntityRef
 import ru.citeck.ecos.webapp.lib.spring.context.auth.RunAsSystem
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
 
 @Component
-class EcosObjectGitService(
+class EcosVcsObjectGitService(
     private val ecosAppService: EcosAppService,
-    private val ecosAppUtils: EcosAppUtils,
     private val recordsService: RecordsService,
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService,
-    private val ecosAuthoritiesApi: EcosAuthoritiesApi
+    private val ecosAuthoritiesApi: EcosAuthoritiesApi,
+    private val artifactTypesService: EcosArtifactTypesService,
+    private val artifactService: ArtifactService
 ) {
 
     companion object {
         private const val APP_GIT_TMP_DIR = "ecos-apps-git"
         private const val ARTIFACTS_PATH = "src/main/resources/app/artifacts"
+        private const val META_FILE_PATH = "src/main/resources/app/meta.json"
 
         private val log = KotlinLogging.logger {}
     }
 
+    @EcosConfig("ecos-vcs-allowed-base-branches")
+    private lateinit var allowedBaseBranches: String
+
+    @EcosConfig("ecos-vcs-allowed-branches-to-commit")
+    private lateinit var allowedBranchesToCommit: String
+
+    fun getAllowedBaseBranches(branches: List<String>): List<String> {
+        return getFilteredBranches(branches, allowedBaseBranches)
+    }
+
+    fun getAllowedBranchesToCommit(branches: List<String>): List<String> {
+        return getFilteredBranches(branches, allowedBranchesToCommit)
+    }
+
+    private fun getFilteredBranches(branches: List<String>, regex: String): List<String> {
+        if (regex.isBlank() || branches.isEmpty()) {
+            return emptyList()
+        }
+        val filterRegex = regex.toRegex(RegexOption.IGNORE_CASE)
+        return branches.filter { filterRegex.matches(it) }
+    }
+
     @RunAsSystem
-    fun getRepoBranches(objectRef: EntityRef): List<String> {
-        val repo = getEndpoint(objectRef)
-        if (repo == EntityRef.EMPTY) {
+    fun getRepoBranchesForVcsObject(vcsObjectRef: EntityRef): List<String> {
+        return getRepoBranchesForEndpoint(getEndpoint(vcsObjectRef))
+    }
+
+    @RunAsSystem
+    fun getRepoBranchesForEndpoint(repoRef: EntityRef): List<String> {
+
+        if (repoRef == EntityRef.EMPTY) {
             return emptyList()
         }
 
-        val endpoint = EcosEndpoints.getEndpoint(repo.getLocalId())
+        val endpoint = EcosEndpoints.getEndpoint(repoRef.getLocalId())
         val basicData = endpoint.getCredentials()?.getBasicData() ?: return emptyList()
-
 
         val repoDesc = DfsRepositoryDescription()
         InMemoryRepository(repoDesc).use { inMemRepo ->
@@ -107,7 +139,22 @@ class EcosObjectGitService(
     }
 
     private fun getExplicitArtifactRef(ref: EntityRef): EntityRef {
-        val artifactTypeId = ecosArtifactTypesService.getTypeIdForRecordRef(ref)
+
+        val fixedRef = if (ref.getAppName() == AppName.EMODEL && ref.getSourceId() == "types-repo") {
+            ref.withSourceId("type")
+        } else {
+            ref
+        }
+
+        val artifactTypeId = ecosArtifactTypesService.getTypeIdForRecordRef(fixedRef)
+
+        if (artifactTypeId.isBlank()) {
+            error(
+                "Artifact type can't be calculated for ref '$ref'. " +
+                    "Please add sourceId in eapps/types/**/type.yml"
+            )
+        }
+
         val typeContext = ecosArtifactTypesService.getTypeContext(artifactTypeId)
             ?: error("Type context not found for $artifactTypeId")
 
@@ -118,20 +165,33 @@ class EcosObjectGitService(
         )
     }
 
-    fun commitChanges(commit: EcosObjectCommit) {
-        val user = AuthContext.getCurrentUser()
+    fun commitChanges(commit: EcosVcsObjectCommit) {
+
+        log.info { "Commit changes: $commit" }
         val endpointRef = getEndpoint(commit.objectRef)
         require(endpointRef.isNotEmpty()) {
             "Repository endpoint is required"
         }
 
+        if (commit.newBranch) {
+            AuthContext.runAsSystem {
+                if (getRepoBranchesForEndpoint(endpointRef).contains(commit.branch)) {
+                    error("Branch with name '${commit.branch}' already exists")
+                }
+            }
+        }
+
         val endpoint = AuthContext.runAsSystem {
             EcosEndpoints.getEndpointOrNull(endpointRef.getLocalId())
-        } ?: return
-        val basicData = AuthContext.runAsSystem { endpoint.getCredentials()?.getBasicData() } ?: return
+        } ?: error("Endpoint instance is not found for ref $endpointRef")
+        val basicData = AuthContext.runAsSystem {
+            endpoint.getCredentials()?.getBasicData()
+        } ?: error("Endpoint instance is found but credentials is empty. Endpoint ref: $endpointRef")
 
         var gitCloneFolder: File? = null
         try {
+            val user = AuthContext.getCurrentUser()
+
             gitCloneFolder = Files.createTempDirectory(
                 "$APP_GIT_TMP_DIR-$user-${commit.objectRef.getLocalId()}"
             ).toFile()
@@ -160,7 +220,7 @@ class EcosObjectGitService(
                             .call()
                     }
 
-                    writeEcosObjectToDisk(gitCloneFolder, commit.objectRef)
+                    writeEcosVcsObjectToDisk(gitCloneFolder, commit.objectRef)
 
                     git.add()
                         .addFilepattern(".")
@@ -174,20 +234,20 @@ class EcosObjectGitService(
                         .setMessage(commit.commitMessage)
                         .call()
 
-                    println("Committed files as " + revCommit + " to repository at " + git.repository.directory)
+                    log.info { "Committed files as " + revCommit + " to repository at " + git.repository.directory }
 
                     val pushes = git.push()
                         .setCredentialsProvider(jgitCredential)
                         .call()
 
-
                     val results: Iterable<PushResult> = pushes
                     for (r: PushResult in results) {
                         for (update: RemoteRefUpdate in r.remoteUpdates) {
-                            println("Having result: $update")
-                            if (update.status != RemoteRefUpdate.Status.OK && update.status != RemoteRefUpdate.Status.UP_TO_DATE) {
-                                val errorMessage = "Push failed: " + update.status
-                                throw RuntimeException(errorMessage)
+                            log.info { "Having result: $update" }
+                            if (update.status != RemoteRefUpdate.Status.OK
+                                && update.status != RemoteRefUpdate.Status.UP_TO_DATE
+                            ) {
+                                throw RuntimeException("Push failed: " + update.status)
                             }
                         }
                     }
@@ -200,59 +260,72 @@ class EcosObjectGitService(
         }
     }
 
-    private fun writeEcosObjectToDisk(folder: File, ecosObject: EntityRef) {
-        // TODO: check that artifact really changed by ArtifactService -> compareArtifacts, isTypeComparable methods
+    private fun writeEcosVcsObjectToDisk(folder: File, ecosVcsObject: EntityRef) {
 
-        // TODO: bug - why some artifacts dont writes? For example, ui journals
+        val baseDir = EcosStdFile(folder)
+        val rootMemDir = EcosMemDir(null, NameUtils.escape(ecosVcsObject.getLocalId()))
+        val artifactsDir = rootMemDir.createDir(ARTIFACTS_PATH)
 
-        when (ecosObject.getSourceId()) {
+        when (ecosVcsObject.getSourceId()) {
             EcosAppRecords.ID -> {
-                writeAppArtifactsToDisk(folder, ecosObject)
+
+                val id = ecosVcsObject.getLocalId()
+                val appDef = ecosAppService.getById(id) ?: error("Invalid ECOS application ID: '$id'")
+                val artifacts = mutableSetOf<EntityRef>()
+
+                artifacts.addAll(appDef.artifacts)
+                artifacts.addAll(appDef.typeRefs.map { ArtifactUtils.typeRefToArtifactRef(it) })
+
+                writeArtifactsToDir(baseDir.getDir(ARTIFACTS_PATH), artifactsDir, artifacts)
+
+                val baseMeta = baseDir.getFile(META_FILE_PATH)?.let {
+                    Json.mapper.read(it, DataValue::class.java)
+                } ?: DataValue.createObj()
+                baseMeta["repositoryEndpoint"] = appDef.repositoryEndpoint
+                rootMemDir.createFile(META_FILE_PATH) {
+                    it.write(Json.mapper.toPrettyStringNotNull(baseMeta).toByteArray(Charsets.UTF_8))
+                }
             }
 
             else -> {
-                val explicitArtifactRef = getExplicitArtifactRef(ecosObject)
-                writeArtifactToDisk(folder, explicitArtifactRef)
+                val explicitArtifactRef = getExplicitArtifactRef(ecosVcsObject)
+                writeArtifactsToDir(baseDir.getDir(ARTIFACTS_PATH), artifactsDir, listOf(explicitArtifactRef))
             }
         }
 
+        baseDir.copyFilesFrom(rootMemDir)
     }
 
-    private fun writeAppArtifactsToDisk(folder: File, appRef: EntityRef) {
-        val id = appRef.getLocalId()
-        val appDef = ecosAppService.getById(id) ?: error("Invalid ECOS application ID: '$id'")
+    private fun writeArtifactsToDir(baseDir: EcosFile?, targetDir: EcosFile, artifacts: Collection<EntityRef>) {
 
-        val rootMemDir = ecosAppUtils.writeAppArtifactsToMemDir(appDef, id, ARTIFACTS_PATH)
+        val artifactRefsByType = HashMap<String, MutableList<ArtifactRef>>()
+        artifacts.forEach { ref ->
+            val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+            artifactRefsByType.computeIfAbsent(artifactRef.type) { ArrayList() }.add(artifactRef)
+        }
 
-        rootMemDir.createFile(
-            "meta.json", """
-            {
-              "repositoryEndpoint": "${appDef.repositoryEndpoint}"
+        for ((type, refs) in artifactRefsByType) {
+            val typeCtx = artifactTypesService.getTypeContext(type)
+            if (typeCtx == null) {
+                log.warn { "Unknown artifact type: $type" }
+                continue
             }
-        """.trimIndent()
-        )
 
-        val sys = EcosStdFile(folder)
-        sys.copyFilesFrom(rootMemDir)
-    }
-
-    private fun writeArtifactToDisk(folder: File, artifactEntityRef: EntityRef) {
-        val artifactId = artifactEntityRef.getLocalId()
-
-        val rootMemDir = EcosMemDir(null, NameUtils.escape(artifactEntityRef.getLocalId()))
-        val artifactsDir = rootMemDir.createDir(ARTIFACTS_PATH)
-
-        val artifactRef = ArtifactRef.valueOf(artifactId)
-        val artifactRev = ecosArtifactsService.getLastArtifactRev(artifactRef, false)
-            ?: error("Artifact revision not found for $artifactId")
-
-        ZipUtils.extractZip(
-            ByteArrayInputStream(artifactRev.data),
-            artifactsDir.getOrCreateDir(artifactRef.type)
-        )
-
-        val sys = EcosStdFile(folder)
-        sys.copyFilesFrom(rootMemDir)
+            val artifactsToWrite = ArrayList<Any>()
+            for (ref in refs) {
+                val lastArtifact = ecosArtifactsService.getLastArtifact(ref, false)
+                if (lastArtifact == null) {
+                    log.warn { "Artifact is null for ref $ref" }
+                    continue
+                }
+                if (lastArtifact.source.type != ArtifactRevSourceType.ECOS_APP) {
+                    artifactsToWrite.add(lastArtifact.data)
+                }
+            }
+            if (artifactsToWrite.isNotEmpty()) {
+                artifactService.writeArtifactsDiff(baseDir, targetDir, typeCtx.getTypeContext(), artifactsToWrite)
+            }
+        }
     }
 
     private data class UserInfo(
@@ -267,7 +340,7 @@ class EcosObjectGitService(
     )
 }
 
-data class EcosObjectCommit(
+data class EcosVcsObjectCommit(
     val objectRef: EntityRef,
     val branch: String,
     val commitMessage: String,
@@ -289,5 +362,4 @@ data class EcosObjectCommit(
             }
         }
     }
-
 }

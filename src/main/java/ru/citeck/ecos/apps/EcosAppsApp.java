@@ -24,6 +24,7 @@ public class EcosAppsApp {
 
     static {
         EcosConfigBeanPostProcessor.excludePackages("ru.citeck.ecos.apps.domain.ecosapp");
+        EcosConfigBeanPostProcessor.includePackages("ru.citeck.ecos.apps.domain.git");
     }
 
     public static void main(String[] args) {

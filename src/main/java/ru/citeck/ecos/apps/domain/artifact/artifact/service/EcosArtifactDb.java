@@ -32,5 +32,6 @@ public class EcosArtifactDb implements EcosArtifactRev {
         this.data = content.getData();
         this.hash = content.getHash();
         this.size = content.getSize();
+
     }
 }

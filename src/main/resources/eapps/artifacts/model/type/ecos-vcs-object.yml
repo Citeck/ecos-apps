@@ -1,0 +1,13 @@
+---
+id: ecos-vcs-object
+
+name:
+  en: ECOS VCS Object
+  ru: VCS Объект ECOS
+
+system: true
+
+actions:
+  - uiserv/action@ecos-vcs-object-commit-action
+
+sourceId: eapps/ecos-vcs-object

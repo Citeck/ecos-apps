@@ -63,6 +63,20 @@
                     "validate": {
                       "required": true
                     }
+                  },
+                  {
+                    "label": {
+                      "ru": "Репозиторий",
+                      "en": "Repository"
+                    },
+                    "key": "repositoryEndpoint",
+                    "modalTitle": "",
+                    "journalId": "endpoints",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "type": "selectJournal",
+                    "input": true,
+                    "queryData": ""
                   }
                 ]
               }

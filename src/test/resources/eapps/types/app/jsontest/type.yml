@@ -1,7 +1,7 @@
 
 modelVersion: "1.0"
 
-source-id: "test-source"
+sourceId: "test-source"
 
 controller:
   type: json

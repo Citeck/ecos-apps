@@ -15,7 +15,7 @@ journalRef: uiserv/journal@ecos-apps
 defaultCreateVariant: false
 
 actions:
-  - uiserv/action@ecos-object-commit-action
+  - uiserv/action@ecos-vcs-object-commit-action
 
 createVariants:
 

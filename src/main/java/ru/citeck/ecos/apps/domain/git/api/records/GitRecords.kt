@@ -1,9 +1,9 @@
 package ru.citeck.ecos.apps.domain.git.api.records
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
-import ru.citeck.ecos.apps.domain.git.service.EcosObjectCommit
-import ru.citeck.ecos.apps.domain.git.service.EcosObjectGitService
+import ru.citeck.ecos.apps.domain.git.service.EcosVcsObjectCommit
+import ru.citeck.ecos.apps.domain.git.service.EcosVcsObjectGitService
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.records3.record.atts.dto.LocalRecordAtts
 import ru.citeck.ecos.records3.record.atts.value.AttValue
@@ -15,7 +15,7 @@ import ru.citeck.ecos.webapp.api.entity.toEntityRef
 
 @Component
 class GitRecords(
-    private val ecosObjectGitService: EcosObjectGitService
+    private val ecosVcsObjectGitService: EcosVcsObjectGitService
 ) : AbstractRecordsDao(), RecordAttsDao, RecordMutateDao {
 
     companion object {
@@ -32,7 +32,7 @@ class GitRecords(
     }
 
     override fun mutate(record: LocalRecordAtts): String {
-        // TODO: develop a more sophisticated check bases on the user's roles
+
         if (AuthContext.isRunAsSystemOrAdmin().not()) {
             error("Only system or admin can use git integration")
         }
@@ -44,12 +44,12 @@ class GitRecords(
 
         val isNewBranch = record.getAtt("newBranch").asBoolean()
         val branchName = if (isNewBranch) {
-            record.getAtt("newBranchName").asText()
+            "ecos/" + record.getAtt("newBranchName").asText()
         } else {
             record.getAtt("branch").asText()
         }
 
-        val objectCommit = EcosObjectCommit(
+        val objectCommit = EcosVcsObjectCommit(
             objectRef = record.id.toEntityRef(),
             branch = branchName,
             commitMessage = record.getAtt("commitMessage").asText(),
@@ -57,9 +57,7 @@ class GitRecords(
             newBranchFrom = record.getAtt("newBranchFrom").asText()
         )
 
-        log.error { "mutate: $record" }
-
-        ecosObjectGitService.commitChanges(objectCommit)
+        ecosVcsObjectGitService.commitChanges(objectCommit)
 
         return record.id
     }
@@ -68,27 +66,28 @@ class GitRecords(
         return GitRecordAtts(recordId.toEntityRef())
     }
 
+    @Suppress("UNUSED")
     inner class GitRecordAtts(
-        ecosObject: EntityRef
+        ecosVcsObject: EntityRef
     ) {
-
-        var id = ecosObject.toString()
-
-        var objectRepo = RepoMeta(ecosObject)
-
+        var id = ecosVcsObject.toString()
+        var objectRepo = RepoMeta(ecosVcsObject)
     }
 
     inner class RepoMeta(
-        val ecosObject: EntityRef
+        val ecosVcsObject: EntityRef
     ) : AttValue {
 
+        private val allBranches by lazy {
+            ecosVcsObjectGitService.getRepoBranchesForVcsObject(ecosVcsObject)
+        }
+
         override fun getAtt(name: String): Any? {
-
-            if (name == "branches") {
-                return ecosObjectGitService.getRepoBranches(ecosObject)
+            return when (name) {
+                "allowedBranchesToCommit" -> ecosVcsObjectGitService.getAllowedBranchesToCommit(allBranches)
+                "allowedBaseBranches" -> ecosVcsObjectGitService.getAllowedBaseBranches(allBranches)
+                else -> null
             }
-
-            return super.getAtt(name)
         }
     }
 }

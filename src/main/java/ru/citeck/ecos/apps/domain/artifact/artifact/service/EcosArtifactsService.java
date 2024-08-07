@@ -636,8 +636,14 @@ public class EcosArtifactsService {
 
     @Nullable
     @Transactional(readOnly = true)
-    public EcosArtifactDto getLastArtifact(ArtifactRef moduleRef) {
-        return toModule(artifactsDao.getLastArtifactRev(moduleRef)).orElse(null);
+    public EcosArtifactDto getLastArtifact(ArtifactRef artifactRef) {
+        return getLastArtifact(artifactRef, true);
+    }
+
+    @Nullable
+    @Transactional(readOnly = true)
+    public EcosArtifactDto getLastArtifact(ArtifactRef moduleRef, boolean includePatched) {
+        return toModule(artifactsDao.getLastArtifactRev(moduleRef, includePatched)).orElse(null);
     }
 
     @Transactional(readOnly = true)

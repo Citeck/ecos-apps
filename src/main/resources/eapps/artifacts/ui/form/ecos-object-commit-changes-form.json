@@ -1,5 +1,5 @@
 {
-  "id": "ecos-object-commit-changes-form",
+  "id": "ecos-vcs-object-commit-changes-form",
   "formKey": "",
   "title": {
     "en": "Ecos object commit changes form"
@@ -35,13 +35,13 @@
           },
           {
             "label": {
-              "ru": "Ветка",
-              "en": "Branch"
+              "ru": "Ветка для коммита",
+              "en": "Branch for commit"
             },
             "key": "branch",
             "dataSrc": "custom",
             "data": {
-              "custom": "values = _.get(data, 'branchesData.branches');",
+              "custom": "values = _.get(data, 'branchesData.allowedBranchesToCommit');",
               "headers": [
                 {}
               ]
@@ -67,7 +67,8 @@
               "record": {
                 "id": "eapps/git@{{instance.options.actionRecord}}",
                 "attributes": {
-                  "branches": "objectRepo.branches[]"
+                  "allowedBaseBranches": "objectRepo.allowedBaseBranches[]",
+                  "allowedBranchesToCommit": "objectRepo.allowedBranchesToCommit[]"
                 }
               },
               "forceLoad": false
@@ -103,7 +104,7 @@
               "minLength": 3,
               "maxLength": 50
             },
-            "defaultValue": "",
+            "prefix": "ecos/",
             "refreshOn": [],
             "optionalWhenDisabled": false,
             "conditional": {
@@ -128,16 +129,16 @@
             },
             "dataSrc": "custom",
             "data": {
-              "custom": "values = _.get(data, 'branchesData.branches');",
+              "custom": "values = _.get(data, 'branchesData.allowedBaseBranches');",
               "headers": [
                 {}
               ]
             },
             "template": "<span>{{ item }}</span>",
-            "defaultValue": "",
             "refreshOn": [
               "branchesData"
             ],
+            "customDefaultValue": "value = 'develop';",
             "optionalWhenDisabled": false,
             "conditional": {
               "show": "true",
@@ -242,8 +243,7 @@
         "type": "columns",
         "input": false
       }
-    ],
-    "formId": "ecos-app-commit-changes-form"
+    ]
   },
   "attributes": {},
   "notExists": false

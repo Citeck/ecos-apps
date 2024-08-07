@@ -4,7 +4,7 @@ name:
   ru: Конфигурация
   en: Config
 
-source-id: "config"
+sourceId: "config"
 
 controller:
   type: json

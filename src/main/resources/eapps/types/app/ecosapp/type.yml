@@ -4,7 +4,7 @@ name:
   ru: ECOS Приложение
   en: ECOS Application
 
-source-id: "ecosapp"
+sourceId: "ecosapp"
 
 internal: true
 

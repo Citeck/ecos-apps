@@ -27,6 +27,7 @@ import ru.citeck.ecos.commons.data.Version
 import ru.citeck.ecos.commons.io.file.EcosFile
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.json.Json
+import ru.citeck.ecos.commons.utils.NameUtils
 import ru.citeck.ecos.commons.utils.ZipUtils
 import ru.citeck.ecos.model.lib.utils.ModelUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
@@ -34,6 +35,7 @@ import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
+import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.*
 
@@ -46,9 +48,7 @@ class EcosAppService(
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
     private val applicationsWatcherJob: ApplicationsWatcherJob,
-    private val jpaSearchConverterFactory: JpaSearchConverterFactory,
-    @Lazy
-    private val ecosAppUtils: EcosAppUtils
+    private val jpaSearchConverterFactory: JpaSearchConverterFactory
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -140,7 +140,7 @@ class EcosAppService(
     private fun internalSave(app: EcosAppDef): EcosAppEntity {
 
         val artifactsSet = HashSet<String>()
-        app.typeRefs.forEach { artifactsSet.add(ecosAppUtils.typeRefToArtifactRef(it).getLocalId()) }
+        app.typeRefs.forEach { artifactsSet.add(ArtifactUtils.typeRefToArtifactRef(it).getLocalId()) }
         app.artifacts.forEach { artifactsSet.add(it.getLocalId()) }
 
         ecosArtifactsService.setEcosAppFull(artifactsSet.map { ArtifactRef.valueOf(it) }, app.id)
@@ -172,21 +172,38 @@ class EcosAppService(
     }
 
     fun getAppForArtifacts(list: List<EntityRef>): Map<EntityRef, EntityRef> {
-        /*
-                val result = mutableMapOf<EntityRef, EntityRef>()
-                ecosAppContentRepo.findAllByArtifactIsIn(list.map { it.toString() }).forEach {
-                    val appId = it.app.extId
-                    if (appId != null) {
-                        result[EntityRef.valueOf(it.artifact)] = EntityRef.create("eapps", "ecos-app", appId)
-                    }
-                }*/
+/*
+        val result = mutableMapOf<EntityRef, EntityRef>()
+        ecosAppContentRepo.findAllByArtifactIsIn(list.map { it.toString() }).forEach {
+            val appId = it.app.extId
+            if (appId != null) {
+                result[EntityRef.valueOf(it.artifact)] = EntityRef.create("eapps", "ecos-app", appId)
+            }
+        }*/
         return emptyMap() // result
     }
 
     fun getAppData(id: String): ByteArray {
 
         val appDef = getById(id) ?: error("Invalid ECOS application ID: '$id'")
-        val rootDir = ecosAppUtils.writeAppArtifactsToMemDir(appDef, id, "artifacts")
+
+        val artifacts = mutableSetOf<EntityRef>()
+        artifacts.addAll(appDef.artifacts)
+        artifacts.addAll(appDef.typeRefs.map { ArtifactUtils.typeRefToArtifactRef(it) })
+
+        val rootDir = EcosMemDir(null, NameUtils.escape(id))
+        val artifactsDir = rootDir.createDir("artifacts")
+
+        for (ref in artifacts) {
+            val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+            val artifactRev = ecosArtifactsService.getLastArtifactRev(artifactRef, false)
+            if (artifactRev != null) {
+                ZipUtils.extractZip(
+                    ByteArrayInputStream(artifactRev.data),
+                    artifactsDir.getOrCreateDir(artifactRef.type)
+                )
+            }
+        }
 
         rootDir.createFile("meta.json", Json.mapper.toPrettyString(appDef) ?: error("toPrettyString error"))
 

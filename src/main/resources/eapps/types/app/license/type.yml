@@ -4,7 +4,7 @@ name:
   ru: Лицензия ECOS
   en: ECOS License
 
-source-id: "license"
+sourceId: "license"
 
 controller:
   type: json

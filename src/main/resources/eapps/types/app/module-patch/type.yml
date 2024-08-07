@@ -5,7 +5,7 @@ name:
 
 internal: true
 
-source-id: "module-patch"
+sourceId: "module-patch"
 
 controller:
   type: json

@@ -4,7 +4,7 @@ name:
   ru: Патч для артефакта
   en: Artifact patch
 
-source-id: "artifact-patch"
+sourceId: "artifact-patch"
 
 controller:
   type: json
