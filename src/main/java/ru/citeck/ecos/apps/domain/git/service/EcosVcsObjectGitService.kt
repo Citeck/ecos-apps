@@ -113,6 +113,14 @@ class EcosVcsObjectGitService(
         }
     }
 
+    fun canVcsObjectBeCommitted(objectRef: EntityRef): Boolean {
+        return try {
+            getEndpoint(objectRef).isNotEmpty()
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
     private fun getEndpoint(objectRef: EntityRef): EntityRef {
         return when (objectRef.getSourceId()) {
             EcosAppRecords.ID -> {

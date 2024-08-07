@@ -65,10 +65,14 @@ class GitRecords(
 
     @Suppress("UNUSED")
     inner class GitRecordAtts(
-        ecosVcsObject: EntityRef
+        private val ecosVcsObject: EntityRef
     ) {
         var id = ecosVcsObject.toString()
         var objectRepo = RepoMeta(ecosVcsObject)
+
+        fun getCanVcsObjectBeCommitted(): Boolean {
+            return ecosVcsObjectGitService.canVcsObjectBeCommitted(ecosVcsObject)
+        }
     }
 
     inner class RepoMeta(

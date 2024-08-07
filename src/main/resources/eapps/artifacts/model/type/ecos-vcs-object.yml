@@ -10,4 +10,11 @@ system: true
 actions:
   - uiserv/action@ecos-vcs-object-commit-action
 
-sourceId: eapps/ecos-vcs-object
+model:
+  attributes:
+    - id: canBeCommittedToVcs
+      computed:
+        type: SCRIPT
+        config:
+          fn: |
+            return Records.get('eapps/git@' + value.getRef()).load('canVcsObjectBeCommitted?bool!');

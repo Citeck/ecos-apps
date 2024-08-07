@@ -24,3 +24,8 @@ config:
     id: "eapps/git@${recordRef}"
     attributes:
       action: COMMIT
+
+predicate:
+  t: eq
+  a: canBeCommittedToVcs?bool
+  v: true

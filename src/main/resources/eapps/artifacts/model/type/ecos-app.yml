@@ -25,3 +25,12 @@ createVariants:
   - id: upload
     name: { ru: Загрузить приложение, en: Upload application }
     formRef: uiserv/form@ecos-module-upload
+
+model:
+  attributes:
+    - id: canBeCommittedToVcs
+      computed:
+        type: SCRIPT
+        config:
+          fn: |
+            return !!value.load('repositoryEndpoint?localId');
