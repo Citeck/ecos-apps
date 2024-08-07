@@ -1,6 +1,5 @@
 package ru.citeck.ecos.apps.domain.git.api.records
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.domain.git.service.EcosVcsObjectCommit
 import ru.citeck.ecos.apps.domain.git.service.EcosVcsObjectGitService
@@ -20,8 +19,6 @@ class GitRecords(
 
     companion object {
         const val ID = "git"
-
-        private val log = KotlinLogging.logger {}
 
         private const val ACTION_ATT = "action"
         private const val ACTION_COMMIT = "COMMIT"

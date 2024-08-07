@@ -3,4 +3,4 @@ id: ecos-vcs-allowed-branches-to-commit
 name:
   ru: Регулярное выражение для разрешенных веток для коммита
   en: Regex for allowed branches to commit
-value: 'ecos/.*'
+value: 'ecos/.+'

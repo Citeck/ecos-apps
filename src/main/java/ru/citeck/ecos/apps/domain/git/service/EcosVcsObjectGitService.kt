@@ -16,8 +16,8 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
-import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.apps.domain.ecosapp.service.ArtifactUtils
+import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.io.file.EcosFile
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
@@ -244,8 +244,8 @@ class EcosVcsObjectGitService(
                     for (r: PushResult in results) {
                         for (update: RemoteRefUpdate in r.remoteUpdates) {
                             log.info { "Having result: $update" }
-                            if (update.status != RemoteRefUpdate.Status.OK
-                                && update.status != RemoteRefUpdate.Status.UP_TO_DATE
+                            if (update.status != RemoteRefUpdate.Status.OK &&
+                                update.status != RemoteRefUpdate.Status.UP_TO_DATE
                             ) {
                                 throw RuntimeException("Push failed: " + update.status)
                             }

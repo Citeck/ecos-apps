@@ -2,7 +2,6 @@ package ru.citeck.ecos.apps.domain.ecosapp.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
-import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
