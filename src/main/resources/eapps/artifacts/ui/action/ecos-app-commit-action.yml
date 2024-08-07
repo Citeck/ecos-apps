@@ -26,6 +26,11 @@ config:
       action: COMMIT
 
 predicate:
-  t: eq
-  a: canBeCommittedToVcs?bool
-  v: true
+  t: and
+  v:
+    - t: eq
+      a: canBeCommittedToVcs?bool
+      v: true
+    - t: eq
+      a: $user.authorities._has.ROLE_ADMIN?bool
+      v: true
