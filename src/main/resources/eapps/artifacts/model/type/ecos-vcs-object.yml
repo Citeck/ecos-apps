@@ -11,7 +11,7 @@ actions:
   - uiserv/action@ecos-vcs-object-commit-action
 
 model:
-  attributes:
+  systemAttributes:
     - id: canBeCommittedToVcs
       computed:
         type: SCRIPT

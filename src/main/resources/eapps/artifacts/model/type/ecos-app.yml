@@ -27,7 +27,7 @@ createVariants:
     formRef: uiserv/form@ecos-module-upload
 
 model:
-  attributes:
+  systemAttributes:
     - id: canBeCommittedToVcs
       computed:
         type: SCRIPT
