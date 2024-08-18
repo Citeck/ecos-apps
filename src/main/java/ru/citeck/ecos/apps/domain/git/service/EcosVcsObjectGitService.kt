@@ -58,7 +58,7 @@ class EcosVcsObjectGitService(
         private const val RESOURCE_CITECK_APPLICATION_PATH = "generated-citeck-application/citeck-application/"
         private const val POM_FILE_NAME = "pom.xml"
 
-        private val applicationRequiredFiles = listOf(POM_FILE_NAME, ".gitignore", ".editorconfig", ".editorconfig")
+        private val applicationRequiredFiles = listOf(POM_FILE_NAME, ".gitignore", ".gitattributes", ".editorconfig")
 
         private val log = KotlinLogging.logger {}
     }
@@ -175,7 +175,7 @@ class EcosVcsObjectGitService(
         if (artifactTypeId.isBlank()) {
             error(
                 "Artifact type can't be calculated for ref '$ref'. " +
-                    "Please add sourceId in eapps/types/**/type.yml"
+                        "Please add sourceId in eapps/types/**/type.yml"
             )
         }
 
@@ -193,14 +193,10 @@ class EcosVcsObjectGitService(
 
         log.info { "Commit changes: $commit" }
         val appInfo = getAppInfo(commit.objectRef)
-        require(appInfo != null) {
-            "Could not get app info for object ref: ${commit.objectRef}"
-        }
+        require(appInfo != null) { "Could not get app info for object ref: ${commit.objectRef}" }
 
         val endpointRef = appInfo.repositoryEndpoint
-        require(endpointRef.isNotEmpty()) {
-            "Repository endpoint is required"
-        }
+        require(endpointRef.isNotEmpty()) { "Repository endpoint is required" }
 
         if (commit.newBranch) {
             AuthContext.runAsSystem {
@@ -220,13 +216,7 @@ class EcosVcsObjectGitService(
         var gitCloneFolder: File? = null
         try {
             val user = AuthContext.getCurrentUser()
-
-            gitCloneFolder = Files.createTempDirectory(
-                "$APP_GIT_TMP_DIR-$user-${commit.objectRef.getLocalId()}"
-            ).toFile()
-            gitCloneFolder.mkdirs()
-
-            log.debug { "gitCloneFolder: ${gitCloneFolder.absolutePath}" }
+            gitCloneFolder = createTempDirectory(commit, user)
 
             val jgitCredential = UsernamePasswordCredentialsProvider(basicData.username, basicData.password)
 
@@ -245,18 +235,17 @@ class EcosVcsObjectGitService(
                 .call()
                 .use { git ->
                     if (commit.newBranch) {
-                        git.checkout().setCreateBranch(true).setName(branchName)
-                            .call()
+                        git.checkout().setCreateBranch(true).setName(branchName).call()
                     }
 
                     writeEcosVcsObjectToDisk(gitCloneFolder, commit.objectRef)
-                    gitCloneFolder?.let { initCiteckAppProjectStructureIfNotExists(it, appInfo) }
+                    initCiteckAppProjectStructureIfNotExists(gitCloneFolder, appInfo)
 
                     git.add()
                         .addFilepattern(".")
                         .call()
 
-                    val userRef = ecosAuthoritiesApi.getAuthorityRef(user)
+                    val userRef = ecosAuthoritiesApi.getAuthorityRef(AuthContext.getCurrentUser())
                     val userInfo = recordsService.getAtts(userRef, UserInfo::class.java)
 
                     val revCommit = git.commit()
@@ -266,27 +255,38 @@ class EcosVcsObjectGitService(
 
                     log.info { "Committed files as " + revCommit + " to repository at " + git.repository.directory }
 
-                    val pushes = git.push()
-                        .setCredentialsProvider(jgitCredential)
-                        .call()
-
-                    val results: Iterable<PushResult> = pushes
-                    for (r: PushResult in results) {
-                        for (update: RemoteRefUpdate in r.remoteUpdates) {
-                            log.info { "Having result: $update" }
-                            if (update.status != RemoteRefUpdate.Status.OK &&
-                                update.status != RemoteRefUpdate.Status.UP_TO_DATE
-                            ) {
-                                throw RuntimeException("Push failed: " + update.status)
-                            }
-                        }
-                    }
+                    pushChanges(git, jgitCredential)
                 }
         } catch (e: Exception) {
             log.error(e) { "Error while committing changes" }
             throw e
         } finally {
             gitCloneFolder?.deleteRecursively()
+        }
+    }
+
+    private fun createTempDirectory(commit: EcosVcsObjectCommit, user: String): File {
+        val gitCloneFolder = Files.createTempDirectory(
+            "$APP_GIT_TMP_DIR-$user-${commit.objectRef.getLocalId()}"
+        ).toFile()
+        gitCloneFolder.mkdirs()
+
+        log.debug { "gitCloneFolder: ${gitCloneFolder.absolutePath}" }
+
+        return gitCloneFolder
+    }
+
+    private fun pushChanges(git: Git, jgitCredential: UsernamePasswordCredentialsProvider) {
+        val pushes = git.push()
+            .setCredentialsProvider(jgitCredential)
+            .call()
+        for (result: PushResult in pushes) {
+            for (update: RemoteRefUpdate in result.remoteUpdates) {
+                log.info { "Having result: $update" }
+                if (update.status != RemoteRefUpdate.Status.OK && update.status != RemoteRefUpdate.Status.UP_TO_DATE) {
+                    throw RuntimeException("Push failed: ${update.status}")
+                }
+            }
         }
     }
 
@@ -413,12 +413,8 @@ data class EcosVcsObjectCommit(
 ) {
 
     init {
-        require(branch.isNotBlank()) {
-            "Branch name is required"
-        }
-        require(commitMessage.isNotBlank()) {
-            "Commit message is required"
-        }
+        require(branch.isNotBlank()) { "Branch name is required" }
+        require(commitMessage.isNotBlank()) { "Commit message is required" }
 
         if (newBranch) {
             require(newBranchFrom.isNotBlank()) {
