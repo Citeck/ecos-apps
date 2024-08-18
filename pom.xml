@@ -16,6 +16,7 @@
     <properties>
 
         <jgit.version>6.10.0.202406032230-r</jgit.version>
+        <citeck.archetype.version>1.1.5</citeck.archetype.version>
 
     </properties>
 
@@ -33,6 +34,41 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-citeck-app-from-archetype</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>mvnw</executable>
+                            <arguments>
+                                <argument>archetype:generate</argument>
+                                <argument>-DarchetypeGroupId=ru.citeck.ecos</argument>
+                                <argument>-DarchetypeArtifactId=ecos-application-archetype</argument>
+                                <argument>-DarchetypeVersion=${citeck.archetype.version}</argument>
+                                <argument>-DgroupId=org.example</argument>
+                                <argument>-DartifactId=citeck-application</argument>
+                                <argument>-Dversion=1.0.0-SNAPSHOT</argument>
+                                <argument>-Dpackage=org.example.generated</argument>
+                                <argument>-DoutputDirectory=${build.outputDirectory}/generated-citeck-application</argument>
+                                <argument>-DinteractiveMode=false</argument>
+                                <argument>-DuseDefaultExcludes=false</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories>
         <repository>

@@ -8,6 +8,7 @@ import org.eclipse.jgit.transport.PushResult
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
@@ -54,6 +55,11 @@ class EcosVcsObjectGitService(
         private const val ARTIFACTS_PATH = "src/main/resources/app/artifacts"
         private const val META_FILE_PATH = "src/main/resources/app/meta.json"
 
+        private const val RESOURCE_CITECK_APPLICATION_PATH = "generated-citeck-application/citeck-application/"
+        private const val POM_FILE_NAME = "pom.xml"
+
+        private val applicationRequiredFiles = listOf(POM_FILE_NAME, ".gitignore", ".editorconfig", ".editorconfig")
+
         private val log = KotlinLogging.logger {}
     }
 
@@ -81,7 +87,8 @@ class EcosVcsObjectGitService(
 
     @RunAsSystem
     fun getRepoBranchesForVcsObject(vcsObjectRef: EntityRef): List<String> {
-        return getRepoBranchesForEndpoint(getEndpoint(vcsObjectRef))
+        val appInfo = getAppInfo(vcsObjectRef) ?: return emptyList()
+        return getRepoBranchesForEndpoint(appInfo.repositoryEndpoint)
     }
 
     @RunAsSystem
@@ -115,24 +122,33 @@ class EcosVcsObjectGitService(
 
     fun canVcsObjectBeCommitted(objectRef: EntityRef): Boolean {
         return try {
-            getEndpoint(objectRef).isNotEmpty()
+            getAppInfo(objectRef)?.repositoryEndpoint?.isNotEmpty() ?: false
         } catch (e: Throwable) {
             false
         }
     }
 
-    private fun getEndpoint(objectRef: EntityRef): EntityRef {
+    private fun getAppInfo(objectRef: EntityRef): AppInfo? {
         return when (objectRef.getSourceId()) {
             EcosAppRecords.ID -> {
                 val app = ecosAppService.getById(objectRef.getLocalId())
-                app?.repositoryEndpoint ?: EntityRef.EMPTY
+                val repoEndpoint = app?.repositoryEndpoint ?: EntityRef.EMPTY
+
+                AppInfo(
+                    objectRef.getLocalId(),
+                    repoEndpoint
+                )
             }
 
             else -> {
                 val artifactApp = getAppRefByObjectRef(objectRef)
-                val app = ecosAppService.getById(artifactApp.getLocalId())
+                val app = ecosAppService.getById(artifactApp.getLocalId()) ?: return null
+                val repositoryEndpoint = app.repositoryEndpoint
 
-                return app?.repositoryEndpoint ?: EntityRef.EMPTY
+                AppInfo(
+                    app.id,
+                    repositoryEndpoint
+                )
             }
         }
     }
@@ -176,7 +192,12 @@ class EcosVcsObjectGitService(
     fun commitChanges(commit: EcosVcsObjectCommit) {
 
         log.info { "Commit changes: $commit" }
-        val endpointRef = getEndpoint(commit.objectRef)
+        val appInfo = getAppInfo(commit.objectRef)
+        require(appInfo != null) {
+            "Could not get app info for object ref: ${commit.objectRef}"
+        }
+
+        val endpointRef = appInfo.repositoryEndpoint
         require(endpointRef.isNotEmpty()) {
             "Repository endpoint is required"
         }
@@ -229,6 +250,7 @@ class EcosVcsObjectGitService(
                     }
 
                     writeEcosVcsObjectToDisk(gitCloneFolder, commit.objectRef)
+                    gitCloneFolder?.let { initCiteckAppProjectStructureIfNotExists(it, appInfo) }
 
                     git.add()
                         .addFilepattern(".")
@@ -304,6 +326,35 @@ class EcosVcsObjectGitService(
         baseDir.copyFilesFrom(rootMemDir)
     }
 
+    private fun initCiteckAppProjectStructureIfNotExists(projectDir: File, appInfo: AppInfo) {
+        applicationRequiredFiles.forEach { fileName ->
+            val targetFile = File(projectDir, fileName)
+            if (!targetFile.exists()) {
+                val resource = ClassPathResource("$RESOURCE_CITECK_APPLICATION_PATH$fileName")
+                resource.inputStream.use { input ->
+                    targetFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                if (fileName == POM_FILE_NAME) {
+                    val pomFile = File(projectDir, POM_FILE_NAME)
+                    if (pomFile.exists()) {
+                        val pomContent = pomFile.readText()
+                        val modifiedPomContent = pomContent.replace(
+                            Regex(
+                                "(<project[^>]*>.*?<artifactId>)(.*?)(</artifactId>.*?</project>)",
+                                RegexOption.DOT_MATCHES_ALL
+                            ),
+                            "$1${appInfo.id}$3"
+                        )
+                        pomFile.writeText(modifiedPomContent)
+                    }
+                }
+            }
+        }
+    }
+
     private fun writeArtifactsToDir(baseDir: EcosFile?, targetDir: EcosFile, artifacts: Collection<EntityRef>) {
 
         val artifactRefsByType = HashMap<String, MutableList<ArtifactRef>>()
@@ -345,6 +396,11 @@ class EcosVcsObjectGitService(
 
         @AttName("lastName")
         var lastName: String? = ""
+    )
+
+    private data class AppInfo(
+        val id: String,
+        val repositoryEndpoint: EntityRef = EntityRef.EMPTY
     )
 }
 
