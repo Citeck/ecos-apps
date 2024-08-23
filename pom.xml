@@ -28,9 +28,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jgit</groupId>
-            <artifactId>org.eclipse.jgit</artifactId>
-            <version>${jgit.version}</version>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-html-jvm</artifactId>
+            <version>0.11.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ru.citeck.ecos.ent.vcs.object</groupId>
+            <artifactId>vcs-object-integration</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
     </dependencies>

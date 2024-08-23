@@ -33,4 +33,4 @@ model:
         type: SCRIPT
         config:
           fn: |
-            return !!value.load('repositoryEndpoint?localId');
+            return value.load('canVcsObjectBeCommitted?bool!');
