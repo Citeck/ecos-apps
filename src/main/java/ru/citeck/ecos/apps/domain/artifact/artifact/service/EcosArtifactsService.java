@@ -118,12 +118,11 @@ public class EcosArtifactsService {
         }
 
         Object artifactData = artifactsService.readArtifactFromBytes(typeId, lastRev.getContent().getData());
-        ArtifactSourceType artifactSourceType;
-        switch (sourceType) {
-            case ECOS_APP: artifactSourceType = ArtifactSourceType.ECOS_APP; break;
-            case USER: artifactSourceType = ArtifactSourceType.USER; break;
-            default: artifactSourceType = ArtifactSourceType.APPLICATION;
-        }
+        ArtifactSourceType artifactSourceType = switch (sourceType) {
+            case ECOS_APP -> ArtifactSourceType.ECOS_APP;
+            case USER -> ArtifactSourceType.USER;
+            default -> ArtifactSourceType.APPLICATION;
+        };
 
         return new EcosArtifactToPatch(
             artifactData,
@@ -247,7 +246,7 @@ public class EcosArtifactsService {
 
         if (typeContext == null) {
             log.error("Type '" + uploadDto.getType() + "' is not found. " +
-                      "Artifact will be skipped: " + uploadDto.getArtifact());
+                "Artifact will be skipped: " + uploadDto.getArtifact());
             return false;
         }
 
@@ -292,7 +291,7 @@ public class EcosArtifactsService {
 
         boolean artifactChanged = false;
         if (ArtifactRevSourceType.ECOS_APP.equals(revSourceType)
-                && !Objects.equals(artifactEntity.getEcosApp(), sourceKey.getId())) {
+            && !Objects.equals(artifactEntity.getEcosApp(), sourceKey.getId())) {
 
             artifactEntity.setEcosApp(sourceKey.getId());
             artifactChanged = true;
@@ -314,7 +313,7 @@ public class EcosArtifactsService {
         }
 
         if (Objects.equals(lastRevContentId, newContent.getId())
-                && revSourceType.equals(lastRevSourceType)) {
+            && revSourceType.equals(lastRevSourceType)) {
 
             // content and source doesn't change
             return false;
@@ -534,7 +533,7 @@ public class EcosArtifactsService {
                     log.error("Artifact deploy failed: " + type + "$" + entity.getExtId() + ". Errors: \n" +
                         errors.stream()
                             .map(it -> Json.getMapper()
-                            .toString(it))
+                                .toString(it))
                             .collect(Collectors.joining("\n"))
                     );
 
@@ -772,8 +771,8 @@ public class EcosArtifactsService {
 
         int itCount = 1000;
         while (--itCount > 0
-                && lastNotUserRev != null
-                && resetWhile.invoke(lastNotUserRev)) {
+            && lastNotUserRev != null
+            && resetWhile.invoke(lastNotUserRev)) {
 
             lastNotUserRev = lastNotUserRev.getPrevRev();
         }
@@ -937,7 +936,7 @@ public class EcosArtifactsService {
         EcosArtifactRevEntity lastArtifactRev = artifactsDao.getLastArtifactRev(artifactRef);
 
         return lastArtifactRev.getArtifact().getDependencies().stream()
-            .map( dep -> ArtifactRef.create(dep.getTarget().getType(), dep.getTarget().getExtId()))
+            .map(dep -> ArtifactRef.create(dep.getTarget().getType(), dep.getTarget().getExtId()))
             .collect(Collectors.toList());
     }
 
@@ -979,9 +978,19 @@ public class EcosArtifactsService {
             ecosApp = "";
         }
 
+        Object artifactData;
+        try {
+            artifactData = artifactsService.readArtifactFromBytes(type, content);
+        } catch (Exception e) {
+            log.error(
+                "Error while artifact data reading. Type: {} Artifact: {}", type, entity.getArtifact().getExtId(), e
+            );
+            return Optional.empty();
+        }
+
         return Optional.of(new EcosArtifactDto(
             entity.getArtifact().getExtId(),
-            artifactsService.readArtifactFromBytes(type, content),
+            artifactData,
             type,
             Json.getMapper().read(entity.getArtifact().getName(), MLText.class),
             DataValue.create(entity.getArtifact().getTags()).asStrList(),

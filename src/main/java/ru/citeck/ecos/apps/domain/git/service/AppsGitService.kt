@@ -17,6 +17,7 @@ import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.io.file.std.EcosStdFile
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
+import ru.citeck.ecos.config.lib.consumer.bean.EcosConfig
 import ru.citeck.ecos.ent.git.service.AppInfo
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectCommit
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectGitService
@@ -42,6 +43,28 @@ class AppsGitService(
         private const val META_FILE_PATH = "src/main/resources/app/meta.json"
 
         private val log = KotlinLogging.logger {}
+    }
+
+    @EcosConfig("ecos-vcs-allowed-base-branches")
+    private lateinit var allowedBaseBranches: String
+
+    @EcosConfig("ecos-vcs-allowed-branches-to-commit")
+    private lateinit var allowedBranchesToCommit: String
+
+    fun getAllowedBaseBranches(branches: List<String>): List<String> {
+        return getFilteredBranches(branches, allowedBaseBranches)
+    }
+
+    fun getAllowedBranchesToCommit(branches: List<String>): List<String> {
+        return getFilteredBranches(branches, allowedBranchesToCommit)
+    }
+
+    private fun getFilteredBranches(branches: List<String>, regex: String): List<String> {
+        if (regex.isBlank() || branches.isEmpty()) {
+            return emptyList()
+        }
+        val filterRegex = regex.toRegex(RegexOption.IGNORE_CASE)
+        return branches.filter { filterRegex.matches(it) }
     }
 
     fun canVcsObjectBeCommitted(objectRef: EntityRef): Boolean {

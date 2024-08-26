@@ -36,7 +36,7 @@
         <dependency>
             <groupId>ru.citeck.ecos.ent.vcs.object</groupId>
             <artifactId>vcs-object-integration</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </dependency>
 
     </dependencies>
