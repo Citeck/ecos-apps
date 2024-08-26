@@ -1,15 +1,15 @@
 {
   "id": "ecos-app-form",
   "formKey": "",
-  "system": true,
   "title": {
     "en": "ECOS Applications Form",
     "ru": "Форма приложения ECOS"
   },
   "description": {},
-  "customModule": null,
+  "customModule": "",
   "typeRef": "emodel/type@ecos-app",
-  "width": "default",
+  "width": "",
+  "system": true,
   "i18n": {},
   "definition": {
     "components": [
@@ -63,7 +63,22 @@
                     "validate": {
                       "required": true
                     }
-                  },
+                  }
+                ]
+              }
+            ],
+            "key": "columns",
+            "type": "columns",
+            "input": false
+          },
+          {
+            "label": {
+              "ru": "Columns"
+            },
+            "key": "columns4",
+            "columns": [
+              {
+                "components": [
                   {
                     "label": {
                       "ru": "Репозиторий",
@@ -77,11 +92,90 @@
                     "type": "selectJournal",
                     "input": true,
                     "queryData": ""
+                  },
+                  {
+                    "label": {
+                      "ru": "Проверить соединение",
+                      "en": "Check connection"
+                    },
+                    "key": "checkRepoConnection",
+                    "action": "event",
+                    "state": "",
+                    "showValidations": false,
+                    "event": "fire-check-connection",
+                    "theme": "info",
+                    "size": "sm",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "customConditional": "show = !!data.repositoryEndpoint",
+                    "type": "button",
+                    "input": true,
+                    "headers": [
+                      {}
+                    ]
+                  }
+                ],
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "index": 0
+              },
+              {
+                "index": 1,
+                "type": "column",
+                "input": false,
+                "key": "column",
+                "components": [
+                  {
+                    "label": "loadConnectionStatus",
+                    "source": {
+                      "type": "recordsQuery",
+                      "recordsQuery": {
+                        "query": "const application = Records.get(recordId).getBaseRecord().id\n\nif (!application) {\n  return;\n}\n\nvalue = {\n    sourceId: 'eapps/git',\n    query: {\n        \"application\": application,\n        \"repository\": data.repositoryEndpoint\n    },\n    language: 'repo-connection-status'\n};",
+                        "attributes": {
+                          "msg": "connectionResultMsgHtml"
+                        },
+                        "isSingle": true
+                      },
+                      "forceLoad": false
+                    },
+                    "update": {
+                      "type": "event",
+                      "event": "fire-check-connection",
+                      "force": true
+                    },
+                    "refreshOn": [
+                      {
+                        "label": "checkRepoConnection",
+                        "value": "checkRepoConnection"
+                      }
+                    ],
+                    "key": "loadConnectionStatus",
+                    "type": "asyncData",
+                    "input": true
+                  },
+                  {
+                    "label": {
+                      "ru": "HTML"
+                    },
+                    "key": "connect-verify-status",
+                    "className": "",
+                    "content": {
+                      "ru": "Статус проверки: не запущена"
+                    },
+                    "refreshOnChange": false,
+                    "refreshOn": [
+                      "checkRepoConnection"
+                    ],
+                    "calculateValue": "var msgError = _.get(data, 'loadConnectionStatus.msg');\nvar htmlContent = \"<p><h6>Статус подключения к репозиторию</h6><p style='color: orange'>Соединение не проверено</p></p>\";\n\nif (!!msgError) {\n    htmlContent = msgError;\n}\n\ndocument.getElementById(component.id).innerHTML = htmlContent;",
+                    "optionalWhenDisabled": false,
+                    "type": "htmlelement",
+                    "input": false
                   }
                 ]
               }
             ],
-            "key": "columns",
+            "oneColumnInViewMode": false,
             "type": "columns",
             "input": false
           }
@@ -212,7 +306,9 @@
         "type": "columns",
         "input": false
       }
-    ]
+    ],
+    "formId": "ecos-app-form"
   },
-  "attributes": {}
+  "attributes": {},
+  "notExists": false
 }
