@@ -130,7 +130,7 @@ class UpdateArtifactsExtIdPatch(
         val ecosApp = entity.ecosApp ?: return null
 
         return AppSourceKey(
-            entity.ecosApp,
+            ecosApp,
             SourceKey(
                 lastRev.sourceId,
                 sourceType
