@@ -26,15 +26,14 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     @Getter @Setter private String name;
     @Getter @Setter private String tags;
     @Getter @Setter private Long typeRevId;
-
-    @Getter @Setter private boolean deleted;
+    @Setter private boolean deleted;
 
     /**
      * Last revision without patches
      */
     @OneToOne
     @JoinColumn(name = "last_rev_id")
-    @Getter @Setter private EcosArtifactRevEntity lastRev;
+    @Setter private EcosArtifactRevEntity lastRev;
 
     /**
      * Patched revision has a higher priority
@@ -51,7 +50,7 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Getter @Setter private Integer deployRetryCounter;
 
-    @Getter @Setter private String ecosApp;
+    @Setter private String ecosApp;
 
     @Getter @Setter private Boolean system;
 
@@ -77,4 +76,17 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
     public void setType(String type) {
         this.type = type;
     }
+
+    public String getEcosApp() {
+        return ecosApp;
+    }
+
+    public EcosArtifactRevEntity getLastRev() {
+        return lastRev;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
 }
