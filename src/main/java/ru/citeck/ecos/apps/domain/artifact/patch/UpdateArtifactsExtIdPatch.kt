@@ -22,7 +22,7 @@ import ru.citeck.ecos.webapp.lib.patch.annotaion.EcosPatchDependsOnApps
 import java.util.concurrent.Callable
 
 @Component
-@EcosPatch("update-artifact-ext-ids-patch", "2024-08-26T00:00:00Z")
+@EcosPatch("update-artifact-ext-ids-patch-2", "2024-08-26T00:00:00Z")
 @EcosPatchDependsOnApps(AppName.EMODEL)
 class UpdateArtifactsExtIdPatch(
     private val ecosArtifactsService: EcosArtifactsService,
@@ -125,14 +125,14 @@ class UpdateArtifactsExtIdPatch(
     }
 
     private fun getAppSourceKeyForEntity(entity: EcosArtifactEntity): AppSourceKey? {
+        val ecosApp = entity.ecosApp ?: ""
         val sourceType = findSourceTypeForEntity(entity) ?: return null
         val lastRev = entity.lastRev ?: return null
-        val ecosApp = entity.ecosApp ?: return null
 
         return AppSourceKey(
             ecosApp,
             SourceKey(
-                lastRev.sourceId,
+                lastRev.sourceId ?: "",
                 sourceType
             )
         )
