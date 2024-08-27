@@ -127,6 +127,7 @@ class UpdateArtifactsExtIdPatch(
     private fun getAppSourceKeyForEntity(entity: EcosArtifactEntity): AppSourceKey? {
         val sourceType = findSourceTypeForEntity(entity) ?: return null
         val lastRev = entity.lastRev ?: return null
+        val ecosApp = entity.ecosApp ?: return null
 
         return AppSourceKey(
             entity.ecosApp,
