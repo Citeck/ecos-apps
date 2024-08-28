@@ -22,7 +22,7 @@ import ru.citeck.ecos.webapp.lib.patch.annotaion.EcosPatchDependsOnApps
 import java.util.concurrent.Callable
 
 @Component
-@EcosPatch("update-artifact-ext-ids-patch-2", "2024-08-26T00:00:00Z")
+@EcosPatch("update-artifact-ext-ids-patch-3", "2024-08-26T00:00:00Z")
 @EcosPatchDependsOnApps(AppName.EMODEL)
 class UpdateArtifactsExtIdPatch(
     private val ecosArtifactsService: EcosArtifactsService,
