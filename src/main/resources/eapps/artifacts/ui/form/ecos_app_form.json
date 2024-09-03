@@ -91,28 +91,14 @@
                     "optionalWhenDisabled": false,
                     "type": "selectJournal",
                     "input": true,
-                    "queryData": ""
-                  },
-                  {
-                    "label": {
-                      "ru": "Проверить соединение",
-                      "en": "Check connection"
-                    },
-                    "key": "checkRepoConnection",
-                    "action": "event",
-                    "state": "",
-                    "showValidations": false,
-                    "event": "fire-check-connection",
-                    "theme": "info",
-                    "size": "sm",
-                    "refreshOn": [],
-                    "optionalWhenDisabled": false,
-                    "customConditional": "show = !!data.repositoryEndpoint",
-                    "type": "button",
-                    "input": true,
-                    "headers": [
-                      {}
-                    ]
+                    "queryData": "",
+                    "source": {
+                      "custom": {
+                        "columns": []
+                      },
+                      "type": "journal",
+                      "customValues": []
+                    }
                   }
                 ],
                 "type": "column",
@@ -136,8 +122,7 @@
                           "msg": "connectionResultMsgHtml"
                         },
                         "isSingle": true
-                      },
-                      "forceLoad": false
+                      }
                     },
                     "update": {
                       "type": "event",
@@ -171,6 +156,27 @@
                     "optionalWhenDisabled": false,
                     "type": "htmlelement",
                     "input": false
+                  },
+                  {
+                    "label": {
+                      "ru": "Проверить соединение",
+                      "en": "Check connection"
+                    },
+                    "key": "checkRepoConnection",
+                    "action": "event",
+                    "state": "",
+                    "showValidations": false,
+                    "event": "fire-check-connection",
+                    "theme": "info",
+                    "size": "sm",
+                    "refreshOn": [],
+                    "optionalWhenDisabled": false,
+                    "customConditional": "show = !!data.repositoryEndpoint",
+                    "type": "button",
+                    "input": true,
+                    "headers": [
+                      {}
+                    ]
                   }
                 ]
               }
@@ -197,7 +203,14 @@
                     "key": "typeRefs",
                     "type": "selectJournal",
                     "input": true,
-                    "multiple": true
+                    "multiple": true,
+                    "source": {
+                      "custom": {
+                        "columns": []
+                      },
+                      "type": "journal",
+                      "customValues": []
+                    }
                   },
                   {
                     "label": {
@@ -233,7 +246,14 @@
                     "defaultValue": [],
                     "key": "artifacts",
                     "type": "selectJournal",
-                    "input": true
+                    "input": true,
+                    "source": {
+                      "custom": {
+                        "columns": []
+                      },
+                      "type": "journal",
+                      "customValues": []
+                    }
                   }
                 ]
               }

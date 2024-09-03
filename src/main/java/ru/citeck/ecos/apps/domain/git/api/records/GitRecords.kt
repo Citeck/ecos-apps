@@ -141,8 +141,8 @@ class GitRecords(
 
         override fun getAtt(name: String): Any? {
             return when (name) {
-                "allowedBranchesToCommit" -> ecosVcsObjectGitService.getAllowedBranchesToCommit(allBranches)
-                "allowedBaseBranches" -> ecosVcsObjectGitService.getAllowedBaseBranches(allBranches)
+                "allowedBranchesToCommit" -> appsGitService.getAllowedBranchesToCommit(allBranches)
+                "allowedBaseBranches" -> appsGitService.getAllowedBaseBranches(allBranches)
                 else -> null
             }
         }

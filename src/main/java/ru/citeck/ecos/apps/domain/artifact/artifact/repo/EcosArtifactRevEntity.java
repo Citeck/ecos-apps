@@ -23,7 +23,7 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prev_rev_id")
-    @Getter @Setter private EcosArtifactRevEntity prevRev;
+    @Setter private EcosArtifactRevEntity prevRev;
 
     @Getter @Setter private String extId;
 
@@ -50,6 +50,11 @@ public class EcosArtifactRevEntity extends AbstractImmutableEntity {
     public ArtifactRevSourceType getSourceType() {
         return sourceType;
     }
+
+    public EcosArtifactRevEntity getPrevRev() {
+        return prevRev;
+    }
+
 
     public void setSourceType(ArtifactRevSourceType sourceType) {
         this.sourceType = sourceType;
