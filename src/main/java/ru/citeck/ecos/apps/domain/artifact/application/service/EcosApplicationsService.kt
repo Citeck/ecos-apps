@@ -285,7 +285,12 @@ class EcosApplicationsService(
     ) : AppArtifactsSource {
 
         override fun getArtifacts(typesDir: EcosFile, since: Instant): Map<String, List<Any>> {
-            val artifactsDir = remoteAppService.getArtifactsDir(appKey.instanceId, sourceInfo.key, typesDir, since)
+            val artifactsDir = try {
+                remoteAppService.getArtifactsDir(appKey.instanceId, sourceInfo.key, typesDir, since)
+            } catch (e: Throwable) {
+                throw RuntimeException("remoteAppService.getArtifactsDir failed " +
+                    "for app $appKey and sourceInfo $sourceInfo", e)
+            }
             return artifactsService.readArtifacts(artifactsDir, artifactTypesService.loadTypes(typesDir))
         }
 
