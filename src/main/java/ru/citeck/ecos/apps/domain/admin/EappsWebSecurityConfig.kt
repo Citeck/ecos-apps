@@ -19,7 +19,8 @@ class EappsWebSecurityConfig {
         return http.initEcosSecurity().securityMatcher(
             AntPathRequestMatcher.antMatcher("/admin/**")
         ).authorizeHttpRequests {
-            it.requestMatchers(AntPathRequestMatcher.antMatcher("/admin/**")).hasAnyAuthority(AuthRole.ADMIN, AuthRole.SYSTEM)
+            it.requestMatchers(AntPathRequestMatcher.antMatcher("/admin/**"))
+                .hasAnyAuthority(AuthRole.ADMIN, AuthRole.SYSTEM)
         }.build()
     }
 }
