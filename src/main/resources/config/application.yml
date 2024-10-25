@@ -38,16 +38,16 @@ ecos:
         application:
           location: classpath:ecos/x509/keys/application.key
 
-# ===================================================================
-# Application specific properties
-# Add your own application properties here, see the ApplicationProperties class
-# to have type-safe configuration, like in the JHipsterProperties above
-#
-# More documentation is available at:
-# https://www.jhipster.tech/common-application-properties/
-# ===================================================================
-
-# application:
+spring:
+  boot:
+    admin:
+      context-path: '/admin'
+      ui:
+        public-url: '${ecos.webapp.properties.webUrl}:80/gateway/eapps/admin'
+        brand: Citeck
+      discovery:
+        converter:
+          management-context-path: '/management'
 
 ecos-apps:
   modules-watcher:

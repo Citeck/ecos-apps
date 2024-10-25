@@ -1,11 +1,11 @@
 package ru.citeck.ecos.apps;
 
+import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import ru.citeck.ecos.webapp.lib.spring.EcosSpringApplication;
 import ru.citeck.ecos.webapp.lib.spring.context.ecosconfig.EcosConfigBeanPostProcessor;
 
@@ -18,6 +18,7 @@ import ru.citeck.ecos.webapp.lib.spring.context.ecosconfig.EcosConfigBeanPostPro
     "ru.citeck.ecos.apps.domain.*.repo",
     "ru.citeck.ecos.apps.domain.*.*.repo"
 })
+@EnableAdminServer
 public class EcosAppsApp {
 
     public static final String NAME = "eapps";

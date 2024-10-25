@@ -10,13 +10,15 @@
     <parent>
         <groupId>ru.citeck.ecos.webapp</groupId>
         <artifactId>ecos-webapp-spring-hibernate-parent</artifactId>
-        <version>3.3.3</version>
+        <version>3.9.0</version>
     </parent>
 
     <properties>
 
         <jgit.version>6.10.0.202406032230-r</jgit.version>
         <citeck.archetype.version>1.1.5</citeck.archetype.version>
+
+        <spring-boot-admin.version>3.3.4</spring-boot-admin.version>
 
     </properties>
 
@@ -37,6 +39,12 @@
             <groupId>ru.citeck.ecos.ent.vcs.object</groupId>
             <artifactId>vcs-object-integration</artifactId>
             <version>1.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-server</artifactId>
+            <version>${spring-boot-admin.version}</version>
         </dependency>
 
     </dependencies>
