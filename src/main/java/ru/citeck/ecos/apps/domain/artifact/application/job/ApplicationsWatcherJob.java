@@ -1,13 +1,13 @@
 package ru.citeck.ecos.apps.domain.artifact.application.job;
 
+import jakarta.annotation.PostConstruct;
+import kotlin.Unit;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo;
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppService;
 import ru.citeck.ecos.apps.app.service.remote.RemoteAppStatus;
@@ -17,8 +17,10 @@ import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchServi
 import ru.citeck.ecos.apps.domain.artifact.source.service.EcosArtifactsSourcesService;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.commons.utils.ExceptionUtils;
+import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.micrometer.EcosMicrometerContext;
 import ru.citeck.ecos.micrometer.obs.EcosObs;
+import ru.citeck.ecos.webapp.api.EcosWebAppApi;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings("BusyWait")
 public class ApplicationsWatcherJob {
 
     private static final long UNHEALTHY_APP_TTL = Duration.ofSeconds(30).toMillis();
@@ -46,11 +49,9 @@ public class ApplicationsWatcherJob {
     private final EcosArtifactsService ecosArtifactsService;
     private final EcosArtifactsPatchService ecosArtifactsPatchService;
     private final EcosMicrometerContext ecosMicrometerContext;
+    private final EcosWebAppApi ecosWebAppApi;
 
     private final RemoteAppService remoteAppService;
-    private final ApplicationProperties props;
-
-    private boolean started = false;
 
     private Throwable lastError;
     private long errorNextPrintTime = 0L;
@@ -59,7 +60,7 @@ public class ApplicationsWatcherJob {
     private long typesLastModifiedTime = 0;
     private long artifactsLastModifiedTime = 0;
 
-    private boolean forceUpdate = false;
+    private volatile boolean forceUpdate = false;
     private final AtomicReference<CompletableFuture<Boolean>> nextUpdateFuture = new AtomicReference<>();
 
     private final AtomicBoolean isContextClosed = new AtomicBoolean(false);
@@ -67,14 +68,13 @@ public class ApplicationsWatcherJob {
 
     private final Map<String, AppStatusInfo> currentStatuses = new ConcurrentHashMap<>();
 
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-
-        if (!started) {
+    @PostConstruct
+    public void init() {
+        ecosWebAppApi.doWhenAppReady(0f, () -> {
             watcherThread = new Thread(this::runWatcher, "ArtifactsWatcher");
             watcherThread.start();
-            started = true;
-        }
+            return Unit.INSTANCE;
+        });
     }
 
     public Set<String> getActiveApps() {
@@ -88,23 +88,31 @@ public class ApplicationsWatcherJob {
         return appNames;
     }
 
+    @SneakyThrows
     private void runWatcher() {
 
-        long initDelay = props.getModulesWatcher().getInitDelayMs();
-        log.info("======= ApplicationsWatcherJob init sleep: " + initDelay + " =======");
         try {
-            Thread.sleep(initDelay);
+            while (!ecosWebAppApi.isReady()) {
+                Thread.sleep(500);
+            }
         } catch (InterruptedException e) {
             log.error("Error", e);
         }
 
         while (!isContextClosed.get()) {
-            doWatcherJob();
+            long startedAt = System.currentTimeMillis();
+            try {
+                AuthContext.runAsSystemJ(this::doWatcherJob);
+            } catch (Throwable e) {
+                log.error("Unexpected error while watcher job action", e);
+                if (System.currentTimeMillis() - startedAt < 30_000) {
+                    Thread.sleep(30_000);
+                }
+            }
         }
     }
 
     @SneakyThrows
-    @SuppressWarnings("BusyWait")
     private void doWatcherJob() {
 
         try {
@@ -181,7 +189,7 @@ public class ApplicationsWatcherJob {
     }
 
     public synchronized void forceUpdate(String appInstanceId, ArtifactSourceInfo source) {
-        log.info("Force update from " + appInstanceId + " " + source);
+        log.info("Force update from {} {}", appInstanceId, source);
         forceUpdate = true;
     }
 
@@ -281,9 +289,11 @@ public class ApplicationsWatcherJob {
     @EventListener
     public void onContextClosed(ContextClosedEvent event) throws InterruptedException {
         log.info("Context was closed and watcher will be terminated");
-        isContextClosed.set(true);
-        watcherThread.interrupt();
-        watcherThread.join();
+        if (isContextClosed.compareAndSet(false, true) && watcherThread != null) {
+            watcherThread.interrupt();
+            watcherThread.join();
+            watcherThread = null;
+        }
     }
 
     @Data

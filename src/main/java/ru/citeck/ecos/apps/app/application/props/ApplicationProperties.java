@@ -15,7 +15,6 @@ import java.util.Map;
 public class ApplicationProperties {
 
     private EappConfig ecosApp;
-    private ModulesWatcherProps modulesWatcher = new ModulesWatcherProps();
 
     @Data
     public static class EappConfig {
@@ -24,10 +23,5 @@ public class ApplicationProperties {
         private String folder;
         private String version;
         private Map<String, String> dependencies;
-    }
-
-    @Data
-    public static class ModulesWatcherProps {
-        private long initDelayMs = 10_000;
     }
 }

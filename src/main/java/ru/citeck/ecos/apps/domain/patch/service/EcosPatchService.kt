@@ -15,6 +15,7 @@ import ru.citeck.ecos.records2.predicate.model.ValuePredicate
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.EcosWebAppApi
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.api.lock.LockContext
 import ru.citeck.ecos.webapp.api.task.EcosTasksApi
@@ -30,6 +31,7 @@ class EcosPatchService(
     val recordsService: RecordsService,
     val commandsService: CommandsService,
     val ecosTasksApi: EcosTasksApi,
+    val ecosWebAppApi: EcosWebAppApi,
     val watcherJob: ApplicationsWatcherJob,
     val properties: EcosPatchProperties,
     val ecosAppLockService: EcosAppLockService
@@ -57,17 +59,16 @@ class EcosPatchService(
 
     @PostConstruct
     fun init() {
-        ecosTasksApi.getScheduler(SCHEDULER_ID).schedule(
-            "Ecos patch task",
-            Schedules.fixedDelay(
-                properties.job.initDelayDuration,
-                properties.job.delayDuration
-            )
-        ) {
-            ecosAppLockService.doInSyncOrSkip(ECOS_PATCHES_LOCK_KEY) { lockCtx ->
-                val apps = watcherJob.activeApps
-                log.trace { "Apply patches for apps: $apps" }
-                apps.forEach { applyPatches(it, lockCtx) }
+        ecosWebAppApi.doWhenAppReady {
+            ecosTasksApi.getScheduler(SCHEDULER_ID).schedule(
+                "Ecos patch task",
+                Schedules.fixedDelay(properties.job.delayDuration)
+            ) {
+                ecosAppLockService.doInSyncOrSkip(ECOS_PATCHES_LOCK_KEY) { lockCtx ->
+                    val apps = watcherJob.activeApps
+                    log.trace { "Apply patches for apps: $apps" }
+                    apps.forEach { applyPatches(it, lockCtx) }
+                }
             }
         }
     }

@@ -1,0 +1,10 @@
+---
+id: admin$workspace
+name:
+  ru: Раздел администратора
+  en: Admin section
+visibility: PRIVATE
+workspaceMembers:
+  - id: administrators
+    authority: emodel/authority-group@ECOS_ADMINISTRATORS
+    memberRole: MANAGER

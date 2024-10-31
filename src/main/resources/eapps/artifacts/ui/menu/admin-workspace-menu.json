@@ -1,0 +1,110 @@
+{
+  "id": "admin-workspace-menu",
+  "type": "LEFT_MENU",
+  "system": true,
+  "authorities": [
+    "GROUP_EVERYONE"
+  ],
+  "workspace": "admin$workspace",
+  "version": 1,
+  "subMenu": {
+    "create": {
+      "items": []
+    },
+    "left": {
+      "items": [
+        {
+          "id": "eapps-section",
+          "label": {
+            "en": "System management",
+            "ru": "Управление системой"
+          },
+          "hidden": false,
+          "type": "SECTION",
+          "config": {},
+          "items": [
+            {
+              "id": "eapps-dev-tools",
+              "label": {
+                "en": "Developer tools",
+                "ru": "Инструменты разработчика"
+              },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "ARBITRARY",
+              "config": {
+                "url": "/v2/dev-tools"
+              }
+            },
+            {
+              "id": "eapps-ecos-apps",
+              "label": { "ru": "Приложения ECOS", "en": "ECOS Applications" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-apps",
+                "displayCount": false
+              }
+            },
+            {
+              "id": "eapps-ecos-artifacts",
+              "label": { "ru": "Артефакты ECOS", "en": "ECOS Artifacts" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-artifacts",
+                "displayCount": false
+              }
+            },
+            {
+              "id": "eapps-ecos-configs",
+              "label": { "ru": "Конфигурация ECOS", "en": "ECOS Configuration" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-configs",
+                "displayCount": false
+              }
+            },
+            {
+              "id": "eapps-ecos-licenses",
+              "label": { "ru": "Лицензии ECOS", "en": "ECOS Licenses" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-licenses",
+                "displayCount": false
+              }
+            },
+            {
+              "id": "eapps-ecos-artifact-patches",
+              "label": { "ru": "Патчи артефактов", "en": "Artifacts patches" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-artifact-patches",
+                "displayCount": false
+              }
+            },
+            {
+              "id": "eapps-changed-artifacts",
+              "label": { "ru": "Измененные артефакты", "en": "Updated artifacts" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@changed-artifacts",
+                "displayCount": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
