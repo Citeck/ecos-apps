@@ -1,0 +1,12 @@
+modelVersion: "1.0"
+
+name:
+  ru: Информация о системе
+  en: System info
+
+sourceId: "system-info"
+
+controller:
+  type: json
+  config:
+    format: yaml

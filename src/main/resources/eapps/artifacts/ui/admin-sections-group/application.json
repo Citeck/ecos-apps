@@ -48,6 +48,12 @@
       "config": {
         "journalId": "changed-artifacts"
       }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
+        "journalId": "system-info"
+      }
     }
   ]
 }
