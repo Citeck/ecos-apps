@@ -4,6 +4,7 @@ name:
   ru: Раздел администратора
   en: Admin section
 visibility: PRIVATE
+homePageLink: "/v2/admin?type=DEV_TOOLS"
 workspaceMembers:
   - id: administrators
     authority: emodel/authority-group@ECOS_ADMINISTRATORS
