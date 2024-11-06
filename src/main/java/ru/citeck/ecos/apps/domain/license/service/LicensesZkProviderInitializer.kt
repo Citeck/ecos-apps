@@ -94,7 +94,11 @@ class LicensesZkProviderInitializer(
                             return setOf(AuthRole.ADMIN)
                         }
                         override fun hasAttReadPerms(name: String): Boolean {
-                            return isAdmin
+                            return if (name == "signatures") {
+                                authorities.contains(AuthRole.SYSTEM)
+                            } else {
+                                isAdmin
+                            }
                         }
                         override fun hasAttWritePerms(name: String): Boolean {
                             return isAdmin
