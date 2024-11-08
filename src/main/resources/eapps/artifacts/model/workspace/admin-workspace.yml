@@ -5,6 +5,9 @@ name:
   en: Admin section
 visibility: PRIVATE
 homePageLink: "/v2/admin?type=DEV_TOOLS"
+
+icon: uiserv/icon@admin-workspace-icon
+
 workspaceMembers:
   - id: administrators
     authority: emodel/authority-group@ECOS_ADMINISTRATORS
