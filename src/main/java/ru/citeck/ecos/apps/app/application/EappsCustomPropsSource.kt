@@ -33,9 +33,12 @@ class EappsCustomPropsSource : EnvironmentPostProcessor {
             }
         }
         adminPublicUrl += WEB_APP_CONTEXT_PATH + environment.getProperty(ADMIN_CONTEXT_PATH_KEY)
-        val eappsProps = MapPropertySource(PROPS_NAME, mapOf(
-            ADMIN_PUBLIC_URL_KEY to adminPublicUrl
-        ))
+        val eappsProps = MapPropertySource(
+            PROPS_NAME,
+            mapOf(
+                ADMIN_PUBLIC_URL_KEY to adminPublicUrl
+            )
+        )
         environment.propertySources.addLast(eappsProps)
     }
 }

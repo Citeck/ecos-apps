@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import ru.citeck.ecos.apps.EcosAppsApp
-import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
+import ru.citeck.ecos.apps.domain.patch.desc.EcosPatchDesc
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.records2.predicate.model.Predicates
@@ -61,7 +61,7 @@ class EcosPatchTest {
         AuthContext.runAsSystem {
             val patchRes = records.queryOne(
                 RecordsQuery.create {
-                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withSourceId(EcosPatchDesc.SRC_ID)
                     withQuery(
                         Predicates.and(
                             Predicates.eq("targetApp", "eapps"),
@@ -76,7 +76,7 @@ class EcosPatchTest {
 
             val patchRes2 = records.queryOne(
                 RecordsQuery.create {
-                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withSourceId(EcosPatchDesc.SRC_ID)
                     withQuery(
                         Predicates.and(
                             Predicates.eq("targetApp", "eapps"),
@@ -91,7 +91,7 @@ class EcosPatchTest {
 
             val patchRes3 = records.queryOne(
                 RecordsQuery.create {
-                    withSourceId(EcosPatchConfig.REPO_ID)
+                    withSourceId(EcosPatchDesc.SRC_ID)
                     withQuery(
                         Predicates.and(
                             Predicates.eq("targetApp", "eapps"),

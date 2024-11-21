@@ -288,8 +288,11 @@ class EcosApplicationsService(
             val artifactsDir = try {
                 remoteAppService.getArtifactsDir(appKey.instanceId, sourceInfo.key, typesDir, since)
             } catch (e: Throwable) {
-                throw RuntimeException("remoteAppService.getArtifactsDir failed " +
-                    "for app $appKey and sourceInfo $sourceInfo", e)
+                throw RuntimeException(
+                    "remoteAppService.getArtifactsDir failed " +
+                        "for app $appKey and sourceInfo $sourceInfo",
+                    e
+                )
             }
             return artifactsService.readArtifacts(artifactsDir, artifactTypesService.loadTypes(typesDir))
         }

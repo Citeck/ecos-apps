@@ -25,7 +25,7 @@ class AdminInstanceWebClientCustomizer(
 
     override fun customize(instanceWebClientBuilder: InstanceWebClient.Builder) {
 
-        val httpClient =  NettyHttpClientUtils.configureTls(HttpClient.create(), x509Registry, webClientProps.tls)
+        val httpClient = NettyHttpClientUtils.configureTls(HttpClient.create(), x509Registry, webClientProps.tls)
             .httpResponseDecoder { it.maxHeaderSize(40_000) }
         val webClient = webClientBuilder.clone().clientConnector(ReactorClientHttpConnector(httpClient))
         instanceWebClientBuilder.webClient(webClient)
@@ -41,7 +41,8 @@ class AdminInstanceWebClientCustomizer(
             } else {
                 ClientRequest.from(request)
                     .header(
-                        "Authorization", jwtAuth.getAuthHeader(
+                        "Authorization",
+                        jwtAuth.getAuthHeader(
                             Authentication(AuthContext.getCurrentUser(), runAs)
                         )
                     )
