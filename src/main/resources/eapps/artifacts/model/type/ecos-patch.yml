@@ -1,34 +1,79 @@
 ---
 id: ecos-patch
 
-#journalRef: uiserv/journal@ecos-patches
+journalRef: uiserv/journal@ecos-patches
 system: true
 
 model:
   attributes:
     - id: patchId
+      name:
+        ru: Идентификатор
+        en: Identifier
     - id: name
+      name:
+        ru: Имя
+        en: Name
       type: MLTEXT
     - id: targetApp
+      name:
+        ru: Целевое приложение
+        en: Target application
     - id: date
+      name:
+        ru: Дата патча
+        en: Patch date
       type: DATETIME
     - id: manual
+      name:
+        ru: Ручной
+        en: Manual
       type: BOOLEAN
     - id: dependsOn
+      name:
+        ru: Зависит от патчей
+        en: Depends on patches
       multiple: true
     - id: dependsOnApps
+      name:
+        ru: Зависит от приложений
+        en: Depends on applications
       multiple: true
     - id: type
+      name:
+        ru: Тип
+        en: Type
     - id: config
+      name:
+        ru: Конфигурация
+        en: Configuration
       type: JSON
   systemAttributes:
     - id: status
+      name:
+        ru: Статус
+        en: Status
     - id: patchResult
+      name:
+        ru: Результат
+        en: Result
       type: JSON
     - id: state
+      name:
+        ru: Состояние
+        en: State
       type: JSON
     - id: errorsCount
+      name:
+        ru: Количество ошибок
+        en: Errors count
       type: NUMBER
     - id: nextExecDate
+      name:
+        ru: Время следующего применения
+        en: Next execution date
       type: DATETIME
     - id: lastError
+      name:
+        ru: Ошибка
+        en: Error

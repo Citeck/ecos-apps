@@ -2,7 +2,7 @@ package ru.citeck.ecos.apps.domain.patch.eapps
 
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.domain.handler.EcosArtifactHandler
-import ru.citeck.ecos.apps.domain.patch.config.EcosPatchConfig
+import ru.citeck.ecos.apps.domain.patch.desc.EcosPatchDesc
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchEntity
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.auth.AuthContext
@@ -22,7 +22,7 @@ class EcosPatchArtifactHandler(
 
         val existingConfig = recordsService.queryOne(
             RecordsQuery.create {
-                withSourceId(EcosPatchConfig.REPO_ID)
+                withSourceId(EcosPatchDesc.SRC_ID)
                 withQuery(
                     Predicates.and(
                         Predicates.eq("patchId", artifact.id),
@@ -40,7 +40,7 @@ class EcosPatchArtifactHandler(
             artifact.toEntity()
         }
 
-        val ref = EntityRef.create(EcosPatchConfig.REPO_ID, entity.id)
+        val ref = EntityRef.create(EcosPatchDesc.SRC_ID, entity.id)
         AuthContext.runAsSystem {
             recordsService.mutate(RecordAtts(ref, ObjectData.create(entity)))
         }
@@ -54,6 +54,6 @@ class EcosPatchArtifactHandler(
     }
 
     override fun deleteArtifact(artifactId: String) {
-        recordsService.delete(EntityRef.create(EcosPatchConfig.REPO_ID, artifactId))
+        recordsService.delete(EntityRef.create(EcosPatchDesc.SRC_ID, artifactId))
     }
 }

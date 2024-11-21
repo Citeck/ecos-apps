@@ -1,0 +1,25 @@
+---
+id: apply-ecos-patch
+
+name:
+  ru: Применить патч
+  en: Apply patch
+
+type: mutate
+icon: icon-arrow
+
+config:
+  record:
+    id: "eapps/apply-ecos-patch@"
+    attributes:
+      recordRef: "${?id}"
+
+predicate:
+  t: or
+  v:
+    - t: eq
+      a: manual
+      v: true
+    - t: not-eq
+      a: status
+      v: APPLIED

@@ -1,0 +1,18 @@
+---
+id: ecos-app-full-delete
+name:
+  ru: Полностью удалить ECOS приложение
+  en: Full delete of ECOS Application
+icon: icon-delete
+confirm:
+  title:
+    ru: Полностью удалить ECOS приложение
+    en: Full delete of ECOS Application
+  formRef: uiserv/form@ecos-app-full-delete-action
+  attributesMapping:
+    body.ecosAppId: ecosAppId
+    body.ecosAppRef: ecosAppRef
+type: fetch
+config:
+  url: "/gateway/eapps/api/ecosapp/ecos-app-full-delete"
+  method: POST

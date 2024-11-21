@@ -40,6 +40,12 @@
     {
       "type": "JOURNAL",
       "config": {
+        "journalId": "ecos-patches"
+      }
+    },
+    {
+      "type": "JOURNAL",
+      "config": {
         "journalId": "ecos-artifact-patches"
       }
     },

@@ -1,0 +1,11 @@
+---
+id: artifact-deploy
+name:
+  ru: Задеплоить артефакт
+  en: Deploy artifact
+type: fetch
+config:
+  url: "/gateway/eapps/api/artifact/deploy"
+  args:
+    ref: "${recordRef}"
+  method: POST

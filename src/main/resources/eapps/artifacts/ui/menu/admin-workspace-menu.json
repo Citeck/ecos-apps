@@ -81,6 +81,17 @@
               }
             },
             {
+              "id": "eapps-ecos-patches",
+              "label": { "ru": "Патчи ECOS", "en": "ECOS patches" },
+              "icon": "ui/icon@i-leftmenu-tools",
+              "hidden": false,
+              "type": "JOURNAL",
+              "config": {
+                "recordRef": "uiserv/journal@ecos-patches",
+                "displayCount": false
+              }
+            },
+            {
               "id": "eapps-ecos-artifact-patches",
               "label": { "ru": "Патчи артефактов", "en": "Artifacts patches" },
               "icon": "ui/icon@i-leftmenu-tools",

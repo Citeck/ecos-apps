@@ -36,7 +36,7 @@ class ArtifactPatchRecordsDao(
             page.skipCount,
             predicate,
             recsQuery.sortBy
-        ).map { PatchRecord(it) }
+        ).map { ArtifactPatchRecord(it) }
 
         val result = RecsQueryRes<Any>()
         result.addRecords(artifacts)
@@ -68,7 +68,7 @@ class ArtifactPatchRecordsDao(
     }
 
     override fun getRecordAtts(recordId: String): Any? {
-        return getPatchDtoById(recordId)?.let { PatchRecord(it) }
+        return getPatchDtoById(recordId)?.let { ArtifactPatchRecord(it) }
     }
 
     @Secured(AuthRole.ADMIN)
@@ -94,7 +94,7 @@ class ArtifactPatchRecordsDao(
         return "artifact-patch"
     }
 
-    class PatchRecord(
+    class ArtifactPatchRecord(
         @AttName("...")
         val dto: ArtifactPatchDto
     ) {

@@ -1,0 +1,19 @@
+---
+id: artifact-reset-all-user-revs
+name:
+  ru: Сбросить все пользовательские настройки
+  en: Reset all user settings
+icon: icon-reload
+confirm:
+  title:
+    ru: Сбросить все пользовательские настройки
+    en: Reset all user settings
+  message:
+    ru: Вы дейсвительно хотите сбросить все изменения пользователей в системе и вернуть
+      настройки по умолчанию?
+    en: Are you really want to reset all user changes in system and return artifacts
+      source version?
+type: fetch
+config:
+  url: "/gateway/eapps/api/artifact/reset-all-user-revs"
+  method: POST
