@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.context.lib.auth.AuthRole
@@ -46,7 +47,6 @@ class LicensesZkProviderInitializer(
     val dbDomainFactory: DbDomainFactory,
     ecosZooKeeper: EcosZooKeeper,
     val ecosWebAppEnv: EcosWebAppEnvironment,
-    val predicateService: PredicateService,
     val recordsServiceFactory: RecordsServiceFactory
 ) {
 
@@ -115,8 +115,10 @@ class LicensesZkProviderInitializer(
 
         repoDao.addAttributesMixin(object : AttMixin {
             override fun getAtt(path: String, value: AttValueCtx): Any {
-                return value.getAtt(ScalarType.JSON_SCHEMA)
-                    .getAs(EcosLicenseInstance::class.java)?.isValid() ?: false
+                return AuthContext.runAsSystem {
+                    value.getAtt(ScalarType.JSON_SCHEMA)
+                        .getAs(EcosLicenseInstance::class.java)?.isValid() ?: false
+                }
             }
             override fun getProvidedAtts(): Collection<String> {
                 return listOf(ATT_IS_LIC_VALID)
@@ -154,11 +156,15 @@ class LicensesZkProviderInitializer(
 
         repoDao.addListener(object : DbRecordsListenerAdapter() {
             override fun onChanged(event: DbRecordChangedEvent) {
-                val json = recordsService.getAtt(event.record, ScalarType.JSON_SCHEMA)
+                val json = AuthContext.runAsSystem {
+                    recordsService.getAtt(event.record, ScalarType.JSON_SCHEMA)
+                }
                 zooKeeper.setValue("/" + json["id"].asText(), json.getAsNotNull(EcosLicenseInstance::class.java))
             }
             override fun onCreated(event: DbRecordCreatedEvent) {
-                val json = recordsService.getAtt(event.record, ScalarType.JSON_SCHEMA)
+                val json = AuthContext.runAsSystem {
+                    recordsService.getAtt(event.record, ScalarType.JSON_SCHEMA)
+                }
                 zooKeeper.setValue("/" + json["id"].asText(), json.getAsNotNull(EcosLicenseInstance::class.java))
             }
             override fun onDeleted(event: DbRecordDeletedEvent) {
@@ -311,6 +317,9 @@ class LicensesZkProviderInitializer(
             if (name == ATT_IS_LIC_VALID) {
                 return license.isValid()
             }
+            if (name == "signatures") {
+                return null
+            }
             if (name == "permissions") {
                 return Perms()
             }
@@ -321,12 +330,15 @@ class LicensesZkProviderInitializer(
             return licTypeRef
         }
 
+        override fun asJson(): Any {
+            val json = DataValue.of(super.asJson())
+            json.remove("signatures")
+            return json
+        }
+
         inner class Perms : AttValue {
             override fun has(name: String): Boolean {
-                if (name.equals("Read", true)) {
-                    return true
-                }
-                return false
+                return name.equals("Read", true)
             }
         }
     }
