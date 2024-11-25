@@ -1,0 +1,36 @@
+---
+id: system-info
+name:
+  en: System info
+  ru: Информация о системе
+
+system: true
+
+sourceId: eapps/system-info-repo
+
+journalRef: uiserv/journal@system-info
+
+actions:
+  - uiserv/action@download-text-yml
+  - uiserv/action@delete
+  - uiserv/action@view-dashboard
+  - uiserv/action@edit-json
+
+defaultCreateVariant: false
+createVariants:
+  - id: upload
+    name: { ru: Загрузить, en: Upload }
+    formRef: 'uiserv/form@ecos-artifact-upload'
+
+model:
+  attributes:
+    - id: name
+      name:
+        ru: Имя
+        en: Name
+      type: MLTEXT
+    - id: data
+      name:
+        ru: Данные
+        en: Data
+      type: JSON

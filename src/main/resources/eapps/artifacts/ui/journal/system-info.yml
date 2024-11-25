@@ -1,0 +1,25 @@
+---
+id: system-info
+name:
+  ru: Информация о системе
+  en: System info
+
+system: true
+properties: {}
+
+actions:
+  - uiserv/action@download-text-yml
+  - uiserv/action@delete
+  - uiserv/action@edit-json
+
+columns:
+  - id: name
+    name:
+      ru: Имя
+      en: Name
+  - id: deploymentVersion
+    name:
+      ru: Комплект поставки
+      en: Deployment info
+    type: TEXT
+    attribute: data.deploymentVersion
