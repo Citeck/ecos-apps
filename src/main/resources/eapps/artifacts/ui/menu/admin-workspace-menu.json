@@ -29,7 +29,6 @@
                 "en": "Developer tools",
                 "ru": "Инструменты разработчика"
               },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "ARBITRARY",
               "config": {
@@ -39,7 +38,6 @@
             {
               "id": "eapps-ecos-apps",
               "label": { "ru": "Приложения ECOS", "en": "ECOS Applications" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -50,7 +48,6 @@
             {
               "id": "eapps-ecos-artifacts",
               "label": { "ru": "Артефакты ECOS", "en": "ECOS Artifacts" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -61,7 +58,6 @@
             {
               "id": "eapps-ecos-configs",
               "label": { "ru": "Конфигурация ECOS", "en": "ECOS Configuration" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -72,7 +68,6 @@
             {
               "id": "eapps-ecos-licenses",
               "label": { "ru": "Лицензии ECOS", "en": "ECOS Licenses" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -83,7 +78,6 @@
             {
               "id": "eapps-ecos-patches",
               "label": { "ru": "Патчи ECOS", "en": "ECOS patches" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -94,7 +88,6 @@
             {
               "id": "eapps-ecos-artifact-patches",
               "label": { "ru": "Патчи артефактов", "en": "Artifacts patches" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -105,7 +98,6 @@
             {
               "id": "eapps-changed-artifacts",
               "label": { "ru": "Измененные артефакты", "en": "Updated artifacts" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
@@ -116,7 +108,6 @@
             {
               "id": "eapps-system-info",
               "label": { "ru": "Информация о системе", "en": "System info" },
-              "icon": "ui/icon@i-leftmenu-tools",
               "hidden": false,
               "type": "JOURNAL",
               "config": {
