@@ -332,7 +332,9 @@ class LicensesZkProviderInitializer(
 
         override fun asJson(): Any {
             val json = DataValue.of(super.asJson())
-            json.remove("signatures")
+            if (AuthContext.isNotRunAsSystem()) {
+                json.remove("signatures")
+            }
             return json
         }
 
