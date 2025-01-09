@@ -21,6 +21,8 @@ import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.micrometer.EcosMicrometerContext;
 import ru.citeck.ecos.micrometer.obs.EcosObs;
 import ru.citeck.ecos.webapp.api.EcosWebAppApi;
+import ru.citeck.ecos.webapp.api.lock.EcosLock;
+import ru.citeck.ecos.webapp.lib.lock.EcosAppLockService;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -50,6 +52,7 @@ public class ApplicationsWatcherJob {
     private final EcosArtifactsPatchService ecosArtifactsPatchService;
     private final EcosMicrometerContext ecosMicrometerContext;
     private final EcosWebAppApi ecosWebAppApi;
+    private final EcosAppLockService ecosAppLockService;
 
     private final RemoteAppService remoteAppService;
 
@@ -99,14 +102,43 @@ public class ApplicationsWatcherJob {
             log.error("Error", e);
         }
 
+        EcosLock watcherWebAppLock = ecosAppLockService.getLock("watcher-job");
+
         while (!isContextClosed.get()) {
-            long startedAt = System.currentTimeMillis();
+            boolean locked = false;
             try {
-                AuthContext.runAsSystemJ(this::doWatcherJob);
+                locked = watcherWebAppLock.acquire(Duration.ofSeconds(1));
             } catch (Throwable e) {
-                log.error("Unexpected error while watcher job action", e);
-                if (System.currentTimeMillis() - startedAt < 30_000) {
-                    Thread.sleep(30_000);
+                // locking failed
+            }
+            if (!locked) {
+                log.debug("Lock is not acquired. Sleep...");
+                try {
+                    var sleepUntil = System.currentTimeMillis() + 5000;
+                    while (!isContextClosed.get() && System.currentTimeMillis() < sleepUntil) {
+                        Thread.sleep(500);
+                    }
+                } catch (Throwable e) {
+                    // do nothing
+                }
+            } else {
+                try {
+                    while (!isContextClosed.get() && watcherWebAppLock.isAcquiredInThisProcess()) {
+                        long startedAt = System.currentTimeMillis();
+                        try {
+                            AuthContext.runAsSystemJ(this::doWatcherJob);
+                        } catch (Throwable e) {
+                            log.error("Unexpected error while watcher job action", e);
+                            var sleepTime = 30_000 - (System.currentTimeMillis() - startedAt);
+                            if (sleepTime > 0) {
+                                Thread.sleep(sleepTime);
+                            }
+                        }
+                    }
+                } finally {
+                    if (watcherWebAppLock.isAcquiredInThisProcess()) {
+                        watcherWebAppLock.release();
+                    }
                 }
             }
         }
