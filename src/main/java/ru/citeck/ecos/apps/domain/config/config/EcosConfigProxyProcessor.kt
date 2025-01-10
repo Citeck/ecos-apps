@@ -190,7 +190,7 @@ class EcosConfigProxyProcessor(
             ConfigValueType.ASSOC,
             ConfigValueType.AUTHORITY,
             ConfigValueType.PERSON,
-            ConfigValueType.AUTHORITY_GROUP -> value.asText()
+            ConfigValueType.AUTHORITY_GROUP -> value.asText().trim()
             ConfigValueType.BOOLEAN -> value.asBoolean()
             ConfigValueType.NUMBER -> value.asDouble()
             ConfigValueType.JSON -> {
