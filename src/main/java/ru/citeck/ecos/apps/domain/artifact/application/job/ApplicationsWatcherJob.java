@@ -194,7 +194,9 @@ public class ApplicationsWatcherJob {
                 }
                 Thread.sleep(2 * CHECK_STATUS_PERIOD);
             } catch (Exception ex) {
-                log.error("Exception handler failed", ex);
+                if (!isContextClosed.get()) {
+                    log.error("Exception handler failed", ex);
+                }
             }
         }
     }
