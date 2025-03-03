@@ -11,12 +11,12 @@ actions:
   - uiserv/action@ecos-module-download
   - uiserv/action@artifact-deploy
 
+defaultFilters:
+  - { t: eq, att: system, val: false }
+
 predicate:
   t: and
   v:
-    - t: eq
-      a: system
-      v: false
     # types on ecos-app form should be selected in other journal
     # this solution is temporal until not-eq predicate will work
     - t: eq
@@ -36,3 +36,8 @@ columns:
 
   - id: tagsStr
     name: { ru: Тэги, en: Tags }
+
+  - id: system
+    type: BOOLEAN
+    name: { ru: Системный артефакт , en: System artifact }
+    visible: false
