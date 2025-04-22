@@ -7,6 +7,7 @@ visibility: PRIVATE
 homePageLink: "/v2/admin?type=DEV_TOOLS"
 
 icon: uiserv/icon@admin-workspace-icon
+system: true
 
 workspaceMembers:
   - id: administrators
