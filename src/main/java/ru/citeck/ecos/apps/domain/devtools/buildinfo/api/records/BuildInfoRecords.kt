@@ -55,7 +55,7 @@ class BuildInfoRecords : AbstractRecordsDao(), RecordsQueryDao, RecordsAttsDao {
             if (label.endsWith(".git")) {
                 label = label.substring(0, label.length - 4)
             }
-            return label
+            return label.ifBlank { app.appName }
         }
     }
 
