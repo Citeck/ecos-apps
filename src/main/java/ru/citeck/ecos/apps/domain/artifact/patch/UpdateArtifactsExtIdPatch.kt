@@ -21,6 +21,8 @@ import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.atts.dto.RecordAtts
 import ru.citeck.ecos.webapp.api.constants.AppName
+import ru.citeck.ecos.webapp.api.entity.EntityRef
+import ru.citeck.ecos.webapp.api.entity.toEntityRef
 import ru.citeck.ecos.webapp.lib.patch.annotaion.EcosPatch
 import ru.citeck.ecos.webapp.lib.patch.annotaion.EcosPatchDependsOn
 import ru.citeck.ecos.webapp.lib.patch.annotaion.EcosPatchDependsOnApps
@@ -184,6 +186,12 @@ class FixNotificationArtifactsPatch(
                     return@forEach
                 }
 
+                val notificationRef = "${AppName.NOTIFICATIONS}/template@$validId".toEntityRef()
+                if (notificationRef.notificationBodyIsBlank()) {
+                    log.info { "Skip notification with blank body. Ext id: $currentId" }
+                    return@forEach
+                }
+
                 log.info { "Processing notification artifact with ext id: $currentId" }
 
                 val artifactEntity = ecosArtifactsRepo.getByExtId(artifactType, currentId) ?: let {
@@ -198,7 +206,7 @@ class FixNotificationArtifactsPatch(
                 }
 
                 saveValidIdToEntity(artifactEntity, validId)
-                redeployNotification(validId)
+                redeployNotification(notificationRef)
 
                 patched++
             }
@@ -216,6 +224,10 @@ class FixNotificationArtifactsPatch(
     }
 
 
+    private fun EntityRef.notificationBodyIsBlank(): Boolean {
+        return recordsService.getAtt(this, "body").asText().isBlank()
+    }
+
     private fun saveValidIdToEntity(entity: EcosArtifactEntity, validId: String) {
         val notValidId = entity.extId
 
@@ -224,9 +236,8 @@ class FixNotificationArtifactsPatch(
         log.info { "Updated artifact ext id: $notValidId -> $validId" }
     }
 
-    private fun redeployNotification(notificationId: String) {
-        val archiveName = "$notificationId.zip"
-        val notificationRef = "${AppName.NOTIFICATIONS}/template@$notificationId"
+    private fun redeployNotification(notificationRef: EntityRef) {
+        val archiveName = "${notificationRef.getLocalId()}.zip"
 
         val notificationDataBase64 = recordsService.getAtt(notificationRef, "data").asText()
         if (notificationDataBase64.isBlank()) {
