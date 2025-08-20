@@ -207,7 +207,11 @@ class EcosArtifactsPatchService(
         val allowedPatchSourceTypes: List<ArtifactSourceType> = when (sourceType) {
             ArtifactSourceType.APPLICATION -> emptyList() // any source
             ArtifactSourceType.USER -> return emptyList() // user artifacts can't be patched
-            ArtifactSourceType.ECOS_APP -> listOf(ArtifactSourceType.ECOS_APP, ArtifactSourceType.USER)
+            ArtifactSourceType.ECOS_APP -> listOf(
+                ArtifactSourceType.APPLICATION,
+                ArtifactSourceType.ECOS_APP,
+                ArtifactSourceType.USER
+            )
         }
         val patchEntities = if (allowedPatchSourceTypes.isNotEmpty()) {
             patchRepo.findAllByEnabledTrueAndTargetAndSourceTypeIn(artifactRef.toString(), allowedPatchSourceTypes)

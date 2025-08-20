@@ -130,8 +130,6 @@ class UpdateArtifactsExtIdPatch(
 
         return "Patched: $patched"
     }
-
-
 }
 
 @Component
@@ -223,7 +221,6 @@ class FixNotificationArtifactsPatch(
         return "Patched: $patched"
     }
 
-
     private fun EntityRef.notificationBodyIsBlank(): Boolean {
         return recordsService.getAtt(this, "body").asText().isBlank()
     }
@@ -263,7 +260,6 @@ class FixNotificationArtifactsPatch(
         log.info { "Mutate result: $mutateResult" }
     }
 }
-
 
 private fun getAppSourceKeyForEntity(entity: EcosArtifactEntity): AppSourceKey? {
     val ecosApp = entity.ecosApp ?: ""
