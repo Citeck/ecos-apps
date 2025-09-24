@@ -1,0 +1,8 @@
+---
+id: download-ecos-patch
+type: download
+config:
+  downloadType: text
+  attribute: ?json|yaml()
+  extension: yml
+  fileName: ${patchId}
