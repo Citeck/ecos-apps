@@ -141,11 +141,13 @@ class EcosPatchTest {
         var completed = false
 
         override fun call(): String {
+            log.info { "====== Call DependentPatch ======" }
             val msg = if (!statefulPatch.completed) {
-                "ERROR"
+                "ERROR. stateful-patch doesn't completed"
             } else {
                 "SUCCESS"
             }
+            log.info { "====== Call DependentPatch Res: $msg ======" }
             completed = true
             return msg
         }
