@@ -1,21 +1,22 @@
 package ru.citeck.ecos.apps.domain.patch.eapps
 
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchEntity
-import ru.citeck.ecos.apps.domain.patch.service.EcosPatchStatus
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.commons.json.serialization.annotation.IncludeNonDefault
 import java.time.Instant
 
+@IncludeNonDefault
 data class EcosPatchArtifact(
-    val id: String,
+    val id: String = "",
     val name: MLText = MLText(id),
-    val targetApp: String,
-    val date: Instant,
+    val targetApp: String = "",
+    val date: Instant = Instant.EPOCH,
     val manual: Boolean = false,
     val dependsOn: List<String> = emptyList(),
     val dependsOnApps: List<String> = emptyList(),
-    val type: String,
-    val config: ObjectData
+    val type: String = "",
+    val config: ObjectData = ObjectData.create()
 ) {
 
     fun toEntity(): EcosPatchEntity {
@@ -30,21 +31,6 @@ data class EcosPatchArtifact(
             type = type,
             config = config.deepCopy()
         )
-    }
-
-    fun toEntity(entity: EcosPatchEntity) {
-
-        if (entity.date.isBefore(date)) {
-            entity.status = EcosPatchStatus.PENDING
-        }
-
-        entity.name = name
-        entity.date = date
-        entity.manual = manual
-        entity.type = type
-        entity.config = config.deepCopy()
-        entity.dependsOn = getDependsOnWithApp()
-        entity.dependsOnApps = dependsOnApps
     }
 
     private fun getDependsOnWithApp(): List<String> {

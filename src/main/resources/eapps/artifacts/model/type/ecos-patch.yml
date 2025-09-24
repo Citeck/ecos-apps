@@ -1,8 +1,16 @@
 ---
 id: ecos-patch
 
+sourceId: eapps/ecos-patch
 journalRef: uiserv/journal@ecos-patches
 system: true
+
+postCreateActionRef: uiserv/action@none
+createVariants:
+
+  - id: upload
+    name: { ru: Загрузить, en: Upload }
+    formRef: 'uiserv/form@ecos-artifact-upload'
 
 model:
   attributes:
