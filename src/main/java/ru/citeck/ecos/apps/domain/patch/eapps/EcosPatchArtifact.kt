@@ -1,5 +1,6 @@
 package ru.citeck.ecos.apps.domain.patch.eapps
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchEntity
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
@@ -33,7 +34,8 @@ data class EcosPatchArtifact(
         )
     }
 
-    private fun getDependsOnWithApp(): List<String> {
+    @JsonIgnore
+    fun getDependsOnWithApp(): List<String> {
         return dependsOn.map {
             if (!it.contains('$')) {
                 "$targetApp$$it"

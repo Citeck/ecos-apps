@@ -71,6 +71,9 @@ class EcosPatchConfig(
                             }
                         )
                         val newAtts = ObjectData.create(artifact)
+                        if (artifact.dependsOn.isNotEmpty()) {
+                            newAtts[EcosPatchDesc.ATT_DEPENDS_ON] = artifact.getDependsOnWithApp()
+                        }
                         newAtts.remove("id")
                         if (existingConfig == null) {
                             newAtts[EcosPatchDesc.ATT_PATCH_ID] = artifact.id
