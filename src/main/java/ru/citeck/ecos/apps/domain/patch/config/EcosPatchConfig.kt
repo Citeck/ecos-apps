@@ -116,11 +116,14 @@ class EcosPatchConfig(
 
         recordsDao.addListener(object : DbRecordsListenerAdapter() {
             override fun onCreated(event: DbRecordCreatedEvent) {
-                setAttsBeforeCommit(event.globalRef, mapOf(
-                    EcosPatchDesc.ATT_STATE to ObjectData.create(),
-                    EcosPatchDesc.ATT_STATUS to EcosPatchStatus.PENDING,
-                    EcosPatchDesc.ATT_ERRORS_COUNT to 0
-                ))
+                setAttsBeforeCommit(
+                    event.globalRef,
+                    mapOf(
+                        EcosPatchDesc.ATT_STATE to ObjectData.create(),
+                        EcosPatchDesc.ATT_STATUS to EcosPatchStatus.PENDING,
+                        EcosPatchDesc.ATT_ERRORS_COUNT to 0
+                    )
+                )
             }
             override fun onChanged(event: DbRecordChangedEvent) {
                 val dateBefore = DataValue.of(event.before[EcosPatchDesc.ATT_DATE]).getAsInstantOrEpoch()

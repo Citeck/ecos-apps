@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommand
 import ru.citeck.ecos.apps.app.api.GetModelTypeArtifactsCommandResponse
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.application.service.EcosApplicationsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.ArtifactRevSourceType
@@ -31,6 +32,7 @@ import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
 import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
+import ru.citeck.ecos.webapp.lib.perms.RecordPerms
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -40,7 +42,8 @@ class EcosArtifactRecords(
     val ecosArtifactsService: EcosArtifactsService,
     private val commandsService: CommandsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService,
-    private val applicationsService: EcosApplicationsService
+    private val applicationsService: EcosApplicationsService,
+    private val perms: AppSystemArtifactPerms
 ) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao {
 
     companion object {
@@ -143,7 +146,7 @@ class EcosArtifactRecords(
         for (future in resultFutures.withIndex()) {
             try {
                 results.add(future.value.get(2, TimeUnit.SECONDS))
-            } catch (e: TimeoutException) {
+            } catch (_: TimeoutException) {
                 log.warn { "Service doesn't respond in 2 seconds: '${appNames[future.index]}'" }
             } catch (e: Exception) {
                 log.error(e) { "Exception while future waiting for app: '${appNames[future.index]}'" }
@@ -255,6 +258,10 @@ class EcosArtifactRecords(
                 return EntityRef.EMPTY
             }
             return EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, artifact.ecosApp)
+        }
+
+        fun getPermissions(): RecordPerms {
+            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, getId()))
         }
     }
 

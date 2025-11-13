@@ -13,7 +13,6 @@ class ConfigRepoMixin : AttMixin {
     companion object {
         const val VALUE_PROP = "_value"
         const val VALUE_PROTECTED_PROP = "_edge.$VALUE_PROP.protected"
-        const val PERMISSIONS_WRITE = "permissions._has.Write"
     }
 
     override fun getAtt(path: String, value: AttValueCtx): Any? {
@@ -32,13 +31,12 @@ class ConfigRepoMixin : AttMixin {
                 ref
             }
             VALUE_PROTECTED_PROP -> false
-            PERMISSIONS_WRITE -> true
             else -> null
         }
     }
 
     override fun getProvidedAtts(): Collection<String> {
-        return listOf(VALUE_PROP, VALUE_PROTECTED_PROP, PERMISSIONS_WRITE, RecordConstants.ATT_FORM_REF)
+        return listOf(VALUE_PROP, VALUE_PROTECTED_PROP, RecordConstants.ATT_FORM_REF)
     }
 
     data class FormRefAtts(

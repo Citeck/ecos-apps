@@ -3,13 +3,16 @@ package ru.citeck.ecos.apps.domain.artifact.patch.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import lombok.extern.slf4j.Slf4j
+import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.artifact.ArtifactService
 import ru.citeck.ecos.apps.artifact.controller.patch.ArtifactPatch
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.patch.api.records.ArtifactPatchRecordsDao
 import ru.citeck.ecos.apps.domain.artifact.patch.dto.ArtifactPatchDto
 import ru.citeck.ecos.apps.domain.artifact.patch.repo.ArtifactPatchEntity
 import ru.citeck.ecos.apps.domain.artifact.patch.repo.ArtifactPatchRepo
@@ -19,8 +22,11 @@ import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
 import ru.citeck.ecos.context.lib.auth.AuthContext
+import ru.citeck.ecos.context.lib.auth.AuthRole
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.constants.AppName
+import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.util.concurrent.CopyOnWriteArrayList
@@ -34,7 +40,8 @@ class EcosArtifactsPatchService(
     private val patchSyncRepo: ArtifactPatchSyncRepo,
     private val artifactService: ArtifactService,
     private val ecosArtifactsService: EcosArtifactsService,
-    private val jpaSearchConverterFactory: JpaSearchConverterFactory
+    private val jpaSearchConverterFactory: JpaSearchConverterFactory,
+    private val perms: AppSystemArtifactPerms
 ) {
 
     companion object {
@@ -73,6 +80,8 @@ class EcosArtifactsPatchService(
     }
 
     fun save(patch: ArtifactPatchDto): ArtifactPatchDto? {
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, ArtifactPatchRecordsDao.ID, patch.id))
+
         val patchToSave = ArtifactPatchDto(patch)
         if (patchToSave.sourceType != ArtifactSourceType.USER &&
             !AuthContext.isRunAsSystem() &&
@@ -91,6 +100,8 @@ class EcosArtifactsPatchService(
     }
 
     fun delete(id: String) {
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, ArtifactPatchRecordsDao.ID, id))
+
         val entity = patchRepo.findFirstByExtId(id)
         if (entity != null) {
             patchRepo.delete(entity)
@@ -121,6 +132,7 @@ class EcosArtifactsPatchService(
         patchSyncRepo.save(syncEntity)
     }
 
+    @Secured(AuthRole.ADMIN, AuthRole.SYSTEM)
     fun applyOutOfSyncPatches(): Boolean {
 
         val outOfSync = patchSyncRepo.findOutOfSyncArtifacts()

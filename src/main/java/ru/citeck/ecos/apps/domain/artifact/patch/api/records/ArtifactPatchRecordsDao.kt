@@ -1,13 +1,12 @@
 package ru.citeck.ecos.apps.domain.artifact.patch.api.records
 
-import org.springframework.security.access.annotation.Secured
 import org.springframework.stereotype.Component
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms
 import ru.citeck.ecos.apps.domain.artifact.patch.dto.ArtifactPatchDto
 import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchService
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json
-import ru.citeck.ecos.context.lib.auth.AuthRole
 import ru.citeck.ecos.records2.predicate.PredicateService
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
@@ -16,13 +15,19 @@ import ru.citeck.ecos.records3.record.dao.mutate.RecordMutateDtoDao
 import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
+import ru.citeck.ecos.webapp.api.constants.AppName
+import ru.citeck.ecos.webapp.api.entity.EntityRef
+import ru.citeck.ecos.webapp.lib.perms.RecordPerms
 
 @Component
 class ArtifactPatchRecordsDao(
-    val artifactPatchService: EcosArtifactsPatchService
-) : RecordsQueryDao,
-    RecordMutateDtoDao<ArtifactPatchRecordsDao.RecordToMutate>,
-    RecordAttsDao {
+    private val artifactPatchService: EcosArtifactsPatchService,
+    private val perms: AppSystemArtifactPerms
+) : RecordsQueryDao, RecordMutateDtoDao<ArtifactPatchRecordsDao.RecordToMutate>, RecordAttsDao {
+
+    companion object {
+        const val ID = "artifact-patch"
+    }
 
     override fun queryRecords(recsQuery: RecordsQuery): Any? {
         if (recsQuery.language != PredicateService.LANGUAGE_PREDICATE) {
@@ -71,7 +76,6 @@ class ArtifactPatchRecordsDao(
         return getPatchDtoById(recordId)?.let { ArtifactPatchRecord(it) }
     }
 
-    @Secured(AuthRole.ADMIN)
     override fun getRecToMutate(recordId: String): RecordToMutate {
         val dto = getPatchDtoById(recordId) ?: error("Artifact patch can't be found by id: '$recordId'")
         return RecordToMutate(dto)
@@ -91,10 +95,10 @@ class ArtifactPatchRecordsDao(
     }
 
     override fun getId(): String {
-        return "artifact-patch"
+        return ID
     }
 
-    class ArtifactPatchRecord(
+    inner class ArtifactPatchRecord(
         @AttName("...")
         val dto: ArtifactPatchDto
     ) {
@@ -105,6 +109,8 @@ class ArtifactPatchRecordsDao(
         }
 
         fun getEcosType(): Any = "ecos-artifact-patch"
+
+        fun getPermissions(): RecordPerms = perms.getPerms(EntityRef.create(AppName.EAPPS, ID, dto.id))
     }
 
     class RecordToMutate : ArtifactPatchDto {
