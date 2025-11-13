@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.domain.ecosapp.api.records
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.stereotype.Component
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.commons.data.MLText
@@ -17,14 +18,17 @@ import ru.citeck.ecos.records3.record.dao.mutate.RecordMutateDtoDao
 import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
+import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
+import ru.citeck.ecos.webapp.lib.perms.RecordPerms
 import java.util.*
 import java.util.regex.Pattern
 
 @Component
 class EcosAppRecords(
     private val ecosAppService: EcosAppService,
-    private val ecosVcsObjectGitService: EcosVcsObjectGitService
+    private val ecosVcsObjectGitService: EcosVcsObjectGitService,
+    private val perms: AppSystemArtifactPerms
 ) : AbstractRecordsDao(),
     RecordAttsDao,
     RecordsQueryDao,
@@ -39,7 +43,8 @@ class EcosAppRecords(
         return EcosAppRecord(
             ecosAppService.getById(recordId) ?: EcosAppDef.create {},
             ecosAppService,
-            ecosVcsObjectGitService
+            ecosVcsObjectGitService,
+            perms
         )
     }
 
@@ -64,7 +69,7 @@ class EcosAppRecords(
                     recsQuery.page.maxItems,
                     recsQuery.page.skipCount,
                     recsQuery.sortBy
-                ).map { EcosAppRecord(it, ecosAppService, ecosVcsObjectGitService) }
+                ).map { EcosAppRecord(it, ecosAppService, ecosVcsObjectGitService, perms) }
             )
             result.setTotalCount(ecosAppService.getCount(predicate))
         }
@@ -82,9 +87,9 @@ class EcosAppRecords(
 
     override fun getRecToMutate(recordId: String): EcosAppRecord {
         return if (recordId.isBlank()) {
-            EcosAppRecord(EcosAppDef.create {}, ecosAppService, ecosVcsObjectGitService)
+            EcosAppRecord(EcosAppDef.create {}, ecosAppService, ecosVcsObjectGitService, perms)
         } else {
-            EcosAppRecord(ecosAppService.getById(recordId)!!, ecosAppService, ecosVcsObjectGitService)
+            EcosAppRecord(ecosAppService.getById(recordId)!!, ecosAppService, ecosVcsObjectGitService, perms)
         }
     }
 
@@ -101,8 +106,9 @@ class EcosAppRecords(
 
     class EcosAppRecord(
         private val appDef: EcosAppDef,
-        val ecosAppService: EcosAppService,
-        val ecosVcsObjectGitService: EcosVcsObjectGitService
+        private val ecosAppService: EcosAppService,
+        private val ecosVcsObjectGitService: EcosVcsObjectGitService,
+        private val perms: AppSystemArtifactPerms
     ) : EcosAppDef.Builder(appDef) {
 
         var appData: ByteArray? = null
@@ -130,7 +136,7 @@ class EcosAppRecords(
         @JsonProperty("_content")
         fun setContent(content: List<ObjectData>) {
 
-            val base64Content = content[0].get("url")
+            val base64Content = content[0]["url"]
             // val filename = content[0].get("originalName", "")
             val pattern = Pattern.compile("^data:(.+?);base64,(.+)$")
             val matcher = pattern.matcher(base64Content.asText())
@@ -145,6 +151,10 @@ class EcosAppRecords(
 
         fun getCanVcsObjectBeCommitted(): Boolean {
             return repositoryEndpoint.isNotEmpty() && ecosVcsObjectGitService.featureAllowed()
+        }
+
+        fun getPermissions(): RecordPerms {
+            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, appDef.id))
         }
     }
 

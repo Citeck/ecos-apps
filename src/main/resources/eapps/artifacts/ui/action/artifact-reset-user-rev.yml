@@ -17,3 +17,9 @@ config:
   args:
     ref: "${recordRef}"
   method: POST
+evaluator:
+  id: null
+  type: has-permission
+  inverse: false
+  config:
+    permission: Write

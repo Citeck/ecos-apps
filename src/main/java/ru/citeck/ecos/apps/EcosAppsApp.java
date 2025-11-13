@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps;
 
 import de.codecentric.boot.admin.server.config.EnableAdminServer;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import ru.citeck.ecos.apps.app.application.props.ApplicationProperties;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,7 @@ import ru.citeck.ecos.webapp.lib.spring.context.ecosconfig.EcosConfigBeanPostPro
 @EnableConfigurationProperties({
     ApplicationProperties.class
 })
+@EnableMethodSecurity(securedEnabled = true)
 @EnableJpaRepositories({
     "ru.citeck.ecos.apps.app.*.repo",
     "ru.citeck.ecos.apps.domain.*.repo",

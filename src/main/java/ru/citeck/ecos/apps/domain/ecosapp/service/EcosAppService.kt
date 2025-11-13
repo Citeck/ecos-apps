@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.citeck.ecos.apps.EcosAppsApp
 import ru.citeck.ecos.apps.EcosAppsServiceFactory
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceInfo
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
@@ -18,6 +19,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao
+import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo
@@ -31,6 +33,7 @@ import ru.citeck.ecos.commons.utils.ZipUtils
 import ru.citeck.ecos.model.lib.utils.ModelUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
+import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
@@ -47,7 +50,8 @@ class EcosAppService(
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosContentDao: EcosContentDao,
     private val applicationsWatcherJob: ApplicationsWatcherJob,
-    private val jpaSearchConverterFactory: JpaSearchConverterFactory
+    private val jpaSearchConverterFactory: JpaSearchConverterFactory,
+    private val perms: AppSystemArtifactPerms
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
@@ -61,10 +65,11 @@ class EcosAppService(
     }
 
     fun uploadZip(data: ByteArray): EcosAppDef {
-
         val appRoot = ZipUtils.extractZip(data)
         val appMeta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
             ?: error("Incorrect application: ${Base64.getEncoder().encodeToString(data)}")
+
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, appMeta.id))
 
         log.info { "Upload application '" + appMeta.id + "'" }
 
@@ -133,6 +138,8 @@ class EcosAppService(
     }
 
     fun save(app: EcosAppDef): EcosAppDef {
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, app.id))
+
         return entityToDto(ecosAppRepo.save(internalSave(app)))
     }
 
@@ -166,6 +173,8 @@ class EcosAppService(
     }
 
     fun delete(id: String) {
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, id))
+
         ecosAppRepo.findFirstByExtId(id)?.let { ecosAppRepo.delete(it) }
         ecosArtifactsService.removeEcosApp(id)
     }

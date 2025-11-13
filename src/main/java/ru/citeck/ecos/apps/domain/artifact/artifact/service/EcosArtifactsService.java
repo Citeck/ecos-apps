@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
@@ -35,6 +36,7 @@ import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
 
@@ -136,33 +138,7 @@ public class EcosArtifactsService {
         return artifactsRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
     }
 
-    private boolean removePatchedRev(EcosArtifactEntity artifactEntity) {
-
-        if (artifactEntity.getPatchedRev() == null) {
-            return false;
-        }
-
-        artifactEntity.setPatchedRev(null);
-
-        if (artifactEntity.getLastRev() == null) {
-            return true;
-        }
-
-        String typeId = artifactEntity.getType();
-
-        byte[] artifactData = artifactEntity.getLastRev().getContent().getData();
-        Object artifact = artifactsService.readArtifactFromBytes(typeId, artifactData);
-
-        EcosArtifactMeta meta = ecosArtifactTypesService.getArtifactMeta(artifactEntity.getType(), artifact);
-        extractArtifactMeta(artifactEntity, meta);
-
-        DeployStatus statusBefore = artifactEntity.getDeployStatus();
-        artifactEntity.setDeployStatus(DeployStatus.DRAFT);
-        printDeployStatusChanged(statusBefore, artifactEntity);
-
-        return true;
-    }
-
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public synchronized boolean setPatchedRev(ArtifactRef artifactRef, @Nullable Object artifact) {
 
         EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
@@ -227,6 +203,34 @@ public class EcosArtifactsService {
         return true;
     }
 
+    private boolean removePatchedRev(EcosArtifactEntity artifactEntity) {
+
+        if (artifactEntity.getPatchedRev() == null) {
+            return false;
+        }
+
+        artifactEntity.setPatchedRev(null);
+
+        if (artifactEntity.getLastRev() == null) {
+            return true;
+        }
+
+        String typeId = artifactEntity.getType();
+
+        byte[] artifactData = artifactEntity.getLastRev().getContent().getData();
+        Object artifact = artifactsService.readArtifactFromBytes(typeId, artifactData);
+
+        EcosArtifactMeta meta = ecosArtifactTypesService.getArtifactMeta(artifactEntity.getType(), artifact);
+        extractArtifactMeta(artifactEntity, meta);
+
+        DeployStatus statusBefore = artifactEntity.getDeployStatus();
+        artifactEntity.setDeployStatus(DeployStatus.DRAFT);
+        printDeployStatusChanged(statusBefore, artifactEntity);
+
+        return true;
+    }
+
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public synchronized boolean uploadArtifact(ArtifactUploadDto uploadDto) {
 
         final SourceKey sourceKey = uploadDto.getSource().getSource();
@@ -441,6 +445,7 @@ public class EcosArtifactsService {
         return Json.getMapper().read(value, MLText.class);
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public synchronized void updateFailedArtifacts() {
 
         Instant now = Instant.now();
@@ -466,6 +471,7 @@ public class EcosArtifactsService {
         }
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean deployArtifacts(ArtifactDeployer deployer, Instant lastModified) {
 
         if (deployer.getSupportedTypes().isEmpty()) {
@@ -740,6 +746,7 @@ public class EcosArtifactsService {
         return new AllUserRevisionsResetStatus(changedCounter, processedCounter);
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(ArtifactRef artifactRef) {
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
@@ -751,10 +758,12 @@ public class EcosArtifactsService {
         return resetUserRevision(artifact);
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(EcosArtifactEntity artifact) {
         return resetRevision(artifact, rev -> ArtifactRevSourceType.USER.equals(rev.getSourceType()));
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetRevision(EcosArtifactEntity artifact, Function1<EcosArtifactRevEntity, Boolean> resetWhile) {
 
         if (artifact.getLastRev() == null) {
@@ -823,6 +832,7 @@ public class EcosArtifactsService {
         return true;
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public void resetDeployStatus(ArtifactRef artifactRef) {
 
         log.info("Reset deploy status: " + artifactRef);
@@ -843,6 +853,7 @@ public class EcosArtifactsService {
         artifactsRepo.save(artifact);
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {
 
         List<EcosArtifactEntity> currentArtifacts = artifactsRepo.findAllByEcosApp(ecosAppId);
@@ -879,6 +890,7 @@ public class EcosArtifactsService {
         }
     }
 
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void removeEcosApp(String ecosAppId) {
         artifactsDao.removeEcosApp(ecosAppId);
     }
