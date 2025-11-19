@@ -4,7 +4,7 @@
 
     <groupId>ru.citeck.ecos.apps</groupId>
     <artifactId>ecos-apps</artifactId>
-    <version>2.24.3-SNAPSHOT</version>
+    <version>2.24.3</version>
     <name>EcosApps</name>
 
     <parent>
