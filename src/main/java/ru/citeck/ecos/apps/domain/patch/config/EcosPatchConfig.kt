@@ -54,6 +54,10 @@ class EcosPatchConfig(
     fun patchesProxyDao(): RecordsDao {
         return object : RecordsDaoProxy(EcosPatchDesc.SRC_ID, REPO_ID) {
             override fun mutate(records: List<LocalRecordAtts>): List<String> {
+                check(AuthContext.isRunAsSystemOrAdmin()) {
+                    "Permission denied"
+                }
+
                 val newRecs = records.map { record ->
                     var recId = record.id
                     var atts = record.getAtts()
