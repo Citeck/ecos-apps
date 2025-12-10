@@ -1,3 +1,7 @@
 include:
   - project: 'infrastructure/gitlab-ci'
     file: '/templates/maven/.maven-microservice-ci-full.yml'
+
+variables:
+  MAVEN_ADDITIONAL_CLI_OPTS: >-
+    -X
