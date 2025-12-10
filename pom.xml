@@ -63,7 +63,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>mvnw</executable>
+                            <executable>mvn</executable>
                             <arguments>
                                 <argument>archetype:generate</argument>
                                 <argument>-DarchetypeGroupId=ru.citeck.ecos</argument>
@@ -73,7 +73,7 @@
                                 <argument>-DartifactId=citeck-application</argument>
                                 <argument>-Dversion=1.0.0-SNAPSHOT</argument>
                                 <argument>-Dpackage=org.example.generated</argument>
-                                <argument>-DoutputDirectory=${build.outputDirectory}/generated-citeck-application</argument>
+                                <argument>-DoutputDirectory=${project.build.outputDirectory}/generated-citeck-application</argument>
                                 <argument>-DinteractiveMode=false</argument>
                                 <argument>-DuseDefaultExcludes=false</argument>
                             </arguments>
