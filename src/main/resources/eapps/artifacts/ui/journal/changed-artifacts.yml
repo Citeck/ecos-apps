@@ -29,9 +29,6 @@ columns:
   - id: type
     name: { ru: Тип, en: Type }
 
-  - id: type
-    name: { ru: Тип, en: Type }
-
   - id: moduleId
     name: { ru: Идентификатор, en: Id }
 
