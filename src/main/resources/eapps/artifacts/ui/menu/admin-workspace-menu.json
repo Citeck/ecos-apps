@@ -104,16 +104,6 @@
                 "recordRef": "uiserv/journal@changed-artifacts",
                 "displayCount": false
               }
-            },
-            {
-              "id": "eapps-system-info",
-              "label": { "ru": "Информация о системе", "en": "System info" },
-              "hidden": false,
-              "type": "JOURNAL",
-              "config": {
-                "recordRef": "uiserv/journal@system-info",
-                "displayCount": false
-              }
             }
           ]
         }
