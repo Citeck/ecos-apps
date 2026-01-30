@@ -6,7 +6,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface DevModuleRepo :
-    JpaRepository<DevModuleEntity, Long>, JpaSpecificationExecutor<DevModuleEntity> {
+    JpaRepository<DevModuleEntity, Long>,
+    JpaSpecificationExecutor<DevModuleEntity> {
 
     fun findByExtId(extId: String): DevModuleEntity?
 }

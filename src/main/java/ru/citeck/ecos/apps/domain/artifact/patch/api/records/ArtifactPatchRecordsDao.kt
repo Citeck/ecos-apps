@@ -23,7 +23,9 @@ import ru.citeck.ecos.webapp.lib.perms.RecordPerms
 class ArtifactPatchRecordsDao(
     private val artifactPatchService: EcosArtifactsPatchService,
     private val perms: AppSystemArtifactPerms
-) : RecordsQueryDao, RecordMutateDtoDao<ArtifactPatchRecordsDao.RecordToMutate>, RecordAttsDao {
+) : RecordsQueryDao,
+    RecordMutateDtoDao<ArtifactPatchRecordsDao.RecordToMutate>,
+    RecordAttsDao {
 
     companion object {
         const val ID = "artifact-patch"

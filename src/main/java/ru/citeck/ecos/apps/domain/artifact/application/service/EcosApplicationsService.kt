@@ -180,7 +180,8 @@ class EcosApplicationsService(
         newSources.forEach { (key, appSourceInfo) ->
 
             val currentSource = sources[key]
-            if (currentSource == null || currentSource.getLastModified()
+            if (currentSource == null ||
+                currentSource.getLastModified()
                     .isBefore(appSourceInfo.sourceInfo.lastModified)
             ) {
 

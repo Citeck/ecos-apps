@@ -15,7 +15,9 @@ import ru.citeck.ecos.webapp.api.entity.EntityRef
 @Component
 class DevModuleActionRecords(
     val service: DevModulesService
-) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao {
+) : AbstractRecordsDao(),
+    RecordsQueryDao,
+    RecordAttsDao {
 
     override fun getRecordAtts(recordId: String): Any {
 

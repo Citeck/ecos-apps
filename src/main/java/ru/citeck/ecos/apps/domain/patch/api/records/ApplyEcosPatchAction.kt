@@ -10,7 +10,8 @@ import ru.citeck.ecos.webapp.api.entity.EntityRef
 @Component
 class ApplyEcosPatchAction(
     private val ecosPatchService: EcosPatchService
-) : AbstractRecordsDao(), ValueMutateDao<ApplyEcosPatchAction.ActionDto> {
+) : AbstractRecordsDao(),
+    ValueMutateDao<ApplyEcosPatchAction.ActionDto> {
 
     companion object {
         const val ID = "apply-ecos-patch"

@@ -23,7 +23,8 @@ import ru.citeck.ecos.webapp.api.entity.EntityRef
 @Component
 class EcosConfigProxyProcessor(
     private val recordsService: RecordsService
-) : MutateProxyProcessor, AttsProxyProcessor {
+) : MutateProxyProcessor,
+    AttsProxyProcessor {
 
     companion object {
         private const val ATT_CONFIG_ID = "configId"

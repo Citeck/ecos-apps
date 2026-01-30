@@ -186,7 +186,8 @@ class LicensesZkProviderInitializer(
         override fun queryRecords(recsQuery: RecordsQuery): RecsQueryRes<*>? {
 
             if (!AuthContext.isRunAsSystemOrAdmin() ||
-                recsQuery.language != "" && recsQuery.language != PredicateService.LANGUAGE_PREDICATE
+                recsQuery.language != "" &&
+                recsQuery.language != PredicateService.LANGUAGE_PREDICATE
             ) {
                 return null
             }

@@ -23,7 +23,10 @@ import ru.citeck.ecos.webapp.api.entity.toEntityRef
 class GitRecords(
     private val appsGitService: AppsGitService,
     private val ecosVcsObjectGitService: EcosVcsObjectGitService
-) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao, RecordMutateDao {
+) : AbstractRecordsDao(),
+    RecordsQueryDao,
+    RecordAttsDao,
+    RecordMutateDao {
 
     companion object {
         const val ID = "git"

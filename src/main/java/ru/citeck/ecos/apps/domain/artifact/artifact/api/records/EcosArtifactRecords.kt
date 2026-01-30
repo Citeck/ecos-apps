@@ -44,7 +44,9 @@ class EcosArtifactRecords(
     private val ecosArtifactTypesService: EcosArtifactTypesService,
     private val applicationsService: EcosApplicationsService,
     private val perms: AppSystemArtifactPerms
-) : AbstractRecordsDao(), RecordsQueryDao, RecordAttsDao {
+) : AbstractRecordsDao(),
+    RecordsQueryDao,
+    RecordAttsDao {
 
     companion object {
         const val ID = "artifact"

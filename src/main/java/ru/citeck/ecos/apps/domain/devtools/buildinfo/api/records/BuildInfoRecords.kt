@@ -11,7 +11,10 @@ import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
-class BuildInfoRecords : AbstractRecordsDao(), RecordsQueryDao, RecordsAttsDao {
+class BuildInfoRecords :
+    AbstractRecordsDao(),
+    RecordsQueryDao,
+    RecordsAttsDao {
 
     companion object {
         const val ID = "build-info"
