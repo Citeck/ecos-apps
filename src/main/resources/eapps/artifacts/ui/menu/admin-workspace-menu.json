@@ -36,6 +36,18 @@
               }
             },
             {
+              "id": "eapps-dev-console",
+              "label": {
+                "en": "Developer console",
+                "ru": "Консоль разработчика"
+              },
+              "hidden": false,
+              "type": "ARBITRARY",
+              "config": {
+                "url": "/v2/admin?type=DEV_CONSOLE"
+              }
+            },
+            {
               "id": "eapps-ecos-apps",
               "label": { "ru": "Приложения ECOS", "en": "ECOS Applications" },
               "hidden": false,
