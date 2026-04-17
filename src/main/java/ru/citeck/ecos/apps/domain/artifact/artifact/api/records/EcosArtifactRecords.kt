@@ -77,7 +77,9 @@ class EcosArtifactRecords(
                     val type = ecosArtifactTypesService.getTypeIdForRecordRef(it)
                     var moduleRes: Any = EmptyAttValue.INSTANCE
                     if (type.isNotEmpty()) {
-                        val artifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(type, it.getLocalId()))
+                        val artifact = ecosArtifactsService.getLastArtifact(
+                            ArtifactRef.valueOf("$type\$${it.getLocalId()}")
+                        )
                         if (artifact != null && !artifact.system) {
                             moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
                         }
@@ -98,12 +100,13 @@ class EcosArtifactRecords(
             } ?: Predicates.alwaysTrue()
             val res = ecosArtifactsService.getAllArtifacts(
                 predicate,
+                recsQuery.workspaces,
                 recsQuery.page.maxItems,
                 recsQuery.page.skipCount,
                 recsQuery.sortBy
             )
             result.setRecords(res.map { EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type)) })
-            result.setTotalCount(ecosArtifactsService.getAllArtifactsCount(predicate))
+            result.setTotalCount(ecosArtifactsService.getAllArtifactsCount(predicate, recsQuery.workspaces))
         }
 
         return result
@@ -182,16 +185,24 @@ class EcosArtifactRecords(
         private val typeContext: EcosArtifactTypeContext?
     ) {
 
+        private fun toRef(): ArtifactRef {
+            return ArtifactRef.create(artifact.type, artifact.id, artifact.wsSysId)
+        }
+
         fun getId(): String {
-            return ArtifactRef.create(artifact.type, artifact.id).toString()
+            return toRef().toString()
         }
 
         fun getModuleId(): String {
             return artifact.id
         }
 
+        fun getWsSysId(): String {
+            return artifact.wsSysId
+        }
+
         fun getData(): ByteArray {
-            return ecosArtifactsService.getArtifactData(ArtifactRef.create(artifact.type, artifact.id))
+            return ecosArtifactsService.getArtifactData(toRef())
         }
 
         fun getType(): Any? {

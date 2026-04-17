@@ -61,7 +61,7 @@ class UpdateArtifactsExtIdPatch(
 
                 val currentId = artifact.id
                 val artifactType: String = artifact.type
-                val artifactEntity = ecosArtifactsRepo.getByExtId(artifactType, currentId) ?: let {
+                val artifactEntity = ecosArtifactsRepo.getByExtId(artifactType, currentId, "") ?: let {
                     log.info { "Skip not found or deleted artifact. Ext id: $currentId, type: $artifactType" }
                     return@forEach
                 }
@@ -79,7 +79,7 @@ class UpdateArtifactsExtIdPatch(
                 if (newId != currentId) {
                     log.info { "Update artifact ext id: $currentId -> $newId" }
 
-                    val entityWithNewId = ecosArtifactsRepo.getByExtId(artifactType, newId)
+                    val entityWithNewId = ecosArtifactsRepo.getByExtId(artifactType, newId, "")
                     if (entityWithNewId != null) {
                         val existsArtifactData: ByteArray =
                             ecosArtifactsService.getArtifactData(ArtifactRef.create(artifactType, newId))
@@ -192,12 +192,12 @@ class FixNotificationArtifactsPatch(
 
                 log.info { "Processing notification artifact with ext id: $currentId" }
 
-                val artifactEntity = ecosArtifactsRepo.getByExtId(artifactType, currentId) ?: let {
+                val artifactEntity = ecosArtifactsRepo.getByExtId(artifactType, currentId, "") ?: let {
                     log.info { "Skip not found or deleted artifact. Ext id: $currentId, type: $artifactType" }
                     return@forEach
                 }
 
-                val artifactWithValidId = ecosArtifactsRepo.getByExtId(artifactType, validId)
+                val artifactWithValidId = ecosArtifactsRepo.getByExtId(artifactType, validId, "")
                 if (artifactWithValidId != null) {
                     ecosArtifactsDao.delete(artifactWithValidId)
                     log.info { "Deleted artifact with ext id: $validId, type: $artifactType" }

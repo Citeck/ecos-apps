@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
+import ru.citeck.ecos.context.lib.auth.AuthContext;
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService;
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
 import ru.citeck.ecos.records2.predicate.model.*;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
@@ -30,6 +32,7 @@ public class EcosArtifactsDao {
     private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final JpaSearchConverterFactory jpaSearchConverterFactory;
+    private final WorkspaceService workspaceService;
 
     private JpaSearchConverter<EcosArtifactEntity> searchConv;
 
@@ -76,20 +79,33 @@ public class EcosArtifactsDao {
                                                            int maxItems,
                                                            int skipCount,
                                                            List<SortBy> sort) {
+        return getAllLastRevisions(predicate, Collections.emptyList(), maxItems, skipCount, sort);
+    }
 
-        return searchConv.findAll(artifactsRepo, preparePredicate(predicate), maxItems, skipCount, sort)
+    public List<EcosArtifactRevEntity> getAllLastRevisions(Predicate predicate,
+                                                           List<String> workspaces,
+                                                           int maxItems,
+                                                           int skipCount,
+                                                           List<SortBy> sort) {
+
+        return searchConv.findAll(artifactsRepo, preparePredicate(predicate, workspaces), maxItems, skipCount, sort)
             .stream()
             .map(EcosArtifactEntity::getLastRev)
             .collect(Collectors.toList());
     }
 
     public long getCount(Predicate predicate) {
-        return searchConv.getCount(artifactsRepo, preparePredicate(predicate));
+        return getCount(predicate, Collections.emptyList());
     }
 
-    public void removeEcosApp(String ecosAppId) {
+    public long getCount(Predicate predicate, List<String> workspaces) {
+        return searchConv.getCount(artifactsRepo, preparePredicate(predicate, workspaces));
+    }
 
-        List<EcosArtifactEntity> currentArtifacts = artifactsRepo.findAllByEcosApp(ecosAppId);
+    public void removeEcosApp(String ecosAppId, String workspace) {
+
+        List<EcosArtifactEntity> currentArtifacts =
+            artifactsRepo.findAllByEcosAppAndWorkspace(ecosAppId, normalizeWorkspace(workspace));
         for (EcosArtifactEntity artifact : currentArtifacts) {
             artifact.setEcosApp(null);
             artifactsRepo.save(artifact);
@@ -100,9 +116,13 @@ public class EcosArtifactsDao {
         return artifactsRepo.getArtifactsByEcosApp(ecosAppId);
     }
 
+    public List<EcosArtifactEntity> getArtifactsByEcosApp(String ecosAppId, String workspace) {
+        return artifactsRepo.getArtifactsByEcosAppAndWorkspace(ecosAppId, normalizeWorkspace(workspace));
+    }
+
     public List<EcosArtifactEntity> getDependentModules(ArtifactRef targetRef) {
 
-        EcosArtifactEntity moduleEntity = artifactsRepo.getByExtId(targetRef.getType(), targetRef.getId());
+        EcosArtifactEntity moduleEntity = getArtifact(targetRef);
         List<EcosArtifactDepEntity> depsByTarget = artifactsDepRepo.getDepsByTarget(moduleEntity.getId());
 
         return depsByTarget.stream()
@@ -130,14 +150,15 @@ public class EcosArtifactsDao {
 
     public List<EcosArtifactEntity> getArtifactsByRefs(List<ArtifactRef> refs) {
         return refs.stream()
-            .map(it -> Optional.ofNullable(artifactsRepo.getByExtId(it.getType(), it.getId())))
+            .map(it -> Optional.ofNullable(getArtifact(it)))
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
     }
 
     public EcosArtifactEntity getArtifact(ArtifactRef ref) {
-        return artifactsRepo.getByExtId(ref.getType(), ref.getId());
+        String wsId = resolveWorkspaceId(ref.getWsSysId());
+        return artifactsRepo.getByExtId(ref.getType(), ref.getId(), wsId);
     }
 
     public List<EcosArtifactRevEntity> getArtifactRevisionsSince(ArtifactRef ref, Instant since, int skip, int max) {
@@ -145,10 +166,12 @@ public class EcosArtifactsDao {
             return Collections.emptyList();
         }
         int page = skip / max;
+        String wsId = resolveWorkspaceId(ref.getWsSysId());
         return artifactsRevRepo.getArtifactRevisionsSince(
             ref.getType(),
             ref.getId(),
             since,
+            wsId,
             PageRequest.of(page, max)
         );
     }
@@ -174,13 +197,60 @@ public class EcosArtifactsDao {
         delete(getArtifact(ref));
     }
 
+    /**
+     * Returns "" for global workspaces, workspace ID as-is otherwise.
+     */
+    public String normalizeWorkspace(String workspace) {
+        if (workspace == null || workspace.isBlank()
+            || workspaceService.isWorkspaceWithGlobalEntities(workspace)) {
+            return "";
+        }
+        return workspace;
+    }
+
+    /**
+     * Resolves wsSysId from ArtifactRef to workspace ID for DB lookup.
+     */
+    public String resolveWorkspaceId(String wsSysId) {
+        if (wsSysId == null || wsSysId.isEmpty()) {
+            return "";
+        }
+        try {
+            String wsId = workspaceService.getWorkspaceIdBySystemId(wsSysId);
+            return normalizeWorkspace(wsId);
+        } catch (Exception e) {
+            log.warn("Failed to resolve workspace ID for wsSysId '{}': {}", wsSysId, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Converts workspace ID (from DB) to wsSysId for ArtifactRef.
+     */
+    public String toWsSysId(String workspaceId) {
+        if (workspaceId == null || workspaceId.isEmpty()) {
+            return "";
+        }
+        try {
+            return workspaceService.getWorkspaceSystemId(workspaceId);
+        } catch (Exception e) {
+            log.warn("Failed to resolve wsSysId for workspace '{}': {}", workspaceId, e.getMessage());
+            return "";
+        }
+    }
+
+    public ArtifactRef toArtifactRef(EcosArtifactEntity entity) {
+        String wsSysId = toWsSysId(entity.getWorkspace());
+        return ArtifactRef.create(entity.getType(), entity.getExtId(), wsSysId);
+    }
+
     private Specification<EcosArtifactEntity> getNonDeletedWithLastRevSpec() {
         Specification<EcosArtifactEntity> spec = (root, query, builder) -> builder.isNotNull(root.get("lastRev"));
         spec = spec.and((root, query, builder) -> builder.notEqual(root.get("deleted"), true));
         return spec;
     }
 
-    private Predicate preparePredicate(Predicate predicate) {
+    private Predicate preparePredicate(Predicate predicate, List<String> workspaces) {
 
         Set<String> attsInPredicate = new HashSet<>();
         predicate = PredicateUtils.mapAttributePredicates(predicate, pred -> {
@@ -212,6 +282,9 @@ public class EcosArtifactsDao {
         andPredicates.add(Predicates.in("type", ecosArtifactTypesService.getNonInternalTypes()));
         andPredicates.add(Predicates.notEmpty("lastRev"));
         andPredicates.add(Predicates.not(Predicates.eq("deleted", true)));
+        andPredicates.add(
+            workspaceService.buildAvailableWorkspacesPredicate(AuthContext.getCurrentRunAsAuth(), workspaces)
+        );
 
         return AndPredicate.of(andPredicates);
     }

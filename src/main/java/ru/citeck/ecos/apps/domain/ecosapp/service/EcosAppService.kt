@@ -30,8 +30,11 @@ import ru.citeck.ecos.commons.io.file.mem.EcosMemDir
 import ru.citeck.ecos.commons.json.Json
 import ru.citeck.ecos.commons.utils.NameUtils
 import ru.citeck.ecos.commons.utils.ZipUtils
+import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.model.lib.utils.ModelUtils
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
@@ -51,10 +54,12 @@ class EcosAppService(
     private val ecosContentDao: EcosContentDao,
     private val applicationsWatcherJob: ApplicationsWatcherJob,
     private val jpaSearchConverterFactory: JpaSearchConverterFactory,
-    private val perms: AppSystemArtifactPerms
+    private val perms: AppSystemArtifactPerms,
+    private val workspaceService: WorkspaceService
 ) {
     companion object {
         private val log = KotlinLogging.logger {}
+        private const val CURRENT_WS_PLACEHOLDER = "CURRENT_WS"
     }
 
     private lateinit var searchConv: JpaSearchConverter<EcosAppEntity>
@@ -64,10 +69,24 @@ class EcosAppService(
         searchConv = jpaSearchConverterFactory.createConverter(EcosAppEntity::class.java).build()
     }
 
-    fun uploadZip(data: ByteArray): EcosAppDef {
+    fun uploadZip(data: ByteArray, workspace: String): EcosAppDef {
         val appRoot = ZipUtils.extractZip(data)
-        val appMeta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
+        val meta = Json.mapper.read(appRoot.getFile("meta.json"), EcosAppDef::class.java)
             ?: error("Incorrect application: ${Base64.getEncoder().encodeToString(data)}")
+
+        // imported ZIP is workspace-agnostic; assign it to the provided workspace
+        // and rebind CURRENT_WS placeholders in refs to the target workspace sysId
+        val targetWs = normalizeWorkspace(workspace)
+        val targetWsSysId = if (targetWs.isNotEmpty()) workspaceService.getWorkspaceSystemId(targetWs) else ""
+        val appMeta = meta.copy()
+            .withWorkspace(targetWs)
+            .withArtifacts(meta.artifacts.map { replaceCurrentWsPlaceholderInArtifactRef(it, targetWsSysId) })
+            .withTypeRefs(
+                meta.typeRefs.map {
+                    it.withLocalId(workspaceService.replaceCurrentWsPlaceholderToWsPrefix(it.getLocalId(), targetWs))
+                }
+            )
+            .build()
 
         perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, appMeta.id))
 
@@ -87,7 +106,7 @@ class EcosAppService(
                     artifacts.forEach {
                         val meta = ecosAppsServiceFactory.artifactService.getArtifactMeta(typeCtx, it)
                         if (meta != null) {
-                            artifactRefs.add(ArtifactRef.create(typeCtx.getId(), meta.id))
+                            artifactRefs.add(ArtifactRef.create(typeCtx.getId(), meta.id, targetWsSysId))
                         }
                     }
                 }
@@ -122,7 +141,7 @@ class EcosAppService(
             }
             entity.artifactsDir = artifactsContentEntity
             entity.artifactsLastModifiedDate = Instant.now()
-            ecosArtifactsService.setEcosAppFull(artifactRefs, appMeta.id)
+            ecosArtifactsService.setEcosAppFull(artifactRefs, appMeta.id, targetWs)
         } else {
             log.info {
                 "Application content doesn't change. App ID: '${appMeta.id}'"
@@ -138,9 +157,11 @@ class EcosAppService(
     }
 
     fun save(app: EcosAppDef): EcosAppDef {
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, app.id))
+        val appToSave = app.copy().withWorkspace(normalizeWorkspace(app.workspace)).build()
 
-        return entityToDto(ecosAppRepo.save(internalSave(app)))
+        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, appToSave.id))
+
+        return entityToDto(ecosAppRepo.save(internalSave(appToSave)))
     }
 
     private fun internalSave(app: EcosAppDef): EcosAppEntity {
@@ -149,22 +170,27 @@ class EcosAppService(
         app.typeRefs.forEach { artifactsSet.add(ArtifactUtils.typeRefToArtifactRef(it).getLocalId()) }
         app.artifacts.forEach { artifactsSet.add(it.getLocalId()) }
 
-        ecosArtifactsService.setEcosAppFull(artifactsSet.map { ArtifactRef.valueOf(it) }, app.id)
+        ecosArtifactsService.setEcosAppFull(
+            artifactsSet.map { ArtifactRef.valueOf(it) },
+            app.id,
+            normalizeWorkspace(app.workspace)
+        )
 
         return dtoToEntity(app)
     }
 
-    fun getById(id: String): EcosAppDef? {
-        val app = ecosAppRepo.findFirstByExtId(id) ?: return null
+    fun getById(id: String, workspace: String): EcosAppDef? {
+        val app = ecosAppRepo.findFirstByExtIdAndWorkspace(id, normalizeWorkspace(workspace)) ?: return null
         return entityToDto(app)
     }
 
-    fun getCount(predicate: Predicate): Long {
-        return searchConv.getCount(ecosAppRepo, predicate)
+    fun getCount(predicate: Predicate, workspaces: List<String>): Long {
+        return searchConv.getCount(ecosAppRepo, workspacesPredicate(predicate, workspaces))
     }
 
-    fun getAll(predicate: Predicate, max: Int, skip: Int, sort: List<SortBy>): List<EcosAppDef> {
-        return searchConv.findAll(ecosAppRepo, predicate, max, skip, sort).map { entityToDto(it) }
+    fun getAll(predicate: Predicate, workspaces: List<String>, max: Int, skip: Int, sort: List<SortBy>): List<EcosAppDef> {
+        return searchConv.findAll(ecosAppRepo, workspacesPredicate(predicate, workspaces), max, skip, sort)
+            .map { entityToDto(it) }
     }
 
     fun getAll(): List<EcosAppDef> {
@@ -172,11 +198,27 @@ class EcosAppService(
         return ecosAppRepo.findAll(sort).map { entityToDto(it) }
     }
 
-    fun delete(id: String) {
+    fun delete(id: String, workspace: String) {
         perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, id))
 
-        ecosAppRepo.findFirstByExtId(id)?.let { ecosAppRepo.delete(it) }
-        ecosArtifactsService.removeEcosApp(id)
+        val ws = normalizeWorkspace(workspace)
+        ecosAppRepo.findFirstByExtIdAndWorkspace(id, ws)?.let { ecosAppRepo.delete(it) }
+        ecosArtifactsService.removeEcosApp(id, ws)
+    }
+
+    private fun normalizeWorkspace(workspace: String?): String {
+        if (workspace.isNullOrBlank() || workspaceService.isWorkspaceWithGlobalEntities(workspace)) {
+            return ""
+        }
+        return workspace
+    }
+
+    private fun workspacesPredicate(predicate: Predicate, workspaces: List<String>): Predicate {
+        val wsPredicate = workspaceService.buildAvailableWorkspacesPredicate(
+            AuthContext.getCurrentRunAsAuth(),
+            workspaces
+        )
+        return Predicates.and(predicate, wsPredicate)
     }
 
     fun getAppForArtifacts(list: List<EntityRef>): Map<EntityRef, EntityRef> {
@@ -191,10 +233,11 @@ class EcosAppService(
         return emptyMap() // result
     }
 
-    fun getAppData(id: String): ByteArray {
+    fun getAppData(id: String, workspace: String): ByteArray {
 
-        val appDef = getById(id) ?: error("Invalid ECOS application ID: '$id'")
+        val appDef = getById(id, workspace) ?: error("Invalid ECOS application ID: '$id'")
 
+        // Use the original refs (with real wsSysId) to fetch artifact data from the DB.
         val artifacts = mutableSetOf<EntityRef>()
         artifacts.addAll(appDef.artifacts)
         artifacts.addAll(appDef.typeRefs.map { ArtifactUtils.typeRefToArtifactRef(it) })
@@ -210,17 +253,57 @@ class EcosAppService(
                     ByteArrayInputStream(artifactRev.data),
                     artifactsDir.getOrCreateDir(artifactRef.type)
                 )
+            } else {
+                log.debug { "No lastRev for artifact '$artifactRef' on ecos-app '$id' export" }
             }
         }
 
-        rootDir.createFile("meta.json", Json.mapper.toPrettyString(appDef) ?: error("toPrettyString error"))
+        // Replace workspace prefix with CURRENT_WS placeholder in meta.json refs —
+        // exported ecos-app is workspace-agnostic and the placeholder is rebound on import.
+        val exportedDef = appDef.copy()
+            .withWorkspace("")
+            .withArtifacts(appDef.artifacts.map { artifactRefToCurrentWsPlaceholder(it) })
+            .withTypeRefs(
+                appDef.typeRefs.map {
+                    it.withLocalId(workspaceService.replaceWsPrefixToCurrentWsPlaceholder(it.getLocalId()))
+                }
+            )
+            .build()
+
+        rootDir.createFile("meta.json", Json.mapper.toPrettyString(exportedDef) ?: error("toPrettyString error"))
 
         return ZipUtils.writeZipAsBytes(rootDir)
     }
 
+    /**
+     * Replaces the workspace sysId with the CURRENT_WS placeholder in an artifact EntityRef,
+     * e.g. "eapps/artifact@ui/form$wsSysId:my-form" → "eapps/artifact@ui/form$CURRENT_WS:my-form".
+     * The placeholder is rebound to the target workspace on import.
+     */
+    private fun artifactRefToCurrentWsPlaceholder(ref: EntityRef): EntityRef {
+        val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+        if (artifactRef.wsSysId.isEmpty() || artifactRef.wsSysId == CURRENT_WS_PLACEHOLDER) {
+            return ref
+        }
+        return ref.withLocalId(
+            ArtifactRef.create(artifactRef.type, artifactRef.id, CURRENT_WS_PLACEHOLDER).toString()
+        )
+    }
+
+    private fun replaceCurrentWsPlaceholderInArtifactRef(ref: EntityRef, targetWsSysId: String): EntityRef {
+        val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+        if (artifactRef.wsSysId != CURRENT_WS_PLACEHOLDER) {
+            return ref
+        }
+        return ref.withLocalId(
+            ArtifactRef.create(artifactRef.type, artifactRef.id, targetWsSysId).toString()
+        )
+    }
+
     private fun dtoToEntity(dto: EcosAppDef): EcosAppEntity {
 
-        val nullableEntity = ecosAppRepo.findFirstByExtId(dto.id)
+        val workspace = normalizeWorkspace(dto.workspace)
+        val nullableEntity = ecosAppRepo.findFirstByExtIdAndWorkspace(dto.id, workspace)
 
         val entity = if (nullableEntity != null) {
 
@@ -231,6 +314,7 @@ class EcosAppService(
             newEntity.extId = dto.id.ifBlank {
                 UUID.randomUUID().toString()
             }
+            newEntity.workspace = workspace
             newEntity
         }
 
@@ -243,13 +327,14 @@ class EcosAppService(
 
     private fun entityToDto(entity: EcosAppEntity): EcosAppDef {
 
-        val appArtifacts = ecosArtifactsService.getArtifactsByEcosApp(entity.extId)
+        val appArtifacts = ecosArtifactsService.getArtifactsByEcosApp(entity.extId, entity.workspace)
         val typeArtifactRefs = mutableListOf<EntityRef>()
         val otherArtifactRefs = mutableListOf<EntityRef>()
 
         appArtifacts.forEach {
             if (it.type == "model/type") {
-                typeArtifactRefs.add(ModelUtils.getTypeRef(it.id))
+                val typeLocalId = if (it.wsSysId.isNotEmpty()) "${it.wsSysId}:${it.id}" else it.id
+                typeArtifactRefs.add(ModelUtils.getTypeRef(typeLocalId))
             } else {
                 otherArtifactRefs.add(EntityRef.create(EcosAppsApp.NAME, EcosArtifactRecords.ID, it.toString()))
             }
@@ -262,6 +347,7 @@ class EcosAppService(
             repositoryEndpoint = EntityRef.valueOf(entity.repositoryEndpoint)
             typeRefs = typeArtifactRefs
             artifacts = otherArtifactRefs
+            workspace = entity.workspace
         }
     }
 

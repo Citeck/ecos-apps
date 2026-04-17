@@ -26,4 +26,6 @@ class EcosAppEntity : AbstractAuditingEntity() {
     var artifactsDir: EcosContentEntity? = null
 
     var artifactsLastModifiedDate: Instant? = null
+
+    var workspace: String = ""
 }

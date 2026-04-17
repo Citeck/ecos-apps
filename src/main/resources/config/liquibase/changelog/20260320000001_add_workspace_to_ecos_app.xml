@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20260320000001-1" author="citeck">
+        <addColumn tableName="ecos_app">
+            <column name="workspace" type="VARCHAR(255)" defaultValue="">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260320000001-2" author="citeck">
+        <dropUniqueConstraint constraintName="ecos_app_ext_id_key"
+                              tableName="ecos_app" />
+    </changeSet>
+
+    <changeSet id="20260320000001-3" author="citeck">
+        <addUniqueConstraint tableName="ecos_app"
+                             columnNames="ext_id,workspace"
+                             constraintName="ecos_app_ext_id_workspace_key" />
+    </changeSet>
+
+</databaseChangeLog>

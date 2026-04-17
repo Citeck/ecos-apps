@@ -30,6 +30,8 @@ import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypeContext;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
+import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity;
+import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo;
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto;
 import ru.citeck.ecos.commons.data.DataValue;
 import ru.citeck.ecos.commons.data.MLText;
@@ -70,6 +72,7 @@ public class EcosArtifactsService {
     private final EcosArtifactsDepRepo artifactsDepRepo;
     private final EcosArtifactsRevRepo artifactsRevRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
+    private final EcosAppRepo ecosAppRepo;
 
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
@@ -135,7 +138,7 @@ public class EcosArtifactsService {
 
     @Nullable
     private EcosArtifactEntity getArtifactEntity(ArtifactRef artifactRef) {
-        return artifactsRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
+        return artifactsDao.getArtifact(artifactRef);
     }
 
     @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
@@ -265,13 +268,16 @@ public class EcosArtifactsService {
             return false;
         }
 
-        EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId());
+        String workspace = resolveUploadWorkspace(uploadDto);
+
+        EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId(), workspace);
 
         if (artifactEntity == null) {
 
             artifactEntity = new EcosArtifactEntity();
             artifactEntity.setExtId(meta.getId());
             artifactEntity.setType(typeId);
+            artifactEntity.setWorkspace(workspace);
             if (ArtifactRevSourceType.USER.equals(revSourceType)) {
                 artifactEntity.setDeployStatus(DeployStatus.DEPLOYED);
             } else {
@@ -348,7 +354,8 @@ public class EcosArtifactsService {
 
         artifactsRepo.save(artifactEntity);
 
-        artifactRevUpdateListeners.forEach(it -> it.invoke(ArtifactRef.create(typeId, meta.getId())));
+        String wsSysId = artifactsDao.toWsSysId(artifactEntity.getWorkspace());
+        artifactRevUpdateListeners.forEach(it -> it.invoke(ArtifactRef.create(typeId, meta.getId(), wsSysId)));
 
         return true;
     }
@@ -420,11 +427,13 @@ public class EcosArtifactsService {
 
         for (ArtifactRef ref : artifactsSet) {
 
-            EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(ref.getType(), ref.getId());
+            EcosArtifactEntity artifactEntity = artifactsDao.getArtifact(ref);
             if (artifactEntity == null) {
+                String wsId = artifactsDao.resolveWorkspaceId(ref.getWsSysId());
                 artifactEntity = new EcosArtifactEntity();
                 artifactEntity.setExtId(ref.getId());
                 artifactEntity.setType(ref.getType());
+                artifactEntity.setWorkspace(wsId);
                 artifactEntity.setDeployStatus(DeployStatus.CONTENT_WAITING);
                 artifactEntity = artifactsRepo.save(artifactEntity);
             }
@@ -436,6 +445,23 @@ public class EcosArtifactsService {
         }
 
         return new HashSet<>(dependencyEntities);
+    }
+
+    private String resolveUploadWorkspace(ArtifactUploadDto uploadDto) {
+        String explicit = artifactsDao.normalizeWorkspace(uploadDto.getWorkspace());
+        if (!explicit.isEmpty()) {
+            return explicit;
+        }
+        // Artifacts deployed from an ecos-app zip inherit the workspace of that ecos-app,
+        // so re-uploading a zip into a workspace scopes its contents to that workspace.
+        SourceKey sourceKey = uploadDto.getSource().getSource();
+        if (sourceKey.getType() == ArtifactSourceType.ECOS_APP) {
+            EcosAppEntity app = ecosAppRepo.findFirstByExtId(sourceKey.getId());
+            if (app != null) {
+                return artifactsDao.normalizeWorkspace(app.getWorkspace());
+            }
+        }
+        return "";
     }
 
     private MLText toNotNullMLText(String value) {
@@ -524,11 +550,12 @@ public class EcosArtifactsService {
                     ArtifactDeployMeta meta = ArtifactDeployMeta.create()
                         .withSourceType(String.valueOf(revToGetMeta.getSourceType()))
                         .withSourceId(revToGetMeta.getSourceId())
+                        .withWorkspace(entity.getWorkspace())
                         .build();
                     errors = deployer.deploy(type, revToDeploy.getContent().getData(), meta);
                 } catch (Exception e) {
                     log.error("Error while artifact deploying: "
-                        + ArtifactRef.create(type, revToDeploy.getArtifact().getExtId())
+                        + artifactsDao.toArtifactRef(revToDeploy.getArtifact())
                         + " rev: " + revToDeploy.getExtId());
                     throw e;
                 }
@@ -626,12 +653,28 @@ public class EcosArtifactsService {
 
     @Transactional(readOnly = true)
     public long getAllArtifactsCount(Predicate predicate) {
-        return artifactsDao.getCount(predicate);
+        return getAllArtifactsCount(predicate, Collections.emptyList());
+    }
+
+    @Transactional(readOnly = true)
+    public long getAllArtifactsCount(Predicate predicate, List<String> workspaces) {
+        return artifactsDao.getCount(predicate, workspaces);
     }
 
     @Transactional(readOnly = true)
     public List<EcosArtifactDto> getAllArtifacts(Predicate predicate, int maxItems, int skipCount, List<SortBy> sort) {
-        return artifactsDao.getAllLastRevisions(predicate, maxItems, skipCount, sort)
+        return getAllArtifacts(predicate, Collections.emptyList(), maxItems, skipCount, sort);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EcosArtifactDto> getAllArtifacts(
+        Predicate predicate,
+        List<String> workspaces,
+        int maxItems,
+        int skipCount,
+        List<SortBy> sort
+    ) {
+        return artifactsDao.getAllLastRevisions(predicate, workspaces, maxItems, skipCount, sort)
             .stream()
             .map(this::toModule)
             .filter(Optional::isPresent)
@@ -790,7 +833,7 @@ public class EcosArtifactsService {
             return false;
         }
 
-        ArtifactRef artifactRef = ArtifactRef.create(artifact.getType(), artifact.getExtId());
+        ArtifactRef artifactRef = artifactsDao.toArtifactRef(artifact);
 
         log.info("User artifact resetting: " + artifactRef);
 
@@ -854,12 +897,13 @@ public class EcosArtifactsService {
     }
 
     @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
-    synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId) {
+    synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId, String workspace) {
 
-        List<EcosArtifactEntity> currentArtifacts = artifactsRepo.findAllByEcosApp(ecosAppId);
+        List<EcosArtifactEntity> currentArtifacts =
+            artifactsRepo.findAllByEcosAppAndWorkspace(ecosAppId, artifactsDao.normalizeWorkspace(workspace));
 
         for (EcosArtifactEntity artifact : currentArtifacts) {
-            ArtifactRef currentArtifactRef = ArtifactRef.create(artifact.getType(), artifact.getExtId());
+            ArtifactRef currentArtifactRef = artifactsDao.toArtifactRef(artifact);
             if (!artifacts.contains(currentArtifactRef)) {
                 artifact.setEcosApp(null);
                 artifactsRepo.save(artifact);
@@ -868,7 +912,7 @@ public class EcosArtifactsService {
 
         for (ArtifactRef artifactRef : artifacts) {
 
-            EcosArtifactEntity moduleEntity = artifactsRepo.getByExtId(artifactRef.getType(), artifactRef.getId());
+            EcosArtifactEntity moduleEntity = artifactsDao.getArtifact(artifactRef);
 
             if (moduleEntity != null && StringUtils.isNotBlank(moduleEntity.getEcosApp())) {
 
@@ -879,9 +923,11 @@ public class EcosArtifactsService {
             }
 
             if (moduleEntity == null) {
+                String wsId = artifactsDao.resolveWorkspaceId(artifactRef.getWsSysId());
                 moduleEntity = new EcosArtifactEntity();
                 moduleEntity.setExtId(artifactRef.getId());
                 moduleEntity.setType(artifactRef.getType());
+                moduleEntity.setWorkspace(wsId);
                 moduleEntity = artifactsRepo.save(moduleEntity);
             }
 
@@ -891,8 +937,8 @@ public class EcosArtifactsService {
     }
 
     @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
-    synchronized public void removeEcosApp(String ecosAppId) {
-        artifactsDao.removeEcosApp(ecosAppId);
+    synchronized public void removeEcosApp(String ecosAppId, String workspace) {
+        artifactsDao.removeEcosApp(ecosAppId, workspace);
     }
 
     public Map<ArtifactRef, String> getEcosAppIdByArtifactRef(List<ArtifactRef> artifacts) {
@@ -902,7 +948,7 @@ public class EcosArtifactsService {
         List<EcosArtifactEntity> artifactEntities = artifactsDao.getArtifactsByRefs(artifacts);
         Map<ArtifactRef, EcosArtifactEntity> entityByRef = new HashMap<>();
         artifactEntities.forEach(entity ->
-            entityByRef.put(ArtifactRef.create(entity.getType(), entity.getExtId()), entity)
+            entityByRef.put(artifactsDao.toArtifactRef(entity), entity)
         );
         Map<ArtifactRef, String> result = new HashMap<>();
         artifacts.forEach(artifactRef -> {
@@ -922,7 +968,17 @@ public class EcosArtifactsService {
         }
         return artifactsDao.getArtifactsByEcosApp(ecosAppId)
             .stream()
-            .map(a -> ArtifactRef.create(a.getType(), a.getExtId()))
+            .map(artifactsDao::toArtifactRef)
+            .collect(Collectors.toList());
+    }
+
+    public List<ArtifactRef> getArtifactsByEcosApp(@Nullable String ecosAppId, String workspace) {
+        if (StringUtils.isBlank(ecosAppId)) {
+            return Collections.emptyList();
+        }
+        return artifactsDao.getArtifactsByEcosApp(ecosAppId, workspace)
+            .stream()
+            .map(artifactsDao::toArtifactRef)
             .collect(Collectors.toList());
     }
 
@@ -948,7 +1004,7 @@ public class EcosArtifactsService {
         EcosArtifactRevEntity lastArtifactRev = artifactsDao.getLastArtifactRev(artifactRef);
 
         return lastArtifactRev.getArtifact().getDependencies().stream()
-            .map(dep -> ArtifactRef.create(dep.getTarget().getType(), dep.getTarget().getExtId()))
+            .map(dep -> artifactsDao.toArtifactRef(dep.getTarget()))
             .collect(Collectors.toList());
     }
 
@@ -1000,6 +1056,8 @@ public class EcosArtifactsService {
             return Optional.empty();
         }
 
+        String wsSysId = artifactsDao.toWsSysId(entity.getArtifact().getWorkspace());
+
         return Optional.of(new EcosArtifactDto(
             entity.getArtifact().getExtId(),
             artifactData,
@@ -1012,7 +1070,8 @@ public class EcosArtifactsService {
             Boolean.TRUE.equals(entity.getArtifact().getSystem()),
             entity.getExtId(),
             entity.getArtifact().getLastModifiedDate(),
-            entity.getArtifact().getCreatedDate()
+            entity.getArtifact().getCreatedDate(),
+            wsSysId
         ));
     }
 
@@ -1107,6 +1166,7 @@ public class EcosArtifactsService {
             List<EcosArtifactRevEntity> revs = artifactsRevRepo.getArtifactRevisions(
                 artifactEntity.getType(),
                 artifactEntity.getExtId(),
+                artifactEntity.getWorkspace(),
                 Arrays.stream(type).collect(Collectors.toList()),
                 PageRequest.of(0, 1)
             );

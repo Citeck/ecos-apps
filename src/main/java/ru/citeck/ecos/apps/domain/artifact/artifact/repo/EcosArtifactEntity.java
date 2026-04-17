@@ -52,6 +52,8 @@ public class EcosArtifactEntity extends AbstractAuditingEntity {
 
     @Setter private String ecosApp;
 
+    @Getter @Setter private String workspace = "";
+
     @Getter @Setter private Boolean system;
 
     @OneToMany(mappedBy = "source", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

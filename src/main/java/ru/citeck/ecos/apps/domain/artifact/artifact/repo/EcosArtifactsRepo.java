@@ -16,9 +16,11 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
 
     List<EcosArtifactEntity> findAllByEcosApp(String ecosApp);
 
+    List<EcosArtifactEntity> findAllByEcosAppAndWorkspace(String ecosApp, String workspace);
+
     @Query("SELECT m FROM EcosArtifactEntity m " +
-           "WHERE m.type = ?1 AND m.extId = ?2 AND m.deleted = false")
-    EcosArtifactEntity getByExtId(String type, String extId);
+           "WHERE m.type = ?1 AND m.extId = ?2 AND m.workspace = ?3 AND m.deleted = false")
+    EcosArtifactEntity getByExtId(String type, String extId, String workspace);
 
     @Query("SELECT m FROM EcosArtifactEntity m " +
            "WHERE m.type = ?1 AND m.deleted = false")
@@ -55,4 +57,8 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
     @Query("SELECT artifact FROM EcosArtifactEntity artifact " +
         "WHERE artifact.ecosApp = ?1 AND artifact.deleted = false")
     List<EcosArtifactEntity> getArtifactsByEcosApp(String ecosApp);
+
+    @Query("SELECT artifact FROM EcosArtifactEntity artifact " +
+        "WHERE artifact.ecosApp = ?1 AND artifact.workspace = ?2 AND artifact.deleted = false")
+    List<EcosArtifactEntity> getArtifactsByEcosAppAndWorkspace(String ecosApp, String workspace);
 }

@@ -9,7 +9,11 @@ import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectGitService
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
+import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.predicate.model.Predicate
+import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
+import ru.citeck.ecos.records3.record.atts.value.impl.EmptyAttValue
 import ru.citeck.ecos.records3.record.dao.AbstractRecordsDao
 import ru.citeck.ecos.records3.record.dao.atts.RecordAttsDao
 import ru.citeck.ecos.records3.record.dao.delete.DelStatus
@@ -28,7 +32,8 @@ import java.util.regex.Pattern
 class EcosAppRecords(
     private val ecosAppService: EcosAppService,
     private val ecosVcsObjectGitService: EcosVcsObjectGitService,
-    private val perms: AppSystemArtifactPerms
+    private val perms: AppSystemArtifactPerms,
+    private val workspaceService: WorkspaceService
 ) : AbstractRecordsDao(),
     RecordAttsDao,
     RecordsQueryDao,
@@ -40,12 +45,9 @@ class EcosAppRecords(
     }
 
     override fun getRecordAtts(recordId: String): Any? {
-        return EcosAppRecord(
-            ecosAppService.getById(recordId) ?: EcosAppDef.create {},
-            ecosAppService,
-            ecosVcsObjectGitService,
-            perms
-        )
+        val idInWs = workspaceService.convertToIdInWs(recordId)
+        val appDef = ecosAppService.getById(idInWs.id, idInWs.workspace) ?: return EmptyAttValue.INSTANCE
+        return EcosAppRecord(appDef, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
     }
 
     override fun queryRecords(recsQuery: RecordsQuery): Any? {
@@ -66,36 +68,41 @@ class EcosAppRecords(
             result.setRecords(
                 ecosAppService.getAll(
                     predicate,
+                    recsQuery.workspaces,
                     recsQuery.page.maxItems,
                     recsQuery.page.skipCount,
                     recsQuery.sortBy
-                ).map { EcosAppRecord(it, ecosAppService, ecosVcsObjectGitService, perms) }
+                ).map { EcosAppRecord(it, ecosAppService, ecosVcsObjectGitService, perms, workspaceService) }
             )
-            result.setTotalCount(ecosAppService.getCount(predicate))
+            result.setTotalCount(ecosAppService.getCount(predicate, recsQuery.workspaces))
         }
         return result
     }
 
     override fun saveMutatedRec(record: EcosAppRecord): String {
         val appData = record.appData
-        return if (appData != null) {
-            ecosAppService.uploadZip(appData).id
+        val savedDef = if (appData != null) {
+            ecosAppService.uploadZip(appData, record.workspace)
         } else {
-            ecosAppService.save(record.build()).id
+            ecosAppService.save(record.build())
         }
+        return workspaceService.addWsPrefixToId(savedDef.id, savedDef.workspace)
     }
 
     override fun getRecToMutate(recordId: String): EcosAppRecord {
-        return if (recordId.isBlank()) {
-            EcosAppRecord(EcosAppDef.create {}, ecosAppService, ecosVcsObjectGitService, perms)
-        } else {
-            EcosAppRecord(ecosAppService.getById(recordId)!!, ecosAppService, ecosVcsObjectGitService, perms)
+        if (recordId.isBlank()) {
+            return EcosAppRecord(EcosAppDef.create {}, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
         }
+        val idInWs = workspaceService.convertToIdInWs(recordId)
+        val appDef = ecosAppService.getById(idInWs.id, idInWs.workspace)
+            ?: error("ECOS application not found: $recordId")
+        return EcosAppRecord(appDef, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
     }
 
     override fun delete(recordIds: List<String>): List<DelStatus> {
         return recordIds.map {
-            ecosAppService.delete(it)
+            val idInWs = workspaceService.convertToIdInWs(it)
+            ecosAppService.delete(idInWs.id, idInWs.workspace)
             DelStatus.OK
         }
     }
@@ -108,17 +115,32 @@ class EcosAppRecords(
         private val appDef: EcosAppDef,
         private val ecosAppService: EcosAppService,
         private val ecosVcsObjectGitService: EcosVcsObjectGitService,
-        private val perms: AppSystemArtifactPerms
+        private val perms: AppSystemArtifactPerms,
+        private val workspaceService: WorkspaceService
     ) : EcosAppDef.Builder(appDef) {
 
         var appData: ByteArray? = null
 
         fun setModuleId(moduleId: String) {
-            withId(moduleId)
+            val idInWs = workspaceService.convertToIdInWs(moduleId)
+            withId(idInWs.id)
+            if (idInWs.workspace.isNotBlank()) {
+                withWorkspace(idInWs.workspace)
+            }
+        }
+
+        @JsonProperty(RecordConstants.ATT_WORKSPACE)
+        fun setCtxWorkspace(workspace: String?) {
+            withWorkspace(workspaceService.getUpdatedWsInMutation(this.workspace, workspace))
+        }
+
+        @AttName("?id")
+        fun getRecordId(): String {
+            return workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
         }
 
         fun getData(): ByteArray {
-            return ecosAppService.getAppData(appDef.id)
+            return ecosAppService.getAppData(appDef.id, appDef.workspace)
         }
 
         fun getModuleId(): String {
@@ -137,13 +159,11 @@ class EcosAppRecords(
         fun setContent(content: List<ObjectData>) {
 
             val base64Content = content[0]["url"]
-            // val filename = content[0].get("originalName", "")
             val pattern = Pattern.compile("^data:(.+?);base64,(.+)$")
             val matcher = pattern.matcher(base64Content.asText())
 
             check(matcher.find()) { "Incorrect content: $base64Content" }
 
-            // val mimetype = matcher.group(1)
             val base64 = matcher.group(2)
 
             appData = Base64.getDecoder().decode(base64)
@@ -154,7 +174,8 @@ class EcosAppRecords(
         }
 
         fun getPermissions(): RecordPerms {
-            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, appDef.id))
+            val fullId = workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
+            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, fullId))
         }
     }
 

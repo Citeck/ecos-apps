@@ -1,0 +1,203 @@
+package ru.citeck.ecos.apps.domain.artifact.service
+
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.annotation.DirtiesContext
+import ru.citeck.ecos.apps.EcosAppsApp
+import ru.citeck.ecos.apps.app.domain.artifact.source.AppSourceKey
+import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType
+import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
+import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
+import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta
+import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.domain.artifact.artifact.repo.EcosArtifactsRepo
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.DeployError
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsDao
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer
+import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
+import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity
+import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo
+import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto
+import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
+import java.time.Instant
+
+@ExtendWith(EcosSpringExtension::class)
+@SpringBootTest(classes = [EcosAppsApp::class])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
+class EcosArtifactsWorkspaceTest {
+
+    companion object {
+        private const val TYPE_ID = "app/jsontest"
+    }
+
+    @Autowired
+    lateinit var ecosArtifactsService: EcosArtifactsService
+    @Autowired
+    lateinit var ecosArtifactsDao: EcosArtifactsDao
+    @Autowired
+    lateinit var ecosArtifactsRepo: EcosArtifactsRepo
+    @Autowired
+    lateinit var ecosArtifactTypesService: EcosArtifactTypesService
+    @Autowired
+    lateinit var artifactTypesProvider: ArtifactTypeProvider
+    @Autowired
+    lateinit var ecosAppRepo: EcosAppRepo
+
+    @BeforeEach
+    fun setup() {
+        val typesDir = artifactTypesProvider.getArtifactTypesDir()
+        ecosArtifactTypesService.registerTypes("eapps", typesDir, Instant.now())
+    }
+
+    private fun upload(
+        id: String,
+        workspace: String = "",
+        sourceType: ArtifactSourceType = ArtifactSourceType.USER
+    ): Boolean {
+        val data = ObjectData.create()
+        data["id"] = id
+        data["name"] = "Test $id"
+        return ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                data,
+                AppSourceKey("test", SourceKey("test-source", sourceType)),
+                workspace
+            )
+        )
+    }
+
+    @Test
+    fun uploadWithoutWorkspace() {
+        upload("ws-test-global")
+
+        val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-test-global", "")
+        assertNotNull(entity, "Global upload must persist an entity with workspace=''")
+        assertEquals("", entity!!.workspace)
+
+        val loaded = ecosArtifactsService.getLastArtifact(ArtifactRef.create(TYPE_ID, "ws-test-global"))
+        assertNotNull(loaded)
+        assertEquals("ws-test-global", loaded!!.id)
+        assertEquals("", loaded.wsSysId)
+    }
+
+    @Test
+    fun uploadWithWorkspace() {
+        upload("ws-test-scoped", "my-workspace")
+
+        val global = ecosArtifactsService.getLastArtifact(ArtifactRef.create(TYPE_ID, "ws-test-scoped"))
+        assertNull(global)
+
+        val scopedEntity = ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-test-scoped", "my-workspace")
+        assertNotNull(scopedEntity, "Workspace-scoped upload must persist an entity in 'my-workspace'")
+        assertEquals("my-workspace", scopedEntity!!.workspace)
+    }
+
+    @Test
+    fun sameIdDifferentWorkspacesAreDistinct() {
+        upload("ws-test-dup", "")
+        upload("ws-test-dup", "ws-a")
+
+        val globalArtifact = ecosArtifactsService.getLastArtifact(ArtifactRef.create(TYPE_ID, "ws-test-dup"))
+        assertNotNull(globalArtifact)
+
+        val globalEntity = ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-test-dup", "")
+        assertNotNull(globalEntity, "Global entity must exist independently")
+        val scopedEntity = ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-test-dup", "ws-a")
+        assertNotNull(scopedEntity, "Workspace-scoped entity must exist independently")
+        assertNotEquals(globalEntity!!.id, scopedEntity!!.id, "Entities must be distinct rows")
+    }
+
+    @Test
+    fun deployPassesWorkspaceInMeta() {
+        upload("ws-test-deploy", "deploy-ws", ArtifactSourceType.APPLICATION)
+
+        val deployedWorkspaces = mutableListOf<String>()
+        val deployer = object : ArtifactDeployer {
+            override fun deploy(type: String, artifact: ByteArray, meta: ArtifactDeployMeta): List<DeployError> {
+                deployedWorkspaces.add(meta.workspace)
+                return emptyList()
+            }
+            override fun getSupportedTypes(): List<String> = listOf(TYPE_ID)
+        }
+
+        ecosArtifactsService.deployArtifacts(deployer, Instant.now())
+
+        assertTrue(deployedWorkspaces.contains("deploy-ws"), "Workspace should be passed in deploy meta")
+    }
+
+    @Test
+    fun uploadFromEcosAppInheritsWorkspace() {
+        // Given an ecos-app registered in workspace "app-ws"
+        val app = EcosAppEntity()
+        app.extId = "inherit-app"
+        app.workspace = "app-ws"
+        app.name = "{}"
+        app.version = "1.0"
+        app.repositoryEndpoint = ""
+        ecosAppRepo.save(app)
+
+        // When an artifact is uploaded with ECOS_APP source and no explicit workspace
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", "inherited-artifact")
+                    set("name", "Inherited")
+                },
+                AppSourceKey("test", SourceKey("inherit-app", ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+
+        // Then the artifact entity is persisted under the ecos-app's workspace
+        val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "inherited-artifact", "app-ws")
+        assertNotNull(entity, "Artifact should inherit workspace from its ecos-app source")
+        assertEquals("app-ws", entity!!.workspace)
+
+        // And not under the global workspace
+        val globalEntity = ecosArtifactsRepo.getByExtId(TYPE_ID, "inherited-artifact", "")
+        assertNull(globalEntity, "Artifact should not land in global workspace")
+    }
+
+    @Test
+    fun explicitWorkspaceWinsOverEcosAppWorkspace() {
+        val app = EcosAppEntity()
+        app.extId = "wins-app"
+        app.workspace = "app-ws"
+        app.name = "{}"
+        app.version = "1.0"
+        app.repositoryEndpoint = ""
+        ecosAppRepo.save(app)
+
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", "explicit-wins")
+                    set("name", "Explicit")
+                },
+                AppSourceKey("test", SourceKey("wins-app", ArtifactSourceType.ECOS_APP)),
+                "explicit-ws"
+            )
+        )
+
+        val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "explicit-wins", "explicit-ws")
+        assertNotNull(entity, "Explicit workspace on upload dto must win over ecos-app fallback")
+    }
+
+    @Test
+    fun normalizeWorkspace() {
+        assertEquals("", ecosArtifactsDao.normalizeWorkspace(null))
+        assertEquals("", ecosArtifactsDao.normalizeWorkspace(""))
+        assertEquals("", ecosArtifactsDao.normalizeWorkspace("  "))
+        assertEquals("", ecosArtifactsDao.normalizeWorkspace("default"))
+        assertEquals("my-ws", ecosArtifactsDao.normalizeWorkspace("my-ws"))
+    }
+}

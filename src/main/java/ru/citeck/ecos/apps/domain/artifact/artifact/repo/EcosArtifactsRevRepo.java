@@ -22,11 +22,13 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
 
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
            "JOIN rev.artifact module " +
-           "WHERE module.type = ?1 AND module.extId = ?2 AND module.deleted = false AND rev.createdDate > ?3 " +
+           "WHERE module.type = ?1 AND module.extId = ?2 AND module.workspace = ?4 " +
+           "AND module.deleted = false AND rev.createdDate > ?3 " +
            "ORDER BY rev.createdDate DESC")
     List<EcosArtifactRevEntity> getArtifactRevisionsSince(String type,
                                                           String artifactId,
                                                           Instant since,
+                                                          String workspace,
                                                           Pageable pageable);
 
     @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
@@ -39,6 +41,20 @@ public interface EcosArtifactsRevRepo extends JpaRepository<EcosArtifactRevEntit
            "ORDER BY rev.createdDate DESC")
     List<EcosArtifactRevEntity> getArtifactRevisions(String type,
                                                      String artifactId,
+                                                     List<ArtifactRevSourceType> sourceType,
+                                                     Pageable pageable);
+
+    @Query("SELECT rev FROM EcosArtifactRevEntity rev " +
+           "JOIN rev.artifact artifact " +
+           "JOIN artifact.lastRev lastRev " +
+           "WHERE artifact.type = ?1 AND artifact.extId = ?2 AND artifact.workspace = ?3 " +
+                "AND rev.sourceType in ?4 " +
+                "AND artifact.deleted = false " +
+                "AND rev.createdDate <= lastRev.createdDate " +
+           "ORDER BY rev.createdDate DESC")
+    List<EcosArtifactRevEntity> getArtifactRevisions(String type,
+                                                     String artifactId,
+                                                     String workspace,
                                                      List<ArtifactRevSourceType> sourceType,
                                                      Pageable pageable);
 

@@ -11,7 +11,13 @@ class JsonApplyDataTest {
 
     @Test
     fun test() {
-        val record = EcosAppRecords.EcosAppRecord(EcosAppDef.create().build(), Mockito.mock(), Mockito.mock(), Mockito.mock())
+        val record = EcosAppRecords.EcosAppRecord(
+            EcosAppDef.create().build(),
+            Mockito.mock(),
+            Mockito.mock(),
+            Mockito.mock(),
+            Mockito.mock()
+        )
         Json.mapper.applyData(record, ObjectData.create())
     }
 

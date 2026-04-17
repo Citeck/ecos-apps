@@ -1,0 +1,34 @@
+---
+id: add-eapps-admin-journals-to-ws-menu
+name:
+  ru: Добавить журналы администрирования eapps в меню рабочей области
+  en: Add eapps admin journals to default workspace menu
+
+target: 'ui/menu$default-ws-admin-menu-items'
+system: true
+order: 100
+
+type: json
+config:
+  operations:
+    - op: add
+      path: '$.subMenu.left.items'
+      value:
+        - id: ecos-apps
+          label:
+            ru: Приложения ECOS
+            en: ECOS Applications
+          icon: ui/icon@i-leftmenu-app
+          hidden: false
+          type: JOURNAL
+          config:
+            recordRef: uiserv/journal@ecos-apps
+        - id: ecos-artifacts
+          label:
+            ru: Артефакты ECOS
+            en: ECOS Artifacts
+          icon: ui/icon@i-leftmenu-app
+          hidden: false
+          type: JOURNAL
+          config:
+            recordRef: uiserv/journal@ecos-artifacts

@@ -21,6 +21,7 @@ import ru.citeck.ecos.config.lib.consumer.bean.EcosConfig
 import ru.citeck.ecos.ent.git.service.AppInfo
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectCommit
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectGitService
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.records3.RecordsService
 import ru.citeck.ecos.records3.record.atts.schema.ScalarType
 import ru.citeck.ecos.webapp.api.constants.AppName
@@ -35,7 +36,8 @@ class AppsGitService(
     private val ecosArtifactsService: EcosArtifactsService,
     private val ecosArtifactTypesService: EcosArtifactTypesService,
     private val artifactService: ArtifactService,
-    private val ecosVcsObjectGitService: EcosVcsObjectGitService
+    private val ecosVcsObjectGitService: EcosVcsObjectGitService,
+    private val workspaceService: WorkspaceService
 ) {
 
     companion object {
@@ -78,7 +80,8 @@ class AppsGitService(
     fun getAppInfo(objectRef: EntityRef): AppInfo? {
         return when (objectRef.getSourceId()) {
             EcosAppRecords.ID -> {
-                val app = ecosAppService.getById(objectRef.getLocalId())
+                val idInWs = workspaceService.convertToIdInWs(objectRef.getLocalId())
+                val app = ecosAppService.getById(idInWs.id, idInWs.workspace)
                 val repoEndpoint = app?.repositoryEndpoint ?: EntityRef.EMPTY
 
                 AppInfo(
@@ -89,7 +92,8 @@ class AppsGitService(
 
             else -> {
                 val artifactApp = getAppRefByObjectRef(objectRef)
-                val app = ecosAppService.getById(artifactApp.getLocalId()) ?: return null
+                val idInWs = workspaceService.convertToIdInWs(artifactApp.getLocalId())
+                val app = ecosAppService.getById(idInWs.id, idInWs.workspace) ?: return null
                 val repositoryEndpoint = app.repositoryEndpoint
 
                 AppInfo(
@@ -153,7 +157,9 @@ class AppsGitService(
             EcosAppRecords.ID -> {
 
                 val id = ecosVcsObject.getLocalId()
-                val appDef = ecosAppService.getById(id) ?: error("Invalid ECOS application ID: '$id'")
+                val idInWs = workspaceService.convertToIdInWs(id)
+                val appDef = ecosAppService.getById(idInWs.id, idInWs.workspace)
+                    ?: error("Invalid ECOS application ID: '$id'")
                 val artifacts = mutableSetOf<EntityRef>()
 
                 artifacts.addAll(appDef.artifacts)

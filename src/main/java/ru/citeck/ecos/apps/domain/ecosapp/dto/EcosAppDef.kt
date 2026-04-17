@@ -13,7 +13,8 @@ data class EcosAppDef(
     val version: Version,
     var repositoryEndpoint: EntityRef,
     val typeRefs: List<EntityRef>,
-    val artifacts: List<EntityRef>
+    val artifacts: List<EntityRef>,
+    val workspace: String = ""
 ) {
 
     companion object {
@@ -49,6 +50,7 @@ data class EcosAppDef(
         var repositoryEndpoint: EntityRef = EntityRef.EMPTY
         var typeRefs: List<EntityRef> = emptyList()
         var artifacts: List<EntityRef> = emptyList()
+        var workspace: String = ""
 
         constructor(base: EcosAppDef) : this() {
             id = base.id
@@ -57,6 +59,7 @@ data class EcosAppDef(
             repositoryEndpoint = base.repositoryEndpoint
             typeRefs = DataValue.create(base.typeRefs).asList(EntityRef::class.java)
             artifacts = DataValue.create(base.artifacts).asList(EntityRef::class.java)
+            workspace = base.workspace
         }
 
         fun withId(id: String): Builder {
@@ -89,6 +92,11 @@ data class EcosAppDef(
             return this
         }
 
+        fun withWorkspace(workspace: String?): Builder {
+            this.workspace = workspace ?: ""
+            return this
+        }
+
         fun build(): EcosAppDef {
             return EcosAppDef(
                 id,
@@ -96,7 +104,8 @@ data class EcosAppDef(
                 version,
                 repositoryEndpoint,
                 typeRefs,
-                artifacts
+                artifacts,
+                workspace
             )
         }
     }

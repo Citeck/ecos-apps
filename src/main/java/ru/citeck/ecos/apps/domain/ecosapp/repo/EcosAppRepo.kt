@@ -7,6 +7,8 @@ interface EcosAppRepo :
     JpaRepository<EcosAppEntity, Long>,
     JpaSpecificationExecutor<EcosAppEntity> {
 
+    fun findFirstByExtIdAndWorkspace(extId: String, workspace: String): EcosAppEntity?
+
     fun findFirstByExtId(extId: String): EcosAppEntity?
 
     fun findAllByArtifactsDirIsNotNull(): List<EcosAppEntity>

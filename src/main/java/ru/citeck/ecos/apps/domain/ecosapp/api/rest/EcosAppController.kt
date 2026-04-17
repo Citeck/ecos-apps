@@ -11,6 +11,7 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsDao
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.context.lib.auth.AuthContext
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 
 @Component
@@ -20,7 +21,8 @@ class EcosAppController(
     val artifactService: EcosArtifactsService,
     val artifactsDao: EcosArtifactsDao,
     val ecosAppsService: EcosAppService,
-    val applicationsWatcherJob: ApplicationsWatcherJob
+    val applicationsWatcherJob: ApplicationsWatcherJob,
+    val workspaceService: WorkspaceService
 ) {
 
     companion object {
@@ -52,14 +54,15 @@ class EcosAppController(
             return "{\"status\": \"OK\"}"
         }
         for (appToDeleteId in appsToDeleteIds) {
-            val artifactsByApp = artifactsDao.getArtifactsByEcosApp(appToDeleteId)
+            val idInWs = workspaceService.convertToIdInWs(appToDeleteId)
+            val artifactsByApp = artifactsDao.getArtifactsByEcosApp(idInWs.id, idInWs.workspace)
             log.info { "Delete $appToDeleteId. Artifacts: ${artifactsByApp.size}" }
             val resetCondition: (EcosArtifactRevEntity) -> Boolean = {
-                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == appToDeleteId) ||
+                (it.sourceType == ArtifactRevSourceType.ECOS_APP && it.sourceId == idInWs.id) ||
                     it.sourceType == ArtifactRevSourceType.USER
             }
             for (artifact in artifactsByApp) {
-                val artifactRef = "${artifact.type}$${artifact.extId}"
+                val artifactRef = artifactsDao.toArtifactRef(artifact).toString()
                 val resetRes = try {
                     artifactService.resetRevision(artifact, resetCondition)
                 } catch (e: Throwable) {
@@ -74,7 +77,7 @@ class EcosAppController(
                 log.info { msg }
             }
             log.info { "All artifacts have been reset for $appToDeleteId" }
-            ecosAppsService.delete(appToDeleteId)
+            ecosAppsService.delete(idInWs.id, idInWs.workspace)
         }
         log.info { "All specified applications was deleted: $appsToDeleteIds" }
         applicationsWatcherJob.forceUpdate()
