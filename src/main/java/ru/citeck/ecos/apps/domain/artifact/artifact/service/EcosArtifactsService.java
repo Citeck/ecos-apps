@@ -32,6 +32,7 @@ import ru.citeck.ecos.apps.domain.content.repo.EcosContentEntity;
 import ru.citeck.ecos.apps.domain.content.service.EcosContentDao;
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity;
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo;
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService;
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto;
 import ru.citeck.ecos.commons.data.DataValue;
 import ru.citeck.ecos.commons.data.MLText;
@@ -73,6 +74,7 @@ public class EcosArtifactsService {
     private final EcosArtifactsRevRepo artifactsRevRepo;
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosAppRepo ecosAppRepo;
+    private final WorkspaceService workspaceService;
 
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
@@ -300,11 +302,14 @@ public class EcosArtifactsService {
         // update artifact
 
         boolean artifactChanged = false;
-        if (ArtifactRevSourceType.ECOS_APP.equals(revSourceType)
-            && !Objects.equals(artifactEntity.getEcosApp(), sourceKey.getId())) {
-
-            artifactEntity.setEcosApp(sourceKey.getId());
-            artifactChanged = true;
+        if (ArtifactRevSourceType.ECOS_APP.equals(revSourceType)) {
+            // `ecos_app` column stores the plain extId (no ws prefix). The source id is
+            // `wsSysId:extId` per platform convention (`addWsPrefixToId`) — strip to match.
+            String ecosAppExtId = workspaceService.convertToIdInWs(sourceKey.getId()).getId();
+            if (!Objects.equals(artifactEntity.getEcosApp(), ecosAppExtId)) {
+                artifactEntity.setEcosApp(ecosAppExtId);
+                artifactChanged = true;
+            }
         }
         artifactChanged = extractArtifactMeta(artifactEntity, meta) || artifactChanged;
 
@@ -334,7 +339,14 @@ public class EcosArtifactsService {
             + "(" + typeId + "$" + meta.getId() + "). Source: " + sourceKey);
 
         EcosArtifactRevEntity lastRev = new EcosArtifactRevEntity();
-        lastRev.setSourceId(sourceKey.getId());
+        // Store plain extId in rev.source_id so `EcosAppSourcePolicy` can compare it against
+        // `artifact.ecos_app` (also plain extId) — the `wsSysId:extId` source-key form would
+        // otherwise fail the policy equality check and reject legitimate uploads.
+        lastRev.setSourceId(
+            ArtifactRevSourceType.ECOS_APP.equals(revSourceType)
+                ? workspaceService.convertToIdInWs(sourceKey.getId()).getId()
+                : sourceKey.getId()
+        );
         lastRev.setSourceType(revSourceType);
         lastRev.setExtId(UUID.randomUUID().toString());
         lastRev.setContent(newContent);
@@ -452,14 +464,14 @@ public class EcosArtifactsService {
         if (!explicit.isEmpty()) {
             return explicit;
         }
-        // Artifacts deployed from an ecos-app zip inherit the workspace of that ecos-app,
-        // so re-uploading a zip into a workspace scopes its contents to that workspace.
+        // For ECOS_APP sources the workspace is embedded in the source id as a wsSysId prefix
+        // (see `EcosAppService.appToSource`). `convertToIdInWs` resolves the prefix through the
+        // ws-sys-id cache — keeps two same-extId apps in different workspaces fully independent.
         SourceKey sourceKey = uploadDto.getSource().getSource();
         if (sourceKey.getType() == ArtifactSourceType.ECOS_APP) {
-            EcosAppEntity app = ecosAppRepo.findFirstByExtId(sourceKey.getId());
-            if (app != null) {
-                return artifactsDao.normalizeWorkspace(app.getWorkspace());
-            }
+            return artifactsDao.normalizeWorkspace(
+                workspaceService.convertToIdInWs(sourceKey.getId()).getWorkspace()
+            );
         }
         return "";
     }
@@ -1201,7 +1213,11 @@ public class EcosArtifactsService {
         @NotNull
         @Override
         public String getSourceId() {
-            return uploadDto.getSource().getSource().getId();
+            SourceKey src = uploadDto.getSource().getSource();
+            if (src.getType() == ArtifactSourceType.ECOS_APP) {
+                return workspaceService.convertToIdInWs(src.getId()).getId();
+            }
+            return src.getId();
         }
 
         public EcosContentEntity getContentEntity() {

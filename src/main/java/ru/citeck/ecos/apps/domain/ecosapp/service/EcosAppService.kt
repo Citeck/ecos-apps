@@ -355,8 +355,14 @@ class EcosAppService(
 
     private fun appToSource(app: EcosAppEntity): ArtifactSourceInfo {
         val lastModified = app.artifactsLastModifiedDate ?: app.artifactsDir?.createdDate ?: Instant.EPOCH
+        // Encode workspace into the source id as a wsSysId prefix (platform convention —
+        // `addWsPrefixToId` → `"${wsSysId}:${id}"`). Without this two ecos-apps with the same
+        // extId in different workspaces would share one SourceKey and cross-contaminate on deploy.
         return ArtifactSourceInfo.create {
-            withKey(app.extId, ArtifactSourceType.ECOS_APP)
+            withKey(
+                workspaceService.addWsPrefixToId(app.extId, app.workspace),
+                ArtifactSourceType.ECOS_APP
+            )
             withLastModified(lastModified)
         }
     }
@@ -371,7 +377,11 @@ class EcosAppService(
         since: Instant
     ): EcosFile {
 
-        val appEntity = ecosAppRepo.findFirstByExtId(source.id) ?: return EcosMemDir()
+        val idInWs = workspaceService.convertToIdInWs(source.id)
+        val appEntity = ecosAppRepo.findFirstByExtIdAndWorkspace(
+            idInWs.id,
+            normalizeWorkspace(idInWs.workspace)
+        ) ?: return EcosMemDir()
         val artifactsDirContent = appEntity.artifactsDir ?: return EcosMemDir()
 
         return ZipUtils.extractZip(artifactsDirContent.data)
