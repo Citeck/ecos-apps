@@ -20,10 +20,10 @@ import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsDao
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.deploy.ArtifactDeployer
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService
-import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppEntity
 import ru.citeck.ecos.apps.domain.ecosapp.repo.EcosAppRepo
 import ru.citeck.ecos.apps.eapps.dto.ArtifactUploadDto
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.webapp.lib.spring.test.extension.EcosSpringExtension
 import java.time.Instant
 
@@ -48,6 +48,8 @@ class EcosArtifactsWorkspaceTest {
     lateinit var artifactTypesProvider: ArtifactTypeProvider
     @Autowired
     lateinit var ecosAppRepo: EcosAppRepo
+    @Autowired
+    lateinit var workspaceService: WorkspaceService
 
     @BeforeEach
     fun setup() {
@@ -134,16 +136,11 @@ class EcosArtifactsWorkspaceTest {
 
     @Test
     fun uploadFromEcosAppInheritsWorkspace() {
-        // Given an ecos-app registered in workspace "app-ws"
-        val app = EcosAppEntity()
-        app.extId = "inherit-app"
-        app.workspace = "app-ws"
-        app.name = "{}"
-        app.version = "1.0"
-        app.repositoryEndpoint = ""
-        ecosAppRepo.save(app)
+        // ECOS_APP source id carries the workspace as a wsSysId prefix (see EcosAppService.appToSource).
+        // resolveUploadWorkspace must decode that prefix so the artifact lands in the same workspace
+        // as its parent ecos-app — keeps two same-extId apps in different workspaces independent.
+        val sourceId = workspaceService.addWsPrefixToId("inherit-app", "app-ws")
 
-        // When an artifact is uploaded with ECOS_APP source and no explicit workspace
         ecosArtifactsService.uploadArtifact(
             ArtifactUploadDto(
                 TYPE_ID,
@@ -151,30 +148,24 @@ class EcosArtifactsWorkspaceTest {
                     set("id", "inherited-artifact")
                     set("name", "Inherited")
                 },
-                AppSourceKey("test", SourceKey("inherit-app", ArtifactSourceType.ECOS_APP)),
+                AppSourceKey("test", SourceKey(sourceId, ArtifactSourceType.ECOS_APP)),
                 ""
             )
         )
 
-        // Then the artifact entity is persisted under the ecos-app's workspace
         val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "inherited-artifact", "app-ws")
-        assertNotNull(entity, "Artifact should inherit workspace from its ecos-app source")
+        assertNotNull(entity, "Artifact should inherit workspace decoded from the ECOS_APP source id")
         assertEquals("app-ws", entity!!.workspace)
+        // ecos_app column stores the plain extId, not the composite wsSysId:extId source id
+        assertEquals("inherit-app", entity.ecosApp)
 
-        // And not under the global workspace
         val globalEntity = ecosArtifactsRepo.getByExtId(TYPE_ID, "inherited-artifact", "")
         assertNull(globalEntity, "Artifact should not land in global workspace")
     }
 
     @Test
     fun explicitWorkspaceWinsOverEcosAppWorkspace() {
-        val app = EcosAppEntity()
-        app.extId = "wins-app"
-        app.workspace = "app-ws"
-        app.name = "{}"
-        app.version = "1.0"
-        app.repositoryEndpoint = ""
-        ecosAppRepo.save(app)
+        val sourceId = workspaceService.addWsPrefixToId("wins-app", "app-ws")
 
         ecosArtifactsService.uploadArtifact(
             ArtifactUploadDto(
@@ -183,13 +174,13 @@ class EcosArtifactsWorkspaceTest {
                     set("id", "explicit-wins")
                     set("name", "Explicit")
                 },
-                AppSourceKey("test", SourceKey("wins-app", ArtifactSourceType.ECOS_APP)),
+                AppSourceKey("test", SourceKey(sourceId, ArtifactSourceType.ECOS_APP)),
                 "explicit-ws"
             )
         )
 
         val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "explicit-wins", "explicit-ws")
-        assertNotNull(entity, "Explicit workspace on upload dto must win over ecos-app fallback")
+        assertNotNull(entity, "Explicit workspace on upload dto must win over the source-id decoding")
     }
 
     @Test
