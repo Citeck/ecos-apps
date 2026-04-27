@@ -11,5 +11,6 @@ data class EcosArtifactMeta(
     val tags: List<String>,
     val typeRevId: Long,
     val modelVersion: Version,
-    val system: Boolean
+    val system: Boolean,
+    val workspace: String = ""
 )

@@ -23,6 +23,7 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.context.lib.auth.AuthRole
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.constants.AppName
@@ -41,11 +42,16 @@ class EcosArtifactsPatchService(
     private val artifactService: ArtifactService,
     private val ecosArtifactsService: EcosArtifactsService,
     private val jpaSearchConverterFactory: JpaSearchConverterFactory,
+    private val workspaceService: WorkspaceService,
     private val perms: AppSystemArtifactPerms
 ) {
 
     companion object {
         private val log = KotlinLogging.logger {}
+
+        private const val ADMIN_WORKSPACE_MENU_TYPE = "ui/menu"
+        private const val ADMIN_WORKSPACE_MENU_ID = "admin-workspace-menu"
+        private const val ADMIN_WORKSPACE = "admin\$workspace"
     }
 
     private val changeListeners: MutableList<Consumer<ArtifactPatchDto?>> = CopyOnWriteArrayList()
@@ -167,20 +173,24 @@ class EcosArtifactsPatchService(
             return false
         }
 
-        val artifactToPatch = ecosArtifactsService.getArtifactToPatch(artifactRef)
+        val resolvedRef = resolveArtifactRefForLookup(artifactRef)
+
+        val artifactToPatch = ecosArtifactsService.getArtifactToPatch(resolvedRef)
         if (artifactToPatch == null) {
-            log.info { "Artifact '$artifactRef' can't be patched" }
+            log.info { "Artifact '$resolvedRef' can't be patched" }
             return false
         }
 
+        // Use the original (workspace-less) ref for patch lookup so existing patches
+        // targeting `ui/menu$admin-workspace-menu` still match.
         val patches = getPatchesForArtifact(artifactRef, artifactToPatch.sourceType)
         if (patches.isEmpty()) {
             return if (artifactToPatch.hasPatchedRev) {
                 log.info {
-                    "Artifact '$artifactRef' has patched revision but " +
+                    "Artifact '$resolvedRef' has patched revision but " +
                         "all patches are gone. Let's remove patched revision"
                 }
-                ecosArtifactsService.setPatchedRev(artifactRef, null)
+                ecosArtifactsService.setPatchedRev(resolvedRef, null)
                 true
             } else {
                 false
@@ -189,13 +199,33 @@ class EcosArtifactsPatchService(
 
         var wasChanged = false
         try {
-            val patchedArtifact = applyPatches(artifactToPatch.artifact, artifactRef, patches)
-            wasChanged = ecosArtifactsService.setPatchedRev(artifactRef, patchedArtifact)
+            val patchedArtifact = applyPatches(artifactToPatch.artifact, resolvedRef, patches)
+            wasChanged = ecosArtifactsService.setPatchedRev(resolvedRef, patchedArtifact)
         } catch (e: Exception) {
-            log.error { "Patching error. Artifact: $artifactRef Patches: $patches" }
+            log.error { "Patching error. Artifact: $resolvedRef Patches: $patches" }
         }
 
         return wasChanged
+    }
+
+    /**
+     * Backwards-compat kludge for the admin-workspace menu. Existing patches in DB and on
+     * classpath target `ui/menu$admin-workspace-menu` with no workspace prefix, but after
+     * the menu artifact got `workspace="admin$workspace"` it lives at
+     * `ui/menu$<wsSysId>:admin-workspace-menu`. Rewrite the workspace-less ref so the
+     * artifact lookup hits the right row; patch lookup keeps the original target string.
+     */
+    private fun resolveArtifactRefForLookup(ref: ArtifactRef): ArtifactRef {
+        if (ref.wsSysId.isEmpty() &&
+            ref.type == ADMIN_WORKSPACE_MENU_TYPE &&
+            ref.id == ADMIN_WORKSPACE_MENU_ID
+        ) {
+            val wsSysId = workspaceService.getWorkspaceSystemId(ADMIN_WORKSPACE)
+            if (wsSysId.isNotEmpty()) {
+                return ArtifactRef.create(ref.type, ref.id, wsSysId)
+            }
+        }
+        return ref
     }
 
     private fun applyPatches(

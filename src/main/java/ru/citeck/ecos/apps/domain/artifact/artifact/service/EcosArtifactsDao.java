@@ -10,6 +10,7 @@ import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.*;
 import ru.citeck.ecos.apps.domain.artifact.type.service.EcosArtifactTypesService;
 import ru.citeck.ecos.context.lib.auth.AuthContext;
+import ru.citeck.ecos.model.lib.utils.ModelUtils;
 import ru.citeck.ecos.model.lib.workspace.WorkspaceService;
 import ru.citeck.ecos.records2.predicate.PredicateUtils;
 import ru.citeck.ecos.records2.predicate.model.*;
@@ -198,11 +199,15 @@ public class EcosArtifactsDao {
     }
 
     /**
-     * Returns "" for global workspaces, workspace ID as-is otherwise.
+     * Returns "" for null/blank/default workspace, workspace ID as-is otherwise.
+     * Note: ecos-apps deliberately does NOT collapse `admin$*` workspaces to "" the way
+     * `WorkspaceService.isWorkspaceWithGlobalEntities` does. Artifacts are stored per
+     * workspace (including admin$X) so deploy meta carries the actual target workspace
+     * to downstream services.
      */
     public String normalizeWorkspace(String workspace) {
         if (workspace == null || workspace.isBlank()
-            || workspaceService.isWorkspaceWithGlobalEntities(workspace)) {
+            || ModelUtils.DEFAULT_WORKSPACE_ID.equals(workspace)) {
             return "";
         }
         return workspace;

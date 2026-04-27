@@ -270,7 +270,7 @@ public class EcosArtifactsService {
             return false;
         }
 
-        String workspace = resolveUploadWorkspace(uploadDto);
+        String workspace = resolveUploadWorkspace(uploadDto, meta);
 
         EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId(), workspace);
 
@@ -459,7 +459,7 @@ public class EcosArtifactsService {
         return new HashSet<>(dependencyEntities);
     }
 
-    private String resolveUploadWorkspace(ArtifactUploadDto uploadDto) {
+    private String resolveUploadWorkspace(ArtifactUploadDto uploadDto, EcosArtifactMeta meta) {
         String explicit = artifactsDao.normalizeWorkspace(uploadDto.getWorkspace());
         if (!explicit.isEmpty()) {
             return explicit;
@@ -473,7 +473,9 @@ public class EcosArtifactsService {
                 workspaceService.convertToIdInWs(sourceKey.getId()).getWorkspace()
             );
         }
-        return "";
+        // CLASSPATH/APPLICATION artifacts may carry a `workspace` field directly in the json/yaml
+        // payload — JsonArtifactController.getMeta extracts it. Use it as the last fallback.
+        return artifactsDao.normalizeWorkspace(meta.getWorkspace());
     }
 
     private MLText toNotNullMLText(String value) {
