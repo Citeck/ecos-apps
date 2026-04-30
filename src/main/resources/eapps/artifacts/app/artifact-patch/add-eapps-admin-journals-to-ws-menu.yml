@@ -18,7 +18,7 @@ config:
           label:
             ru: Приложения ECOS
             en: ECOS Applications
-          icon: ui/icon@i-leftmenu-app
+          icon: ui/icon@i-leftmenu-new-section
           hidden: false
           type: JOURNAL
           config:
@@ -27,7 +27,7 @@ config:
           label:
             ru: Артефакты ECOS
             en: ECOS Artifacts
-          icon: ui/icon@i-leftmenu-app
+          icon: ui/icon@i-leftmenu-sections
           hidden: false
           type: JOURNAL
           config:
