@@ -16,6 +16,12 @@ public class ArtifactPatchDto {
     private MLText name;
     private float order;
     private ArtifactRef target;
+    /**
+     * Workspace the patch applies to. The {@code target} ref stays workspace-less
+     * (e.g. {@code ui/menu$admin-workspace-menu}); this field carries the workspace
+     * id of the artifact being patched. Empty means a global artifact.
+     */
+    private String workspace = "";
     private ArtifactSourceType sourceType;
     private String type;
     private ObjectData config;
@@ -29,6 +35,7 @@ public class ArtifactPatchDto {
         this.name = Json.getMapper().copy(other.name);
         this.order = other.order;
         this.target = other.target;
+        this.workspace = other.workspace;
         this.sourceType = other.sourceType;
         this.type = other.type;
         this.config = ObjectData.deepCopy(other.config);
@@ -65,6 +72,14 @@ public class ArtifactPatchDto {
 
     public void setTarget(ArtifactRef target) {
         this.target = target;
+    }
+
+    public String getWorkspace() {
+        return workspace;
+    }
+
+    public void setWorkspace(String workspace) {
+        this.workspace = workspace == null ? "" : workspace;
     }
 
     public String getType() {

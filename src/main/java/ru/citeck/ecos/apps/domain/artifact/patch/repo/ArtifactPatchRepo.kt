@@ -12,7 +12,14 @@ interface ArtifactPatchRepo :
 
     fun findFirstByExtId(extId: String): ArtifactPatchEntity?
 
-    fun findAllByEnabledTrueAndTarget(target: String): List<ArtifactPatchEntity>
+    fun findAllByEnabledTrueAndTargetAndWorkspace(
+        target: String,
+        workspace: String
+    ): List<ArtifactPatchEntity>
 
-    fun findAllByEnabledTrueAndTargetAndSourceTypeIn(target: String, sourceTypes: List<ArtifactSourceType>): List<ArtifactPatchEntity>
+    fun findAllByEnabledTrueAndTargetAndWorkspaceAndSourceTypeIn(
+        target: String,
+        workspace: String,
+        sourceTypes: List<ArtifactSourceType>
+    ): List<ArtifactPatchEntity>
 }

@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.domain.artifact.artifact.service;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
+import kotlin.jvm.functions.Function2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -79,7 +80,7 @@ public class EcosArtifactsService {
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
 
-    private final List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
+    private final List<Function2<ArtifactRef, String, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -88,6 +89,20 @@ public class EcosArtifactsService {
             policiesMap.put(policy.getSourceType(), policy)
         );
         uploadPolicyBySource = Collections.unmodifiableMap(policiesMap);
+    }
+
+    /**
+     * Returns true if any artifact is still in {@link DeployStatus#DRAFT} with
+     * {@code lastModifiedDate <= since}. Used by the watcher to decide whether
+     * the deploy gate can advance — if anything pending remains in this time
+     * window, we want the next tick to retry instead of marking the window
+     * processed.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasUndeployedArtifacts(Instant since) {
+        return artifactsRepo.countByDeployStatusAndDeletedFalseAndLastModifiedDateLessThanEqual(
+            DeployStatus.DRAFT, since
+        ) > 0;
     }
 
     @Transactional(readOnly = true)
@@ -101,8 +116,20 @@ public class EcosArtifactsService {
 
     @Nullable
     public EcosArtifactToPatch getArtifactToPatch(ArtifactRef artifactRef) {
+        return toArtifactToPatch(getArtifactEntity(artifactRef));
+    }
 
-        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
+    /**
+     * Workspace-id variant — bypasses wsSysId resolution. See {@link EcosArtifactsDao#getArtifact(String, String, String)}.
+     */
+    @Nullable
+    public EcosArtifactToPatch getArtifactToPatch(String type, String extId, String workspaceId) {
+        return toArtifactToPatch(artifactsDao.getArtifact(type, extId, workspaceId));
+    }
+
+    @Nullable
+    private EcosArtifactToPatch toArtifactToPatch(@Nullable EcosArtifactEntity artifactEntity) {
+
         if (artifactEntity == null) {
             return null;
         }
@@ -145,8 +172,19 @@ public class EcosArtifactsService {
 
     @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public synchronized boolean setPatchedRev(ArtifactRef artifactRef, @Nullable Object artifact) {
+        return setPatchedRev(getArtifactEntity(artifactRef), artifact);
+    }
 
-        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
+    /**
+     * Workspace-id variant — bypasses wsSysId resolution. See {@link EcosArtifactsDao#getArtifact(String, String, String)}.
+     */
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
+    public synchronized boolean setPatchedRev(String type, String extId, String workspaceId, @Nullable Object artifact) {
+        return setPatchedRev(artifactsDao.getArtifact(type, extId, workspaceId), artifact);
+    }
+
+    private boolean setPatchedRev(@Nullable EcosArtifactEntity artifactEntity, @Nullable Object artifact) {
+
         if (artifactEntity == null || artifactEntity.getLastRev() == null) {
             return false;
         }
@@ -155,7 +193,7 @@ public class EcosArtifactsService {
             return removePatchedRev(artifactEntity);
         }
 
-        String typeId = artifactRef.getType();
+        String typeId = artifactEntity.getType();
 
         byte[] patchedArtifactBytes = artifactsService.writeArtifactAsBytes(typeId, artifact);
         EcosContentEntity patchedContent = contentDao.upload(patchedArtifactBytes);
@@ -180,7 +218,7 @@ public class EcosArtifactsService {
         if (patchedMeta == null) {
             log.error(
                 "Patched artifact meta can't be received. " +
-                    "Patches won't be applied. Artifact: " + artifactRef
+                    "Patches won't be applied. Artifact: " + artifactsDao.toArtifactRef(artifactEntity)
             );
             return removePatchedRev(artifactEntity);
         }
@@ -366,8 +404,10 @@ public class EcosArtifactsService {
 
         artifactsRepo.save(artifactEntity);
 
-        String wsSysId = artifactsDao.toWsSysId(artifactEntity.getWorkspace());
-        artifactRevUpdateListeners.forEach(it -> it.invoke(ArtifactRef.create(typeId, meta.getId(), wsSysId)));
+        String revWorkspace = artifactEntity.getWorkspace();
+        String wsSysId = artifactsDao.toWsSysId(revWorkspace);
+        ArtifactRef notifyRef = ArtifactRef.create(typeId, meta.getId(), wsSysId);
+        artifactRevUpdateListeners.forEach(it -> it.invoke(notifyRef, revWorkspace));
 
         return true;
     }
@@ -882,7 +922,8 @@ public class EcosArtifactsService {
 
         printDeployStatusChanged(statusBefore, artifact);
 
-        artifactRevUpdateListeners.forEach(it -> it.invoke(artifactRef));
+        String resetWorkspace = artifact.getWorkspace();
+        artifactRevUpdateListeners.forEach(it -> it.invoke(artifactRef, resetWorkspace));
 
         log.info("User artifact resetting completed: " + artifactRef);
 
@@ -1089,7 +1130,7 @@ public class EcosArtifactsService {
         ));
     }
 
-    public void addArtifactRevUpdateListener(Function1<ArtifactRef, Unit> listener) {
+    public void addArtifactRevUpdateListener(Function2<ArtifactRef, String, Unit> listener) {
         artifactRevUpdateListeners.add(listener);
     }
 

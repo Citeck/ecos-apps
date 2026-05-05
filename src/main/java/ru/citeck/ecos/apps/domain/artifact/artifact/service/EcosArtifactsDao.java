@@ -162,6 +162,16 @@ public class EcosArtifactsDao {
         return artifactsRepo.getByExtId(ref.getType(), ref.getId(), wsId);
     }
 
+    /**
+     * Direct workspace-id lookup that bypasses the wsSysId↔wsId round trip.
+     * Use when the caller already has the workspace id and the round trip would
+     * fail (e.g. virtual workspaces like {@code admin$workspace} that may not
+     * yet be materialized in ecos-model when this is called).
+     */
+    public EcosArtifactEntity getArtifact(String type, String extId, String workspaceId) {
+        return artifactsRepo.getByExtId(type, extId, normalizeWorkspace(workspaceId));
+    }
+
     public List<EcosArtifactRevEntity> getArtifactRevisionsSince(ArtifactRef ref, Instant since, int skip, int max) {
         if (max <= 0) {
             return Collections.emptyList();

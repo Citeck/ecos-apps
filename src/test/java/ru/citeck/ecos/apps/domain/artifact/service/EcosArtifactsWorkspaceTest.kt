@@ -14,6 +14,7 @@ import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey
 import ru.citeck.ecos.apps.app.domain.artifact.type.ArtifactTypeProvider
 import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta
 import ru.citeck.ecos.apps.artifact.ArtifactRef
+import ru.citeck.ecos.apps.domain.artifact.artifact.dto.DeployStatus
 import ru.citeck.ecos.apps.domain.artifact.artifact.repo.EcosArtifactsRepo
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.DeployError
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsDao
@@ -181,6 +182,53 @@ class EcosArtifactsWorkspaceTest {
 
         val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "explicit-wins", "explicit-ws")
         assertNotNull(entity, "Explicit workspace on upload dto must win over the source-id decoding")
+    }
+
+    @Test
+    fun hasUndeployedArtifactsTracksDraftWindow() {
+        // Other tests may have left rows in DRAFT, so use the count delta as the
+        // unit of comparison — that is order-independent regardless of what's
+        // already in the table.
+        fun draftCount(): Long = ecosArtifactsRepo
+            .countByDeployStatusAndDeletedFalseAndLastModifiedDateLessThanEqual(
+                DeployStatus.DRAFT,
+                Instant.now()
+            )
+
+        val baseline = draftCount()
+
+        upload("ws-undeployed", "ws-a", ArtifactSourceType.APPLICATION)
+        val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-undeployed", "ws-a")
+        assertNotNull(entity)
+
+        assertEquals(
+            baseline + 1,
+            draftCount(),
+            "Fresh upload in DRAFT must increase the count by exactly one"
+        )
+        assertTrue(
+            ecosArtifactsService.hasUndeployedArtifacts(entity!!.lastModifiedDate),
+            "DRAFT artifact within the window must count as undeployed"
+        )
+
+        entity.deployStatus = DeployStatus.DEPLOYED
+        ecosArtifactsRepo.save(entity)
+
+        assertEquals(
+            baseline,
+            draftCount(),
+            "Flipping the test artifact to DEPLOYED must drop the count back to baseline"
+        )
+
+        // Exercise the public service helper on the negative side too: a future
+        // mutation like `return true` in `hasUndeployedArtifacts` would otherwise
+        // pass — the count-delta only covers the repo query, not the wrapper.
+        if (baseline == 0L) {
+            assertFalse(
+                ecosArtifactsService.hasUndeployedArtifacts(entity.lastModifiedDate),
+                "After flipping to DEPLOYED the gate must clear when nothing else is DRAFT"
+            )
+        }
     }
 
     @Test

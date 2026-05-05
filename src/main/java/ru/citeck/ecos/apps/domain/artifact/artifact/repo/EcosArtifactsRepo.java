@@ -37,6 +37,10 @@ public interface EcosArtifactsRepo extends JpaRepository<EcosArtifactEntity, Lon
         "WHERE m.deployStatus = ?1 AND m.deployRetryCounter <= ?2 AND m.lastModifiedDate < ?3 AND m.deleted = false")
     List<EcosArtifactEntity> findArtifactsToRetry(DeployStatus status, int retryCounter, Instant changedBefore);
 
+    long countByDeployStatusAndDeletedFalseAndLastModifiedDateLessThanEqual(
+        DeployStatus status, Instant since
+    );
+
     @Query("SELECT rev FROM EcosArtifactEntity module " +
            "JOIN module.lastRev rev " +
            "WHERE module.type = ?1 AND module.deleted = false " +
