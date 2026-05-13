@@ -5,19 +5,20 @@ import org.mockito.Mockito
 import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords
 import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.commons.data.entity.EntityWithMeta
 import ru.citeck.ecos.commons.json.Json
 
 class JsonApplyDataTest {
 
     @Test
     fun test() {
-        val record = EcosAppRecords.EcosAppRecord(
-            EcosAppDef.create().build(),
+        val record = EcosAppRecords(
+            Mockito.mock(),
             Mockito.mock(),
             Mockito.mock(),
             Mockito.mock(),
             Mockito.mock()
-        )
+        ).EcosAppRecord(EntityWithMeta(EcosAppDef.create().build()))
         Json.mapper.applyData(record, ObjectData.create())
     }
 
