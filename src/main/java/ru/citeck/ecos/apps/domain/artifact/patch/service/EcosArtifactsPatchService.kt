@@ -65,8 +65,8 @@ class EcosArtifactsPatchService(
     private lateinit var searchConv: JpaSearchConverter<ArtifactPatchEntity>
 
     init {
-        ecosArtifactsService.addArtifactRevUpdateListener { artifactRef, workspace ->
-            updateArtifactSyncTime(artifactRef.type, artifactRef.id, workspace)
+        ecosArtifactsService.addArtifactRevUpdateListener { artifactRef ->
+            updateArtifactSyncTime(artifactRef.type, artifactRef.id, artifactRef.workspace)
         }
     }
 

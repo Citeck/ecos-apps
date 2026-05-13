@@ -173,7 +173,19 @@
                 "journalSettingId": "",
                 "journalId": "ecos-app-changed-artifacts",
                 "customJournalMode": false,
-                "customJournal": ""
+                "customJournal": "",
+                "attrsToLoad": {
+                  "ecos-app-changed-artifacts": [
+                    {
+                      "label": "ECOS Application",
+                      "value": "ecosAppRef"
+                    }
+                  ]
+                },
+                "searchInWorkspacePolicy": "current",
+                "aggregateWorkspaces": [],
+                "isHideCreateVariants": false,
+                "isHideGoToButton": false
               }
             }
           },

@@ -16,5 +16,5 @@ data class EcosArtifactDto(
     val revId: String,
     val modified: Instant?,
     val created: Instant?,
-    val wsSysId: String = ""
+    val workspace: String = ""
 )

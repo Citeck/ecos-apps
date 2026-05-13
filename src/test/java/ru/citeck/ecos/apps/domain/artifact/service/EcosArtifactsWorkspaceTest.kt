@@ -87,7 +87,7 @@ class EcosArtifactsWorkspaceTest {
         val loaded = ecosArtifactsService.getLastArtifact(ArtifactRef.create(TYPE_ID, "ws-test-global"))
         assertNotNull(loaded)
         assertEquals("ws-test-global", loaded!!.id)
-        assertEquals("", loaded.wsSysId)
+        assertEquals("", loaded.workspace)
     }
 
     @Test
@@ -182,6 +182,72 @@ class EcosArtifactsWorkspaceTest {
 
         val entity = ecosArtifactsRepo.getByExtId(TYPE_ID, "explicit-wins", "explicit-ws")
         assertNotNull(entity, "Explicit workspace on upload dto must win over the source-id decoding")
+    }
+
+    @Test
+    fun globalEcosAppArtifactInheritsContentWorkspace() {
+        // a *global* ecos-app (no ws prefix in its source id) ships a workspace-scoped artifact
+        // by declaring the workspace in the artifact payload — resolveUploadWorkspace must honour it
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", "ws-from-content")
+                    set("name", "n")
+                    set("workspace", "contracts-ws")
+                },
+                AppSourceKey("global-app", SourceKey(workspaceService.addWsPrefixToId("global-app", ""), ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+        assertNotNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-from-content", "contracts-ws"),
+            "a global ecos-app's artifact must inherit the workspace declared in its content"
+        )
+        assertNull(ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-from-content", ""))
+    }
+
+    @Test
+    fun ecosAppWorkspaceWinsOverContentWorkspace() {
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", "ws-app-wins")
+                    set("name", "n")
+                    set("workspace", "content-ws")
+                },
+                AppSourceKey("scoped-app", SourceKey(workspaceService.addWsPrefixToId("scoped-app", "app-ws"), ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+        assertNotNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-app-wins", "app-ws"),
+            "the parent ecos-app's workspace wins over the content-declared one"
+        )
+        assertNull(ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-app-wins", "content-ws"))
+    }
+
+    @Test
+    fun currentWsPlaceholderInContentResolvesToAppWorkspace() {
+        // CURRENT_WS in the content must defer to the deploy workspace (here the global app's "")
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", "ws-current-ph")
+                    set("name", "n")
+                    set("workspace", "CURRENT_WS")
+                },
+                AppSourceKey("ph-app", SourceKey(workspaceService.addWsPrefixToId("ph-app", ""), ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+        assertNotNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-current-ph", ""),
+            "CURRENT_WS must resolve to the deploy workspace, not be stored literally"
+        )
+        assertNull(ecosArtifactsRepo.getByExtId(TYPE_ID, "ws-current-ph", "CURRENT_WS"))
     }
 
     @Test

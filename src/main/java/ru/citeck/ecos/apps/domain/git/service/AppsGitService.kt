@@ -189,7 +189,9 @@ class AppsGitService(
 
         val artifactRefsByType = HashMap<String, MutableList<ArtifactRef>>()
         artifacts.forEach { ref ->
-            val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+            // local id is in the record-id form `type$wsSysId:localId` — parse via the service so the
+            // wsSysId prefix is resolved to a workspace id (ArtifactRef.valueOf only handles the `::` form).
+            val artifactRef = ecosArtifactsService.parseArtifactRecordLocalId(ref.getLocalId())
             artifactRefsByType.computeIfAbsent(artifactRef.type) { ArrayList() }.add(artifactRef)
         }
 

@@ -35,11 +35,11 @@ columns:
   - id: sourceId
     name: { ru: Идентификатор источника, en: Source ID }
 
-  - id: modifiedIso
+  - id: _modified
     type: DATETIME
     name: { ru: Дата изменения, en: Modified }
 
-  - id: createdIso
+  - id: _created
     type: DATETIME
     name: { ru: Дата создания, en: Created }
 

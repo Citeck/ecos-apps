@@ -5,6 +5,8 @@ name: { ru: Измененные артефакты приложения, en: Up
 system: true
 sourceId: eapps/artifact
 
+typeRef: emodel/type@ecos-artifact
+
 predicate:
     t: eq
     att: sourceType
@@ -30,11 +32,11 @@ columns:
   - id: tagsStr
     name: { ru: Тэги, en: Tags }
 
-  - id: modifiedIso
+  - id: _modified
     type: DATETIME
     name: { ru: Дата изменения, en: Modified }
 
-  - id: createdIso
+  - id: _created
     type: DATETIME
     name: { ru: Дата создания, en: Created }
 
