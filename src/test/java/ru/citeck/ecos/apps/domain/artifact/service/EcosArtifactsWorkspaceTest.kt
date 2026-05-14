@@ -251,6 +251,128 @@ class EcosArtifactsWorkspaceTest {
     }
 
     @Test
+    fun uploadClaimsPlaceholderAndRehomesIt() {
+        // First-deploy scenario: setEcosAppFull creates an empty (no-rev) placeholder in ws='',
+        // then a real upload arrives with a content-declared workspace — the placeholder must be
+        // re-homed (same row), not duplicated. Mirrors the real flow where uploadZip calls
+        // setEcosAppFull first, then the watcher feeds artifact files through uploadArtifact via
+        // the ECOS_APP source from the same app (which the EcosAppSourcePolicy then allows).
+        val appId = "placeholder-claim-app"
+        val artifactId = "placeholder-claim-target"
+        val sourceId = workspaceService.addWsPrefixToId(appId, "")
+        ecosArtifactsService.setEcosAppFull(
+            listOf(ArtifactRef.create(TYPE_ID, artifactId, "")),
+            appId,
+            ""
+        )
+        val placeholder = ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, "")
+        assertNotNull(placeholder, "setEcosAppFull should create a placeholder in ws=''")
+        assertNull(placeholder!!.lastRev, "Placeholder must have no committed revision yet")
+        val placeholderId = placeholder.id ?: error("Placeholder must have a generated id after save")
+
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", artifactId)
+                    set("name", "real")
+                    set("workspace", "claimed-ws")
+                },
+                AppSourceKey("test", SourceKey(sourceId, ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+
+        val rehomed = ecosArtifactsRepo.findById(placeholderId).orElseThrow()
+        assertEquals("claimed-ws", rehomed.workspace, "Placeholder must be re-homed into the resolved workspace")
+        assertNotNull(rehomed.lastRev, "Re-homed row must have a committed revision now")
+        assertNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, ""),
+            "Original ws='' row must be gone (re-homed, not duplicated)"
+        )
+    }
+
+    @Test
+    fun placeholderWorkspaceIsPreservedWhenUploadPolicyRejects() {
+        // Owner-app creates a placeholder for an artifact in ws=''. A *different* app then attempts
+        // to upload the same artifact (claiming a content-declared workspace). EcosAppSourcePolicy
+        // rejects (sourceId ≠ artifact.ecosApp), so the upload must return false AND leave the
+        // placeholder's workspace untouched — earlier the workspace mutation happened before the
+        // policy gate, and the dirty field was still flushed at commit, silently re-homing the row.
+        val ownerAppId = "policy-rejection-owner"
+        val artifactId = "policy-rejection-target"
+        ecosArtifactsService.setEcosAppFull(
+            listOf(ArtifactRef.create(TYPE_ID, artifactId, "")),
+            ownerAppId,
+            ""
+        )
+        assertNotNull(ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, ""), "Precondition: placeholder exists in ws=''")
+
+        val intruderSourceId = workspaceService.addWsPrefixToId("policy-rejection-intruder", "")
+        val accepted = ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", artifactId)
+                    set("name", "rejected")
+                    set("workspace", "would-be-rehomed-ws")
+                },
+                AppSourceKey("test", SourceKey(intruderSourceId, ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+        assertFalse(accepted, "Upload from a different app must be rejected by EcosAppSourcePolicy")
+
+        val unchanged = ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, "")
+        assertNotNull(unchanged, "Placeholder must NOT have been silently re-homed after policy rejection")
+        assertNull(unchanged!!.lastRev, "Placeholder must still have no committed revision")
+        assertNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, "would-be-rehomed-ws"),
+            "No row should exist in the rejected target workspace"
+        )
+    }
+
+    @Test
+    fun setEcosAppFullSkipsPlaceholderWhenAppAlreadyOwnsArtifact() {
+        // Re-deploy scenario: the real artifact already lives in some workspace, owned by this app.
+        // setEcosAppFull called again with refs in ws='' (because uploadZip's targetWs is the app's
+        // own workspace) must NOT create a stray placeholder — the existsBy guard short-circuits.
+        val appId = "redeploy-guard-app"
+        val artifactId = "redeploy-guard-target"
+        val sourceId = workspaceService.addWsPrefixToId(appId, "")
+
+        ecosArtifactsService.uploadArtifact(
+            ArtifactUploadDto(
+                TYPE_ID,
+                ObjectData.create().apply {
+                    set("id", artifactId)
+                    set("name", "real")
+                    set("workspace", "owned-ws")
+                },
+                AppSourceKey("test", SourceKey(sourceId, ArtifactSourceType.ECOS_APP)),
+                ""
+            )
+        )
+        val real = ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, "owned-ws")
+        assertNotNull(real, "Pre-condition: real row exists in owned-ws")
+        assertEquals(appId, real!!.ecosApp, "Pre-condition: ecos_app set by uploadArtifact")
+
+        ecosArtifactsService.setEcosAppFull(
+            listOf(ArtifactRef.create(TYPE_ID, artifactId, "")),
+            appId,
+            ""
+        )
+
+        assertNull(
+            ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, ""),
+            "Re-deploy guard must skip placeholder creation when this app already owns the artifact elsewhere"
+        )
+        val stillReal = ecosArtifactsRepo.getByExtId(TYPE_ID, artifactId, "owned-ws")
+        assertNotNull(stillReal, "Real row must remain")
+        assertEquals(appId, stillReal!!.ecosApp, "Real row's ecos_app must remain set")
+    }
+
+    @Test
     fun hasUndeployedArtifactsTracksDraftWindow() {
         // Other tests may have left rows in DRAFT, so use the count delta as the
         // unit of comparison — that is order-independent regardless of what's

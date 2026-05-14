@@ -386,12 +386,14 @@ class EcosAppService(
             workspace = entity.workspace
         }
 
-        return EntityWithMeta(appDef, EntityMeta.create()
-            .withCreated(entity.createdDate)
-            .withModified(entity.lastModifiedDate)
-            .withCreator(entity.createdBy)
-            .withModifier(entity.lastModifiedBy)
-            .build()
+        return EntityWithMeta(
+            appDef,
+            EntityMeta.create()
+                .withCreated(entity.createdDate)
+                .withModified(entity.lastModifiedDate)
+                .withCreator(entity.createdBy)
+                .withModifier(entity.lastModifiedBy)
+                .build()
         )
     }
 

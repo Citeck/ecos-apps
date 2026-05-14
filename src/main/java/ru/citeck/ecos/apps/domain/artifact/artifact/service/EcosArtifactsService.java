@@ -327,6 +327,21 @@ public class EcosArtifactsService {
         EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId(), workspace);
 
         if (artifactEntity == null) {
+            // Try to claim a placeholder row created earlier for this (type, extId) — these have no
+            // committed revision yet, and are produced by `setEcosAppFull` / `getDepsEntities` when an
+            // ecos-app references an artifact before its actual content is uploaded. The first real
+            // upload re-homes the placeholder into the resolved workspace (instead of creating a
+            // duplicate row alongside). The re-home itself is deferred until after the upload-policy
+            // gate (below): if the policy denies the upload, mutating the placeholder's workspace
+            // here would still be flushed at commit and silently re-home the row to the wrong place.
+            EcosArtifactEntity placeholder =
+                artifactsRepo.findFirstByTypeAndExtIdAndLastRevIsNullAndDeletedFalseOrderByIdAsc(typeId, meta.getId());
+            if (placeholder != null) {
+                artifactEntity = placeholder;
+            }
+        }
+
+        if (artifactEntity == null) {
 
             artifactEntity = new EcosArtifactEntity();
             artifactEntity.setExtId(meta.getId());
@@ -349,6 +364,15 @@ public class EcosArtifactsService {
                 artifactsRepo.save(artifactEntity);
             }
             return false;
+        }
+
+        // Policy passed — safe to re-home a claimed placeholder now (a real artifact found via
+        // primary lookup already has lastRev != null and workspace == workspace, so the condition
+        // only fires for placeholder-claim).
+        if (artifactEntity.getLastRev() == null && !Objects.equals(artifactEntity.getWorkspace(), workspace)) {
+            log.info("Re-homing placeholder artifact {}${} from workspace='{}' to '{}'",
+                typeId, meta.getId(), artifactEntity.getWorkspace(), workspace);
+            artifactEntity.setWorkspace(workspace);
         }
 
         // update artifact
@@ -1001,6 +1025,15 @@ public class EcosArtifactsService {
             }
 
             if (moduleEntity == null) {
+                // Re-deploy guard: when an ecos-app is uploaded a second time, `uploadZip` builds
+                // `artifactRefs` with the app's own workspace, but a workspace-scoped artifact has
+                // since been re-homed by `resolveUploadWorkspace` into its content-declared workspace.
+                // If this app already owns a row for (type, extId) in some other workspace, skip
+                // creating a placeholder here — `uploadArtifact` will keep the existing row.
+                if (artifactsRepo.existsByTypeAndExtIdAndEcosAppAndDeletedFalse(
+                        artifactRef.getType(), artifactRef.getId(), ecosAppId)) {
+                    continue;
+                }
                 moduleEntity = new EcosArtifactEntity();
                 moduleEntity.setExtId(artifactRef.getId());
                 moduleEntity.setType(artifactRef.getType());
