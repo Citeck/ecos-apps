@@ -7,6 +7,8 @@ import ru.citeck.ecos.apps.domain.artifact.patch.service.EcosArtifactsPatchServi
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
+import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.predicate.PredicateService
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.atts.schema.annotation.AttName
@@ -22,7 +24,8 @@ import ru.citeck.ecos.webapp.lib.perms.RecordPerms
 @Component
 class ArtifactPatchRecordsDao(
     private val artifactPatchService: EcosArtifactsPatchService,
-    private val perms: AppSystemArtifactPerms
+    private val perms: AppSystemArtifactPerms,
+    private val workspaceService: WorkspaceService
 ) : RecordsQueryDao,
     RecordMutateDtoDao<ArtifactPatchRecordsDao.RecordToMutate>,
     RecordAttsDao {
@@ -113,6 +116,15 @@ class ArtifactPatchRecordsDao(
         fun getEcosType(): Any = "ecos-artifact-patch"
 
         fun getPermissions(): RecordPerms = perms.getPerms(EntityRef.create(AppName.EAPPS, ID, dto.id))
+
+        @AttName(RecordConstants.ATT_WORKSPACE)
+        fun getWorkspaceRef(): EntityRef {
+            return if (dto.workspace.isBlank()) {
+                EntityRef.EMPTY
+            } else {
+                EntityRef.create(AppName.EMODEL, "workspace", dto.workspace)
+            }
+        }
     }
 
     class RecordToMutate : ArtifactPatchDto {

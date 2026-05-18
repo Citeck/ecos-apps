@@ -54,6 +54,11 @@ class EcosArtifactRecords(
         const val ECOS_APP_REF_ATTRIBUTE = "ecosAppRef"
         private const val ECOS_APP_ATTRIBUTE = "ecosApp"
 
+        private val EXCLUDED_TYPE_ARTIFACTS = setOf(
+            EntityRef.create(AppName.UISERV, "form", "DEFAULT_FORM"),
+            EntityRef.create(AppName.UISERV, "journal", "DEFAULT_JOURNAL")
+        )
+
         private val log = KotlinLogging.logger {}
     }
 
@@ -173,6 +178,7 @@ class EcosArtifactRecords(
         if (newTypes.isNotEmpty()) {
             artifactsSet.addAll(getArtifactsForTypes(newTypes, checkedTypes))
         }
+        artifactsSet.removeAll(EXCLUDED_TYPE_ARTIFACTS)
 
         return artifactsSet
     }
@@ -278,6 +284,15 @@ class EcosArtifactRecords(
 
         fun getPermissions(): RecordPerms {
             return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, getId()))
+        }
+
+        @AttName(RecordConstants.ATT_WORKSPACE)
+        fun getWorkspaceRef(): EntityRef {
+            return if (artifact.workspace.isBlank()) {
+                EntityRef.EMPTY
+            } else {
+                EntityRef.create(AppName.EMODEL, "workspace", artifact.workspace)
+            }
         }
     }
 

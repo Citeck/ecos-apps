@@ -23,10 +23,10 @@ import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.Json.mapper
 import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.context.lib.auth.AuthRole
+import ru.citeck.ecos.model.lib.workspace.WorkspaceService
 import ru.citeck.ecos.records2.predicate.model.Predicate
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy
 import ru.citeck.ecos.webapp.api.constants.AppName
-import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverter
 import ru.citeck.ecos.webapp.lib.spring.hibernate.context.predicate.JpaSearchConverterFactory
 import java.util.concurrent.CopyOnWriteArrayList
@@ -41,7 +41,8 @@ class EcosArtifactsPatchService(
     private val artifactService: ArtifactService,
     private val ecosArtifactsService: EcosArtifactsService,
     private val jpaSearchConverterFactory: JpaSearchConverterFactory,
-    private val perms: AppSystemArtifactPerms
+    private val perms: AppSystemArtifactPerms,
+    private val workspaceService: WorkspaceService
 ) {
 
     companion object {
@@ -93,7 +94,7 @@ class EcosArtifactsPatchService(
     }
 
     fun save(patch: ArtifactPatchDto): ArtifactPatchDto? {
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, ArtifactPatchRecordsDao.ID, patch.id))
+        perms.checkWrite(AppName.EAPPS, ArtifactPatchRecordsDao.ID, patch.id, patch.workspace)
 
         val patchToSave = ArtifactPatchDto(patch)
         if (patchToSave.workspace.isBlank() && isAdminWorkspaceMenuTarget(patchToSave.target)) {
@@ -121,9 +122,10 @@ class EcosArtifactsPatchService(
     }
 
     fun delete(id: String) {
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, ArtifactPatchRecordsDao.ID, id))
-
         val entity = patchRepo.findFirstByExtId(id)
+        val patchWorkspace = entity?.workspace ?: ""
+        perms.checkWrite(AppName.EAPPS, ArtifactPatchRecordsDao.ID, id, patchWorkspace)
+
         if (entity != null) {
             patchRepo.delete(entity)
             updatePatchSyncTime(ArtifactRef.valueOf(entity.target), entity.workspace)

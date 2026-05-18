@@ -13,9 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey;
 import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta;
+import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords;
+import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords;
+import ru.citeck.ecos.webapp.api.constants.AppName;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactService;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
@@ -81,6 +85,7 @@ public class EcosArtifactsService {
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosAppRepo ecosAppRepo;
     private final WorkspaceService workspaceService;
+    private final AppSystemArtifactPerms appSystemArtifactPerms;
 
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
@@ -287,7 +292,6 @@ public class EcosArtifactsService {
      * {@code EcosArtifactsSourcesService} / {@code UpdateArtifactsExtIdPatch} are not protected
      * (low practical race risk — they don't run concurrently with the same artifact).
      */
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
 
         final SourceKey sourceKey = uploadDto.getSource().getSource();
@@ -323,6 +327,11 @@ public class EcosArtifactsService {
         }
 
         String workspace = resolveUploadWorkspace(uploadDto, meta);
+
+        // Authorize against the *resolved* workspace, not uploadDto.workspace —
+        // for ECOS_APP sources resolveUploadWorkspace can re-home the artifact
+        // (CURRENT_WS placeholder, content-declared workspace, parent app ws).
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosArtifactRecords.ID, meta.getId(), workspace);
 
         EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId(), workspace);
 
@@ -998,8 +1007,9 @@ public class EcosArtifactsService {
         artifactsRepo.save(artifact);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId, String workspace) {
+
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, ecosAppId, workspace);
 
         List<EcosArtifactEntity> currentArtifacts =
             artifactsRepo.findAllByEcosAppAndWorkspace(ecosAppId, artifactsDao.normalizeWorkspace(workspace));
@@ -1046,8 +1056,8 @@ public class EcosArtifactsService {
         }
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void removeEcosApp(String ecosAppId, String workspace) {
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, ecosAppId, workspace);
         artifactsDao.removeEcosApp(ecosAppId, workspace);
     }
 

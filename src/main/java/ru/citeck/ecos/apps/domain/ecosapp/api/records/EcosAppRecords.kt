@@ -177,8 +177,22 @@ class EcosAppRecords(
         }
 
         fun getPermissions(): RecordPerms {
-            val fullId = workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
-            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, fullId))
+            return perms.getPerms(
+                EntityRef.create(
+                    AppName.EAPPS,
+                    ID,
+                    workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
+                )
+            )
+        }
+
+        @AttName(RecordConstants.ATT_WORKSPACE)
+        fun getWorkspaceRef(): EntityRef {
+            return if (appDef.workspace.isBlank()) {
+                EntityRef.EMPTY
+            } else {
+                EntityRef.create(AppName.EMODEL, "workspace", appDef.workspace)
+            }
         }
 
         @AttName(RecordConstants.ATT_CREATOR)

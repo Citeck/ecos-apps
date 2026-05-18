@@ -90,7 +90,7 @@ class EcosAppService(
             )
             .build()
 
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, appMeta.id))
+        perms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, appMeta.id, targetWs)
 
         log.info { "Upload application '" + appMeta.id + "'" }
 
@@ -161,7 +161,7 @@ class EcosAppService(
     fun save(app: EcosAppDef): EcosAppDef {
         val appToSave = app.copy().withWorkspace(normalizeWorkspace(app.workspace)).build()
 
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, appToSave.id))
+        perms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, appToSave.id, appToSave.workspace)
 
         return entityToDto(ecosAppRepo.save(internalSave(appToSave))).entity
     }
@@ -211,9 +211,8 @@ class EcosAppService(
     }
 
     fun delete(id: String, workspace: String) {
-        perms.checkWrite(EntityRef.create(AppName.EAPPS, EcosAppRecords.ID, id))
-
         val ws = normalizeWorkspace(workspace)
+        perms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, id, ws)
         ecosAppRepo.findFirstByExtIdAndWorkspace(id, ws)?.let { ecosAppRepo.delete(it) }
         ecosArtifactsService.removeEcosApp(id, ws)
     }
