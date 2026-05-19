@@ -43,6 +43,7 @@ import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
@@ -872,6 +873,10 @@ public class EcosArtifactsService {
 
     public AllUserRevisionsResetStatus resetAllUserRevisions() {
 
+        if (!AuthContext.isRunAsSystemOrAdmin()) {
+            throw new SecurityException("Access denied");
+        }
+
         log.info("========= User all artifacts resetting started =========");
 
         int pageSize = 10;
@@ -900,7 +905,6 @@ public class EcosArtifactsService {
         return new AllUserRevisionsResetStatus(changedCounter, processedCounter);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(ArtifactRef artifactRef) {
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
@@ -912,13 +916,15 @@ public class EcosArtifactsService {
         return resetUserRevision(artifact);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(EcosArtifactEntity artifact) {
         return resetRevision(artifact, rev -> ArtifactRevSourceType.USER.equals(rev.getSourceType()));
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetRevision(EcosArtifactEntity artifact, Function1<EcosArtifactRevEntity, Boolean> resetWhile) {
+
+        appSystemArtifactPerms.checkWrite(
+            AppName.EAPPS, EcosArtifactRecords.ID, artifact.getExtId(), artifact.getWorkspace()
+        );
 
         if (artifact.getLastRev() == null) {
             return false;
@@ -986,7 +992,6 @@ public class EcosArtifactsService {
         return true;
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public void resetDeployStatus(ArtifactRef artifactRef) {
 
         log.info("Reset deploy status: " + artifactRef);
@@ -996,6 +1001,10 @@ public class EcosArtifactsService {
             log.warn("Artifact is not found: " + artifactRef);
             return;
         }
+
+        appSystemArtifactPerms.checkWrite(
+            AppName.EAPPS, EcosArtifactRecords.ID, artifact.getExtId(), artifact.getWorkspace()
+        );
 
         DeployStatus statusBefore = artifact.getDeployStatus();
         artifact.setDeployStatus(DeployStatus.DRAFT);
