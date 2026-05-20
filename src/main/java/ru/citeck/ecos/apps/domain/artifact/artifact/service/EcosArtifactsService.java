@@ -47,6 +47,8 @@ import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
+import ru.citeck.ecos.txn.lib.TxnContext;
+import ru.citeck.ecos.txn.lib.transaction.Transaction;
 import ru.citeck.ecos.webapp.api.entity.EntityRef;
 
 import jakarta.annotation.PostConstruct;
@@ -76,6 +78,8 @@ public class EcosArtifactsService {
      * "the workspace this artifact is deployed into". Shared with {@code EcosAppService}.
      */
     public static final String CURRENT_WS_PLACEHOLDER = "CURRENT_WS";
+
+    private static final Object CO_DEPLOYED_ARTIFACTS_CACHE_KEY = new Object();
 
     private final ArtifactService artifactsService;
 
@@ -736,11 +740,17 @@ public class EcosArtifactsService {
     }
 
     /**
-     * Siblings of {@code entity} in the same {@code (ecosApp, workspace)}, mapped to their
-     * primary records {@link EntityRef} (`appName/recordsSourceId@extId`, e.g.
+     * Artifacts owned by the same ecos-app in the same {@code (ecosApp, workspace)}, mapped to
+     * their primary records {@link EntityRef} (`appName/recordsSourceId@extId`, e.g.
      * {@code emodel/type@order-pass}). Empty for global deploys (workspace == "") and for
      * artifacts not owned by an ecos-app. Used by artifact handlers (e.g. BPMN) to rebind
      * intra-app references when a global-app payload lands in a workspace.
+     * <p>
+     * The deploying artifact's own ref is intentionally kept in the list — an artifact never
+     * references itself by these ref attributes, so it can't match, and keeping it makes the
+     * result identical for every artifact in the same {@code (ecosApp, workspace)}. That lets
+     * the result be cached per-transaction (deploying a whole app touches many artifacts that
+     * all resolve the same list — see {@link TxnContext}) instead of re-querying the DB each time.
      */
     private List<EntityRef> getCoDeployedArtifacts(EcosArtifactEntity entity) {
         String workspace = entity.getWorkspace();
@@ -748,15 +758,21 @@ public class EcosArtifactsService {
         if (StringUtils.isBlank(workspace) || StringUtils.isBlank(ecosApp)) {
             return Collections.emptyList();
         }
+        Transaction txn = TxnContext.getTxnOrNull();
+        if (txn == null || !txn.isReadOnly()) {
+            return computeCoDeployedArtifacts(ecosApp, workspace);
+        }
+        Map<String, List<EntityRef>> cache = txn.getData(CO_DEPLOYED_ARTIFACTS_CACHE_KEY, _ -> new HashMap<>());
+        return cache.computeIfAbsent(ecosApp + "$" + workspace, _ -> computeCoDeployedArtifacts(ecosApp, workspace));
+    }
+
+    private List<EntityRef> computeCoDeployedArtifacts(String ecosApp, String workspace) {
         List<EcosArtifactEntity> siblings = artifactsRepo.getArtifactsByEcosAppAndWorkspace(ecosApp, workspace);
         if (siblings.isEmpty()) {
             return Collections.emptyList();
         }
         List<EntityRef> refs = new ArrayList<>(siblings.size());
         for (EcosArtifactEntity sibling : siblings) {
-            if (Objects.equals(sibling.getId(), entity.getId())) {
-                continue;
-            }
             EntityRef ref = ecosArtifactTypesService.getArtifactRecordRef(sibling.getType(), sibling.getExtId());
             if (EntityRef.isNotEmpty(ref)) {
                 refs.add(ref);
