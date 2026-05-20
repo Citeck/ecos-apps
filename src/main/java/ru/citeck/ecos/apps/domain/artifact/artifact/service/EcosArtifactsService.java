@@ -47,6 +47,7 @@ import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
+import ru.citeck.ecos.webapp.api.entity.EntityRef;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
@@ -663,6 +664,7 @@ public class EcosArtifactsService {
                         .withSourceType(String.valueOf(revToGetMeta.getSourceType()))
                         .withSourceId(revToGetMeta.getSourceId())
                         .withWorkspace(entity.getWorkspace())
+                        .withCoDeployedArtifacts(getCoDeployedArtifacts(entity))
                         .build();
                     errors = deployer.deploy(type, revToDeploy.getContent().getData(), meta);
                 } catch (Exception e) {
@@ -731,6 +733,40 @@ public class EcosArtifactsService {
         }
 
         return deployedCount > 0;
+    }
+
+    /**
+     * Siblings of {@code entity} in the same {@code (ecosApp, workspace)}, mapped to their
+     * primary {@link EntityRef} (`<typeMeta.sourceId>@<extId>`). Empty for global deploys
+     * (workspace == "") and for artifacts not owned by an ecos-app. Used by artifact handlers
+     * (e.g. BPMN) to rebind intra-app references when a global-app payload lands in a workspace.
+     */
+    private List<EntityRef> getCoDeployedArtifacts(EcosArtifactEntity entity) {
+        String workspace = entity.getWorkspace();
+        String ecosApp = entity.getEcosApp();
+        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(ecosApp)) {
+            return Collections.emptyList();
+        }
+        List<EcosArtifactEntity> siblings = artifactsRepo.getArtifactsByEcosAppAndWorkspace(ecosApp, workspace);
+        if (siblings.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<EntityRef> refs = new ArrayList<>(siblings.size());
+        for (EcosArtifactEntity sibling : siblings) {
+            if (Objects.equals(sibling.getId(), entity.getId())) {
+                continue;
+            }
+            EcosArtifactTypeContext typeCtx = ecosArtifactTypesService.getTypeContext(sibling.getType());
+            if (typeCtx == null) {
+                continue;
+            }
+            String sourceId = typeCtx.getMeta().getSourceId();
+            if (StringUtils.isBlank(sourceId)) {
+                continue;
+            }
+            refs.add(EntityRef.create(sourceId, sibling.getExtId()));
+        }
+        return refs;
     }
 
     private void printDeployStatusChanged(DeployStatus before, EcosArtifactEntity entity) {
