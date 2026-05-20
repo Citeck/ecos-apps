@@ -3,6 +3,7 @@ package ru.citeck.ecos.apps.domain.artifact.type.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
@@ -131,6 +132,21 @@ public class EcosArtifactTypesService {
     public String getAppNameByType(String typeId) {
         EcosArtifactTypeEntity typeEntity = artifactTypeRepo.findFirstByExtId(typeId);
         return typeEntity != null ? typeEntity.getAppName() : "";
+    }
+
+    /**
+     * Primary records {@link EntityRef} of an artifact ({@code appName/recordsSourceId@extId},
+     * e.g. {@code emodel/type@order-pass}) — the form used to reference it from other artifacts'
+     * content. Returns {@link EntityRef#EMPTY} for types without a records source (internal types,
+     * patches), which have no addressable records form.
+     */
+    @NotNull
+    public EntityRef getArtifactRecordRef(String typeId, String extId) {
+        EcosArtifactTypeEntity typeEntity = artifactTypeRepo.findFirstByExtId(typeId);
+        if (typeEntity == null || StringUtils.isBlank(typeEntity.getRecordsSourceId())) {
+            return EntityRef.EMPTY;
+        }
+        return EntityRef.create(typeEntity.getAppName(), typeEntity.getRecordsSourceId(), extId);
     }
 
     public EcosFile getAllTypesDir() {

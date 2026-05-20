@@ -737,9 +737,10 @@ public class EcosArtifactsService {
 
     /**
      * Siblings of {@code entity} in the same {@code (ecosApp, workspace)}, mapped to their
-     * primary {@link EntityRef} (`<typeMeta.sourceId>@<extId>`). Empty for global deploys
-     * (workspace == "") and for artifacts not owned by an ecos-app. Used by artifact handlers
-     * (e.g. BPMN) to rebind intra-app references when a global-app payload lands in a workspace.
+     * primary records {@link EntityRef} (`appName/recordsSourceId@extId`, e.g.
+     * {@code emodel/type@order-pass}). Empty for global deploys (workspace == "") and for
+     * artifacts not owned by an ecos-app. Used by artifact handlers (e.g. BPMN) to rebind
+     * intra-app references when a global-app payload lands in a workspace.
      */
     private List<EntityRef> getCoDeployedArtifacts(EcosArtifactEntity entity) {
         String workspace = entity.getWorkspace();
@@ -756,15 +757,10 @@ public class EcosArtifactsService {
             if (Objects.equals(sibling.getId(), entity.getId())) {
                 continue;
             }
-            EcosArtifactTypeContext typeCtx = ecosArtifactTypesService.getTypeContext(sibling.getType());
-            if (typeCtx == null) {
-                continue;
+            EntityRef ref = ecosArtifactTypesService.getArtifactRecordRef(sibling.getType(), sibling.getExtId());
+            if (EntityRef.isNotEmpty(ref)) {
+                refs.add(ref);
             }
-            String sourceId = typeCtx.getMeta().getSourceId();
-            if (StringUtils.isBlank(sourceId)) {
-                continue;
-            }
-            refs.add(EntityRef.create(sourceId, sibling.getExtId()));
         }
         return refs;
     }
