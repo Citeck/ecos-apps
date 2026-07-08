@@ -4,6 +4,7 @@ enum class EcosPatchStatus {
     PENDING,
     IN_PROGRESS,
     DEPS_WAITING,
+    TARGET_WAITING,
     FAILED,
     APPLIED
 }

@@ -1,0 +1,67 @@
+package ru.citeck.ecos.apps.domain.patch
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import ru.citeck.ecos.apps.domain.patch.service.PatchBatchConfig
+import ru.citeck.ecos.apps.domain.patch.service.PatchBatchUtils
+import ru.citeck.ecos.commons.data.ObjectData
+
+class PatchBatchUtilsTest {
+
+    private fun batch(field: String, size: Int) = PatchBatchConfig(field, size)
+
+    private fun configWith(vararg ids: Int): ObjectData {
+        val recs = ids.map { ObjectData.create().set("code", it) }
+        return ObjectData.create().set("records", recs).set("typeRef", "emodel/type@t")
+    }
+
+    @Test
+    fun `isBatched true only when field present`() {
+        assertThat(PatchBatchUtils.isBatched(batch("records", 20))).isTrue()
+        assertThat(PatchBatchUtils.isBatched(PatchBatchConfig())).isFalse()
+    }
+
+    @Test
+    fun `buildBatch slices records and preserves shared config`() {
+        val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3, 4, 5), batch("records", 2), 0)
+        assertThat(slice.total).isEqualTo(5)
+        assertThat(slice.newOffset).isEqualTo(2)
+        assertThat(slice.completed).isFalse()
+        assertThat(slice.config["records"].size()).isEqualTo(2)
+        assertThat(slice.config["records"][0]["code"].asInt()).isEqualTo(1)
+        assertThat(slice.config["typeRef"].asText()).isEqualTo("emodel/type@t")
+    }
+
+    @Test
+    fun `buildBatch last slice sets completed`() {
+        val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3, 4, 5), batch("records", 2), 4)
+        assertThat(slice.config["records"].size()).isEqualTo(1)
+        assertThat(slice.newOffset).isEqualTo(5)
+        assertThat(slice.completed).isTrue()
+    }
+
+    @Test
+    fun `buildBatch default size is 20`() {
+        val cfg = configWith(*IntArray(25) { it }.toTypedArray().toIntArray())
+        val slice = PatchBatchUtils.buildBatch(cfg, PatchBatchConfig(field = "records"), 0)
+        assertThat(slice.config["records"].size()).isEqualTo(20)
+    }
+
+    @Test
+    fun `buildBatch empty list completes immediately`() {
+        val slice = PatchBatchUtils.buildBatch(configWith(), batch("records", 2), 0)
+        assertThat(slice.total).isEqualTo(0)
+        assertThat(slice.completed).isTrue()
+    }
+
+    @Test
+    fun `buildBatch slice elements do not alias original config`() {
+        val config = configWith(1, 2, 3, 4, 5)
+        val slice = PatchBatchUtils.buildBatch(config, batch("records", 2), 0)
+
+        slice.config["records"][0]["code"] = 999
+
+        assertThat(config["records"][0]["code"].asInt()).isEqualTo(1)
+        assertThat(slice.config["records"][0]["code"].asInt()).isEqualTo(999)
+    }
+}

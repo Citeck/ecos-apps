@@ -56,6 +56,11 @@ model:
         ru: Конфигурация
         en: Configuration
       type: JSON
+    - id: batch
+      name:
+        ru: Батчинг
+        en: Batch
+      type: JSON
   systemAttributes:
     - id: status
       name:

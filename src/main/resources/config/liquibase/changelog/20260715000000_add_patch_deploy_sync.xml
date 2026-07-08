@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20260715000000" author="citeck">
+
+        <createTable tableName="ecos_patch_deploy_sync">
+
+            <column name="id" type="BIGINT" autoIncrement="${autoIncrement}">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+
+            <column name="sync_key" type="VARCHAR">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="deploy_date" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="patches_sync_date" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+
+        </createTable>
+
+        <addUniqueConstraint tableName="ecos_patch_deploy_sync"
+                             columnNames="sync_key" />
+
+    </changeSet>
+
+</databaseChangeLog>

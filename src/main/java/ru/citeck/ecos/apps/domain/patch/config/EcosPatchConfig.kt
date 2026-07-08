@@ -134,7 +134,17 @@ class EcosPatchConfig(
                 val dateAfter = DataValue.of(event.after[EcosPatchDesc.ATT_DATE]).getAsInstantOrEpoch()
 
                 if (dateAfter.isAfter(dateBefore)) {
-                    setAttsBeforeCommit(event.globalRef, mapOf(EcosPatchDesc.ATT_STATUS to EcosPatchStatus.PENDING))
+                    // Redeploy is a fresh run: reset run state too (not just status), otherwise a
+                    // stale state["batchOffset"] from the previous run would skip records of the new
+                    // config or mark the patch APPLIED having processed none. Mirrors onCreated.
+                    setAttsBeforeCommit(
+                        event.globalRef,
+                        mapOf(
+                            EcosPatchDesc.ATT_STATUS to EcosPatchStatus.PENDING,
+                            EcosPatchDesc.ATT_STATE to ObjectData.create(),
+                            EcosPatchDesc.ATT_ERRORS_COUNT to 0
+                        )
+                    )
                 }
             }
 

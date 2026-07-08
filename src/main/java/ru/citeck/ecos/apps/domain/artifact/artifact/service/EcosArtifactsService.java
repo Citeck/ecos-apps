@@ -97,6 +97,7 @@ public class EcosArtifactsService {
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
 
     private final List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
+    private final List<Function1<ArtifactRef, Unit>> artifactDeployedListeners = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -362,12 +363,18 @@ public class EcosArtifactsService {
             artifactEntity.setExtId(meta.getId());
             artifactEntity.setType(typeId);
             artifactEntity.setWorkspace(workspace);
-            if (ArtifactRevSourceType.USER.equals(revSourceType)) {
+            boolean deployedByUser = ArtifactRevSourceType.USER.equals(revSourceType);
+            if (deployedByUser) {
                 artifactEntity.setDeployStatus(DeployStatus.DEPLOYED);
             } else {
                 artifactEntity.setDeployStatus(DeployStatus.DRAFT);
             }
             artifactEntity = artifactsRepo.save(artifactEntity);
+
+            if (deployedByUser) {
+                ArtifactRef deployedRef = artifactsDao.toArtifactRef(artifactEntity);
+                artifactDeployedListeners.forEach(it -> it.invoke(deployedRef));
+            }
         }
 
         EcosArtifactContext artifactContext = new EcosArtifactContext(typeContext, artifactEntity);
@@ -715,6 +722,9 @@ public class EcosArtifactsService {
                     artifactsToUpdateSourceDeps.put(entity.getId(), entity);
 
                     deployedCount++;
+
+                    ArtifactRef deployedRef = artifactsDao.toArtifactRef(entity);
+                    artifactDeployedListeners.forEach(it -> it.invoke(deployedRef));
                 }
 
                 printDeployStatusChanged(deployStatusBefore, entity);
@@ -1304,6 +1314,10 @@ public class EcosArtifactsService {
 
     public void addArtifactRevUpdateListener(Function1<ArtifactRef, Unit> listener) {
         artifactRevUpdateListeners.add(listener);
+    }
+
+    public void addArtifactDeployedListener(Function1<ArtifactRef, Unit> listener) {
+        artifactDeployedListeners.add(listener);
     }
 
     private boolean isArtifactRevisionsEquals(
