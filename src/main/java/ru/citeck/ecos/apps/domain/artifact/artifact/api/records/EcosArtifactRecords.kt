@@ -18,6 +18,7 @@ import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commands.dto.CommandResult
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.context.lib.i18n.I18nContext
+import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.predicate.PredicateService
 import ru.citeck.ecos.records2.predicate.PredicateUtils
 import ru.citeck.ecos.records2.predicate.model.Predicate
@@ -53,11 +54,16 @@ class EcosArtifactRecords(
         const val ECOS_APP_REF_ATTRIBUTE = "ecosAppRef"
         private const val ECOS_APP_ATTRIBUTE = "ecosApp"
 
+        private val EXCLUDED_TYPE_ARTIFACTS = setOf(
+            EntityRef.create(AppName.UISERV, "form", "DEFAULT_FORM"),
+            EntityRef.create(AppName.UISERV, "journal", "DEFAULT_JOURNAL")
+        )
+
         private val log = KotlinLogging.logger {}
     }
 
     override fun getRecordAtts(recordId: String): Any? {
-        return ecosArtifactsService.getLastArtifact(ArtifactRef.valueOf(recordId))?.let {
+        return ecosArtifactsService.getLastArtifact(ecosArtifactsService.parseArtifactRecordLocalId(recordId))?.let {
             EcosArtifactRecord(it, ecosArtifactTypesService.getTypeContext(it.type))
         } ?: EmptyAttValue.INSTANCE
     }
@@ -78,7 +84,7 @@ class EcosArtifactRecords(
                     var moduleRes: Any = EmptyAttValue.INSTANCE
                     if (type.isNotEmpty()) {
                         val artifact = ecosArtifactsService.getLastArtifact(
-                            ArtifactRef.valueOf("$type\$${it.getLocalId()}")
+                            ecosArtifactsService.parseArtifactRecordLocalId("$type\$${it.getLocalId()}")
                         )
                         if (artifact != null && !artifact.system) {
                             moduleRes = EcosArtifactRecord(artifact, ecosArtifactTypesService.getTypeContext(artifact.type))
@@ -172,6 +178,7 @@ class EcosArtifactRecords(
         if (newTypes.isNotEmpty()) {
             artifactsSet.addAll(getArtifactsForTypes(newTypes, checkedTypes))
         }
+        artifactsSet.removeAll(EXCLUDED_TYPE_ARTIFACTS)
 
         return artifactsSet
     }
@@ -186,11 +193,11 @@ class EcosArtifactRecords(
     ) {
 
         private fun toRef(): ArtifactRef {
-            return ArtifactRef.create(artifact.type, artifact.id, artifact.wsSysId)
+            return ArtifactRef.create(artifact.type, artifact.id, artifact.workspace)
         }
 
         fun getId(): String {
-            return toRef().toString()
+            return ecosArtifactsService.toArtifactRecordLocalId(toRef())
         }
 
         fun getModuleId(): String {
@@ -198,7 +205,7 @@ class EcosArtifactRecords(
         }
 
         fun getWsSysId(): String {
-            return artifact.wsSysId
+            return ecosArtifactsService.toWsSysId(artifact.workspace)
         }
 
         fun getData(): ByteArray {
@@ -258,11 +265,13 @@ class EcosArtifactRecords(
             return artifact.tags
         }
 
-        fun getModifiedIso(): String {
+        @AttName(RecordConstants.ATT_MODIFIED)
+        fun getModified(): String {
             return (artifact.modified ?: Instant.EPOCH).toString()
         }
 
-        fun getCreatedIso(): String {
+        @AttName(RecordConstants.ATT_CREATED)
+        fun getCreated(): String {
             return (artifact.created ?: Instant.EPOCH).toString()
         }
 
@@ -275,6 +284,15 @@ class EcosArtifactRecords(
 
         fun getPermissions(): RecordPerms {
             return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, getId()))
+        }
+
+        @AttName(RecordConstants.ATT_WORKSPACE)
+        fun getWorkspaceRef(): EntityRef {
+            return if (artifact.workspace.isBlank()) {
+                EntityRef.EMPTY
+            } else {
+                EntityRef.create(AppName.EMODEL, "workspace", artifact.workspace)
+            }
         }
     }
 

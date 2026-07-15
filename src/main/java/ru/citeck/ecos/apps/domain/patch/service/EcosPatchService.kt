@@ -4,11 +4,13 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
+import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
 import ru.citeck.ecos.apps.domain.patch.desc.EcosPatchDesc
 import ru.citeck.ecos.commands.CommandsService
 import ru.citeck.ecos.commons.data.DataValue
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.task.schedule.Schedules
+import ru.citeck.ecos.context.lib.auth.AuthContext
 import ru.citeck.ecos.records2.RecordConstants
 import ru.citeck.ecos.records2.predicate.model.Predicates
 import ru.citeck.ecos.records2.predicate.model.ValuePredicate
@@ -21,7 +23,7 @@ import ru.citeck.ecos.webapp.api.lock.LockContext
 import ru.citeck.ecos.webapp.api.task.EcosTasksApi
 import ru.citeck.ecos.webapp.lib.lock.EcosAppLockService
 import ru.citeck.ecos.webapp.lib.patch.EcosPatchCommandExecutor
-import ru.citeck.ecos.webapp.lib.patch.EcosPatchService
+import ru.citeck.ecos.webapp.lib.patch.PatchTypeMetaRegistry
 import java.time.Duration
 import java.time.Instant
 import kotlin.reflect.jvm.jvmName
@@ -34,7 +36,11 @@ class EcosPatchService(
     val ecosWebAppApi: EcosWebAppApi,
     val watcherJob: ApplicationsWatcherJob,
     val properties: EcosPatchProperties,
-    val ecosAppLockService: EcosAppLockService
+    val ecosAppLockService: EcosAppLockService,
+    val patchTypeMetaRegistry: PatchTypeMetaRegistry,
+    val refsDeployChecker: PatchRefsDeployChecker,
+    val ecosArtifactsService: EcosArtifactsService,
+    val patchDeploySyncService: PatchDeploySyncService
 ) {
 
     companion object {
@@ -43,6 +49,11 @@ class EcosPatchService(
         private val ECOS_PATCHES_LOCK_KEY = EcosPatchService::class.jvmName + "-$SCHEDULER_ID-lock"
 
         private val log = KotlinLogging.logger {}
+
+        // Patch types that were registered before the patch-type-meta registry existed. They may
+        // target old (parent pre-3.27) apps that never publish to PatchTypeMetaRegistry, so they must not
+        // wait for the target app to register.
+        private val PRE_REGISTRY_PATCH_TYPES = setOf("mutate", "delete", "bean")
 
         private val errorDelayDistribution = listOf(
             Duration.ofMinutes(1),
@@ -57,14 +68,39 @@ class EcosPatchService(
         )
     }
 
+    /**
+     * Forces the next job tick to reconcile DEPS_WAITING patches even when the deploy watermark
+     * looks in-sync. Set on the first tick (recovers from a crash that left a patch in DEPS_WAITING
+     * after its deps were already deployed) and whenever the patch-type-meta registry updates —
+     * a refs-patch parked before a restart can only be resolved once its targetApp republishes its
+     * meta to [PatchTypeMetaRegistry], which may happen after that first tick.
+     */
+    @Volatile
+    private var forceDepsReconcile = true
+
     @PostConstruct
     fun init() {
+        patchTypeMetaRegistry.onDataUpdated {
+            AuthContext.runAsSystem {
+                wakeTargetWaitingPatches()
+                // Registry (re)populated: a DEPS_WAITING refs-patch whose meta was empty on the
+                // first tick can now be resolved — arm a reconcile for the next job tick.
+                forceDepsReconcile = true
+            }
+        }
+        // Stamp the deploy watermark inside the deploy transaction. The patch job (below) reads it
+        // and reconciles DEPS_WAITING patches — no in-memory signal, so it survives restarts and
+        // works even when the deploy runs on a different node than the patch job.
+        ecosArtifactsService.addArtifactDeployedListener {
+            patchDeploySyncService.markArtifactsDeployed()
+        }
         ecosWebAppApi.doWhenAppReady {
             ecosTasksApi.getScheduler(SCHEDULER_ID).schedule(
-                "Ecos patch task",
+                "Citeck patch task",
                 Schedules.fixedDelay(properties.job.delayDuration)
             ) {
                 ecosAppLockService.doInSyncOrSkip(ECOS_PATCHES_LOCK_KEY) { lockCtx ->
+                    reconcileDepsWaitingPatches()
                     val apps = watcherJob.activeApps
                     log.trace { "Apply patches for apps: $apps" }
                     apps.forEach { applyPatches(it, lockCtx) }
@@ -89,8 +125,8 @@ class EcosPatchService(
 
     private fun applyPatch(appName: String, availableApps: Set<String>): Boolean {
 
-        if (!isAppReadyToDeployPatches(appName)) {
-            log.trace { "App is not ready yet: $appName" }
+        if (!isAppPatchesSettled(appName)) {
+            log.trace { "Patches for app '$appName' are still being collected; waiting for a quiet period" }
             return false
         }
 
@@ -98,23 +134,27 @@ class EcosPatchService(
             withSourceId(EcosPatchDesc.SRC_ID)
             withQuery(
                 Predicates.and(
-                    Predicates.eq(EcosPatchDesc.ATT_MANUAL, false),
                     Predicates.eq(EcosPatchDesc.ATT_TARGET_APP, appName),
                     Predicates.or(
                         Predicates.empty(EcosPatchDesc.ATT_DEPENDS_ON_APPS),
                         ValuePredicate.contains(EcosPatchDesc.ATT_DEPENDS_ON_APPS, availableApps),
                     ),
+                    // `manual` gates only the initial PENDING launch — a manual patch is started by
+                    // an explicit ApplyEcosPatchAction. Once started it lands in IN_PROGRESS (batched,
+                    // must auto-continue across batches) or FAILED (retried per errorDelayDistribution),
+                    // and from there the scheduler drives it like any other patch, without re-triggering.
                     Predicates.or(
-                        Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.PENDING),
+                        Predicates.and(
+                            Predicates.eq(EcosPatchDesc.ATT_MANUAL, false),
+                            Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.PENDING)
+                        ),
                         Predicates.and(
                             Predicates.or(
                                 Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.FAILED),
                                 Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.IN_PROGRESS)
                             ),
-                            Predicates.and(
-                                Predicates.notEmpty(EcosPatchDesc.ATT_NEXT_EXEC_DATE),
-                                Predicates.lt(EcosPatchDesc.ATT_NEXT_EXEC_DATE, Instant.now())
-                            )
+                            Predicates.notEmpty(EcosPatchDesc.ATT_NEXT_EXEC_DATE),
+                            Predicates.lt(EcosPatchDesc.ATT_NEXT_EXEC_DATE, Instant.now())
                         ),
                     )
                 )
@@ -148,16 +188,54 @@ class EcosPatchService(
 
     fun applyPatch(patch: EcosPatchEntity) {
 
+        // New-registry types wait for the target app to publish its patch metadata; pre-registry
+        // types may run on apps that don't publish, so they skip only this registration wait.
+        if (patch.type !in PRE_REGISTRY_PATCH_TYPES && !patchTypeMetaRegistry.isAppRegistered(patch.targetApp)) {
+            setWaitingStatus(
+                patch,
+                EcosPatchStatus.TARGET_WAITING,
+                "target app '${patch.targetApp}' is not registered in PatchTypeMetaRegistry yet"
+            )
+            return
+        }
+
+        // Dependency check applies to every type: the metadata is read from the registry (empty for
+        // apps that haven't published), so pre-registry types are also honoured if they declare it.
+        val dependsOnRefsPaths = patchTypeMetaRegistry.getMeta(patch.targetApp, patch.type).dependsOnRefs
+        if (dependsOnRefsPaths.isNotEmpty()) {
+            val refs = PatchRefsDeployChecker.resolveRefs(patch.config, dependsOnRefsPaths)
+            if (!refsDeployChecker.allDeployed(refs)) {
+                setWaitingStatus(patch, EcosPatchStatus.DEPS_WAITING, "waits for artifacts: $refs")
+                return
+            }
+        }
+
         val patchId = "${patch.targetApp}$${patch.patchId}"
         log.info { "Apply patch '$patchId'" }
+
+        val batched = PatchBatchUtils.isBatched(patch.batch)
+        val slice = if (batched) {
+            PatchBatchUtils.buildBatch(patch.config, patch.batch, patch.state[EcosPatchDesc.STATE_BATCH_OFFSET].asInt(0))
+        } else {
+            null
+        }
+        val commandConfig = slice?.config ?: patch.config
+        // A batched executor sees only its own state (nested under STATE_COMMAND_STATE), not the
+        // orchestration state; a non-batched one owns the whole state object as before.
+        val commandState = if (batched) {
+            val stored = patch.state[EcosPatchDesc.STATE_COMMAND_STATE]
+            if (stored.isObject()) ObjectData.create(stored) else ObjectData.create()
+        } else {
+            patch.state
+        }
 
         val result = commandsService.executeSync {
             withTargetApp(patch.targetApp)
             withBody(
                 EcosPatchCommandExecutor.Command(
                     patch.type,
-                    patch.config,
-                    patch.state
+                    commandConfig,
+                    commandState
                 )
             )
             withTtl(Duration.ofSeconds(30))
@@ -182,15 +260,27 @@ class EcosPatchService(
             recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
             log.info { "Patch '$patchId' completed with error: $errorMsg" }
         } else {
-            patch.state = commRes?.result?.state ?: ObjectData.create()
             patch.errorsCount = 0
             patch.lastError = null
-            patch.status = if (commRes?.result?.completed == true) {
-                patch.nextExecDate = null
-                EcosPatchStatus.APPLIED
+            if (batched && slice != null) {
+                patch.state[EcosPatchDesc.STATE_BATCH_OFFSET] = slice.newOffset
+                patch.state[EcosPatchDesc.STATE_COMMAND_STATE] = commRes?.result?.state ?: ObjectData.create()
+                patch.status = if (slice.completed) {
+                    patch.nextExecDate = null
+                    EcosPatchStatus.APPLIED
+                } else {
+                    patch.nextExecDate = Instant.now()
+                    EcosPatchStatus.IN_PROGRESS
+                }
             } else {
-                patch.nextExecDate = commRes?.result?.nextExecutionTime
-                EcosPatchStatus.IN_PROGRESS
+                patch.state = commRes?.result?.state ?: ObjectData.create()
+                patch.status = if (commRes?.result?.completed == true) {
+                    patch.nextExecDate = null
+                    EcosPatchStatus.APPLIED
+                } else {
+                    patch.nextExecDate = commRes?.result?.nextExecutionTime
+                    EcosPatchStatus.IN_PROGRESS
+                }
             }
             patch.patchResult = DataValue.create(commRes?.result)
             recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
@@ -235,7 +325,102 @@ class EcosPatchService(
         }
     }
 
-    private fun isAppReadyToDeployPatches(appName: String): Boolean {
+    /**
+     * Parks the patch in a reactive waiting status (no nextExecDate/polling). The patch is woken
+     * up explicitly: TARGET_WAITING by [wakeTargetWaitingPatches] on registry updates, DEPS_WAITING
+     * (dependsOnRefs) by [reconcileDepsWaitingPatches] once the deploy watermark advances.
+     */
+    private fun setWaitingStatus(patch: EcosPatchEntity, status: EcosPatchStatus, reason: String) {
+        patch.status = status
+        recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+        log.info { "Patch '${patch.targetApp}\$${patch.patchId}' set to $status: $reason" }
+    }
+
+    private fun wakeTargetWaitingPatches() {
+        try {
+            val targetWaitingPatches = recordsService.query(
+                RecordsQuery.create {
+                    withSourceId(EcosPatchDesc.SRC_ID)
+                    withQuery(
+                        Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.TARGET_WAITING)
+                    )
+                },
+                EcosPatchEntity::class.java
+            )
+            targetWaitingPatches.getRecords().forEach { patch ->
+                if (patchTypeMetaRegistry.isAppRegistered(patch.targetApp)) {
+                    patch.status = EcosPatchStatus.PENDING
+                    recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+                }
+            }
+        } catch (e: Throwable) {
+            log.error(e) { "Error while waking TARGET_WAITING patches" }
+        }
+    }
+
+    /**
+     * Wakes DEPS_WAITING patches whose `dependsOnRefs` artifacts are now all deployed. Driven by the
+     * persisted deploy watermark ([PatchDeploySyncService]) rather than per-deploy callbacks: the
+     * scan runs only when the watermark shows a deploy the job hasn't reacted to yet (or on the
+     * first tick, for crash recovery), so an idle system does no work. The observed deploy date is
+     * captured before the scan and committed back via a conditional update — if a deploy lands
+     * mid-scan, the mark is rejected and the next tick reconciles again, so no wake is lost.
+     *
+     * Patches parked in DEPS_WAITING because of an unmet `dependsOn` (patch-dependency, empty
+     * dependsOnRefs) are left alone here — those are reactivated by the APPLIED-path logic in
+     * [applyPatch].
+     */
+    private fun reconcileDepsWaitingPatches() {
+        try {
+            // Reset the force flag up front (capture-and-clear): a registry update landing during
+            // the scan re-arms it, so the next tick reconciles again instead of losing the signal.
+            val forced = forceDepsReconcile
+            forceDepsReconcile = false
+
+            val state = patchDeploySyncService.getState()
+            val settled = System.currentTimeMillis() - state.deployDate >=
+                properties.deploySettleDuration.toMillis()
+            if (!forced && !(state.isOutOfSync() && settled)) {
+                return
+            }
+            // Capture the deploy date BEFORE the scan so markSynced can detect a deploy that lands
+            // while we're still reconciling.
+            val observedDeployDate = state.deployDate
+
+            val depsWaitingPatches = recordsService.query(
+                RecordsQuery.create {
+                    withSourceId(EcosPatchDesc.SRC_ID)
+                    withQuery(
+                        Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.DEPS_WAITING)
+                    )
+                },
+                EcosPatchEntity::class.java
+            )
+            depsWaitingPatches.getRecords().forEach { patch ->
+                val paths = patchTypeMetaRegistry.getMeta(patch.targetApp, patch.type).dependsOnRefs
+                if (paths.isEmpty()) {
+                    return@forEach
+                }
+                val refs = PatchRefsDeployChecker.resolveRefs(patch.config, paths)
+                if (refsDeployChecker.allDeployed(refs)) {
+                    patch.status = EcosPatchStatus.PENDING
+                    recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+                }
+            }
+
+            patchDeploySyncService.markSynced(observedDeployDate)
+        } catch (e: Throwable) {
+            log.error(e) { "Error while reconciling DEPS_WAITING patches" }
+        }
+    }
+
+    /**
+     * True when the app's pending patches have "settled" — none was modified within the last
+     * [EcosPatchProperties.appReadyThresholdDuration]. Patches for an app arrive from several sources
+     * over a short window, so we wait for a quiet period before applying any, to be sure the whole
+     * set (and its dependsOn ordering) is already collected.
+     */
+    private fun isAppPatchesSettled(appName: String): Boolean {
         val query = RecordsQuery.create {
             withSourceId(EcosPatchDesc.SRC_ID)
             withQuery(
@@ -244,8 +429,8 @@ class EcosPatchService(
                     Predicates.eq(EcosPatchDesc.ATT_TARGET_APP, appName),
                     Predicates.and(
                         Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.PENDING),
-                        // apply only patches for app with last change more than 10 seconds ago
-                        // this delay required to collect patches for app from all sources
+                        // a PENDING patch modified within the threshold means the set is still
+                        // being collected from all sources — not settled yet
                         Predicates.gt(
                             RecordConstants.ATT_MODIFIED,
                             Instant.now().minus(properties.appReadyThresholdDuration)

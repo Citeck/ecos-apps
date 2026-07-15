@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <changeSet id="20260520000000-1" author="citeck">
+        <addColumn tableName="ecos_artifact_patch">
+            <column name="workspace" type="VARCHAR(255)" defaultValue="">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260520000000-2" author="citeck">
+        <addColumn tableName="ecos_artifact_patch_sync">
+            <column name="workspace" type="VARCHAR(255)" defaultValue="">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!--
+        Back-fill the legacy admin-workspace-menu rows on upgrade. Without this,
+        DB-resident patches/sync entries from before this migration stay at
+        workspace="" while the live code looks them up at workspace="admin$workspace"
+        (because the save-time auto-fill only runs on re-save).
+    -->
+    <changeSet id="20260520000000-2-backfill-patch" author="citeck">
+        <sql>
+            UPDATE ecos_artifact_patch
+            SET workspace = 'admin$workspace'
+            WHERE target = 'ui/menu$admin-workspace-menu' AND workspace = ''
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260520000000-2-backfill-sync" author="citeck">
+        <sql>
+            UPDATE ecos_artifact_patch_sync
+            SET workspace = 'admin$workspace'
+            WHERE artifact_type = 'ui/menu'
+              AND artifact_ext_id = 'admin-workspace-menu'
+              AND workspace = ''
+        </sql>
+    </changeSet>
+
+    <!--
+        Force the back-filled admin-workspace-menu sync row out-of-sync. Before
+        this fix `applyOutOfSyncPatches` advanced both timestamps even when the
+        artifact lookup missed (the upgrade path that this bug repairs). After
+        the back-fill above the row sits at workspace='admin$workspace' but is
+        still flagged as in-sync, so without this reset the next watcher tick
+        never re-attempts the patches.
+    -->
+    <changeSet id="20260520000000-2-resync-admin-menu" author="citeck">
+        <sql>
+            UPDATE ecos_artifact_patch_sync
+            SET artifact_last_modified = 0
+            WHERE artifact_type = 'ui/menu'
+              AND artifact_ext_id = 'admin-workspace-menu'
+              AND workspace = 'admin$workspace'
+              AND patch_last_modified &gt; 0
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260520000000-3" author="citeck">
+        <preConditions onError="MARK_RAN" onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT count(*) FROM pg_constraint
+                WHERE conname = 'ecos_artifact_patch_sync_artifact_type_artifact_ext_id_key'
+            </sqlCheck>
+        </preConditions>
+        <dropUniqueConstraint constraintName="ecos_artifact_patch_sync_artifact_type_artifact_ext_id_key"
+                              tableName="ecos_artifact_patch_sync" />
+    </changeSet>
+
+    <changeSet id="20260520000000-4" author="citeck">
+        <addUniqueConstraint tableName="ecos_artifact_patch_sync"
+                             columnNames="artifact_type,artifact_ext_id,workspace"
+                             constraintName="ecos_artifact_patch_sync_type_ext_id_workspace_key" />
+    </changeSet>
+
+</databaseChangeLog>

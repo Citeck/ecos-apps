@@ -300,12 +300,24 @@ public class ApplicationsWatcherJob {
 
                 ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 if (ecosArtifactsPatchService.applyOutOfSyncPatches()) {
+                    // applyOutOfSyncPatches may have produced new patched revisions,
+                    // bumping artifact timestamps — refresh the snapshot before the
+                    // second deploy and the gate check below so they reflect the
+                    // latest state.
                     artifactsLastModified = ecosArtifactsService.getLastModifiedTime();
                     artifactsLastModifiedMs = artifactsLastModified.toEpochMilli();
                     ecosApplicationsService.deployArtifacts(artifactsLastModified);
                 }
 
-                artifactsLastModifiedTime = artifactsLastModifiedMs;
+                // Advance the gate only if nothing in this time window stayed DRAFT.
+                // If anything remains undeployed (deployer not yet registered, target
+                // app temporarily offline, missing supportedTypes for the artifact's
+                // type), keep the gate open so the next tick retries — otherwise the
+                // DRAFT row would sit forever until its lastModifiedDate is bumped
+                // externally.
+                if (!ecosArtifactsService.hasUndeployedArtifacts(artifactsLastModified)) {
+                    artifactsLastModifiedTime = artifactsLastModifiedMs;
+                }
 
             } catch (Exception e) {
                 log.error("Artifacts deployment error", e);

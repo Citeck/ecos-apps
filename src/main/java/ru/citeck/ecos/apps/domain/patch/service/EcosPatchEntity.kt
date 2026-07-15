@@ -15,6 +15,7 @@ class EcosPatchEntity(
     var manual: Boolean = false,
     var type: String,
     var config: ObjectData = ObjectData.create(),
+    var batch: PatchBatchConfig = PatchBatchConfig(),
     var status: EcosPatchStatus = EcosPatchStatus.PENDING,
     var patchResult: DataValue = DataValue.NULL,
     var errorsCount: Int = 0,

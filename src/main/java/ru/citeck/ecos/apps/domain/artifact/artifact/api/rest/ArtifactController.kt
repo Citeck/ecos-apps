@@ -7,7 +7,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
-import ru.citeck.ecos.apps.artifact.ArtifactRef
 import ru.citeck.ecos.apps.domain.artifact.application.job.ApplicationsWatcherJob
 import ru.citeck.ecos.apps.domain.artifact.artifact.dto.AllUserRevisionsResetStatus
 import ru.citeck.ecos.apps.domain.artifact.artifact.service.EcosArtifactsService
@@ -29,13 +28,13 @@ class ArtifactController(
 
     @PostMapping("deploy")
     fun deployArtifact(@RequestParam(required = true) ref: EntityRef) {
-        artifactService.resetDeployStatus(ArtifactRef.valueOf(ref.getLocalId()))
+        artifactService.resetDeployStatus(artifactService.parseArtifactRecordLocalId(ref.getLocalId()))
         applicationsWatcherJob.forceUpdate()
     }
 
     @PostMapping("reset-user-rev")
     fun resetUserRevision(@RequestParam(required = true) ref: EntityRef) {
-        artifactService.resetUserRevision(ArtifactRef.valueOf(ref.getLocalId()))
+        artifactService.resetUserRevision(artifactService.parseArtifactRecordLocalId(ref.getLocalId()))
         applicationsWatcherJob.forceUpdate()
     }
 
@@ -52,7 +51,7 @@ class ArtifactController(
         @RequestParam(required = true) fromTime: String
     ): HttpEntity<ByteArray> {
 
-        val artifactRef = ArtifactRef.valueOf(ref.getLocalId())
+        val artifactRef = artifactService.parseArtifactRecordLocalId(ref.getLocalId())
         val fromTimeInstant = OffsetDateTime.parse(fromTime).toInstant()
 
         val dir = artifactService.getArtifactRevisions(artifactRef, fromTimeInstant)

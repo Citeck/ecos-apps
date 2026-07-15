@@ -11,7 +11,7 @@ predicate:
     val: USER
 
 defaultSortBy:
-  - attribute: modifiedIso
+  - attribute: _modified
     ascending: false
 
 actions:
@@ -38,11 +38,11 @@ columns:
   - id: tagsStr
     name: { ru: Тэги, en: Tags }
 
-  - id: modifiedIso
+  - id: _modified
     type: DATETIME
     name: { ru: Дата изменения, en: Modified }
 
-  - id: createdIso
+  - id: _created
     type: DATETIME
     name: { ru: Дата создания, en: Created }
     visible: false

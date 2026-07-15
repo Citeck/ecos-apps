@@ -21,6 +21,9 @@ class ArtifactPatchEntity : AbstractAuditingEntity() {
 
     lateinit var target: String
 
+    @Column(name = "workspace")
+    var workspace: String = ""
+
     @Column(name = "patch_order")
     var order = 0f
 

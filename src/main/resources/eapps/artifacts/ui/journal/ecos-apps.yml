@@ -21,3 +21,29 @@ columns:
 
   - id: version
     name: { ru: Версия, en: Version }
+
+  - id: _created
+    visible: false
+    name:
+      ru: Дата создания
+      en: Created
+    type: DATETIME
+
+  - id: _creator
+    visible: false
+    name:
+      ru: Создатель
+      en: Creator
+    type: PERSON
+
+  - id: _modified
+    name:
+      ru: Дата изменения
+      en: Modified
+    type: DATETIME
+
+  - id: _modifier
+    name:
+      ru: Изменено пользователем
+      en: Modified by
+    type: PERSON

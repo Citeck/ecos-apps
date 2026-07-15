@@ -2,6 +2,7 @@ package ru.citeck.ecos.apps.domain.patch.eapps
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import ru.citeck.ecos.apps.domain.patch.service.EcosPatchEntity
+import ru.citeck.ecos.apps.domain.patch.service.PatchBatchConfig
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
 import ru.citeck.ecos.commons.json.serialization.annotation.IncludeNonDefault
@@ -17,7 +18,8 @@ data class EcosPatchArtifact(
     val dependsOn: List<String> = emptyList(),
     val dependsOnApps: List<String> = emptyList(),
     val type: String = "",
-    val config: ObjectData = ObjectData.create()
+    val config: ObjectData = ObjectData.create(),
+    val batch: PatchBatchConfig = PatchBatchConfig()
 ) {
 
     fun toEntity(): EcosPatchEntity {
@@ -30,7 +32,8 @@ data class EcosPatchArtifact(
             dependsOn = getDependsOnWithApp(),
             dependsOnApps = dependsOnApps,
             type = type,
-            config = config.deepCopy()
+            config = config.deepCopy(),
+            batch = batch
         )
     }
 

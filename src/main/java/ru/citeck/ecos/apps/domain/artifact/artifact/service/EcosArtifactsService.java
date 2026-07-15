@@ -13,9 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.citeck.ecos.apps.app.common.AppSystemArtifactPerms;
 import ru.citeck.ecos.apps.app.domain.artifact.source.ArtifactSourceType;
 import ru.citeck.ecos.apps.app.domain.artifact.source.SourceKey;
 import ru.citeck.ecos.apps.app.domain.handler.ArtifactDeployMeta;
+import ru.citeck.ecos.apps.domain.artifact.artifact.api.records.EcosArtifactRecords;
+import ru.citeck.ecos.apps.domain.ecosapp.api.records.EcosAppRecords;
+import ru.citeck.ecos.webapp.api.constants.AppName;
 import ru.citeck.ecos.apps.artifact.ArtifactRef;
 import ru.citeck.ecos.apps.artifact.ArtifactService;
 import ru.citeck.ecos.apps.artifact.type.TypeContext;
@@ -39,9 +43,13 @@ import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
 import ru.citeck.ecos.records3.record.dao.query.dto.query.SortBy;
+import ru.citeck.ecos.txn.lib.TxnContext;
+import ru.citeck.ecos.txn.lib.transaction.Transaction;
+import ru.citeck.ecos.webapp.api.entity.EntityRef;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
@@ -65,6 +73,14 @@ public class EcosArtifactsService {
         Duration.ofDays(2)
     };
 
+    /**
+     * Workspace value (in an artifact payload or an exported ecos-app's artifact ref) meaning
+     * "the workspace this artifact is deployed into". Shared with {@code EcosAppService}.
+     */
+    public static final String CURRENT_WS_PLACEHOLDER = "CURRENT_WS";
+
+    private static final Object CO_DEPLOYED_ARTIFACTS_CACHE_KEY = new Object();
+
     private final ArtifactService artifactsService;
 
     private final EcosContentDao contentDao;
@@ -75,11 +91,13 @@ public class EcosArtifactsService {
     private final EcosArtifactTypesService ecosArtifactTypesService;
     private final EcosAppRepo ecosAppRepo;
     private final WorkspaceService workspaceService;
+    private final AppSystemArtifactPerms appSystemArtifactPerms;
 
     private final List<ArtifactSourcePolicy> uploadPolicies;
     private Map<ArtifactSourceType, ArtifactSourcePolicy> uploadPolicyBySource;
 
     private final List<Function1<ArtifactRef, Unit>> artifactRevUpdateListeners = new CopyOnWriteArrayList<>();
+    private final List<Function1<ArtifactRef, Unit>> artifactDeployedListeners = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -88,6 +106,20 @@ public class EcosArtifactsService {
             policiesMap.put(policy.getSourceType(), policy)
         );
         uploadPolicyBySource = Collections.unmodifiableMap(policiesMap);
+    }
+
+    /**
+     * Returns true if any artifact is still in {@link DeployStatus#DRAFT} with
+     * {@code lastModifiedDate <= since}. Used by the watcher to decide whether
+     * the deploy gate can advance — if anything pending remains in this time
+     * window, we want the next tick to retry instead of marking the window
+     * processed.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasUndeployedArtifacts(Instant since) {
+        return artifactsRepo.countByDeployStatusAndDeletedFalseAndLastModifiedDateLessThanEqual(
+            DeployStatus.DRAFT, since
+        ) > 0;
     }
 
     @Transactional(readOnly = true)
@@ -101,8 +133,20 @@ public class EcosArtifactsService {
 
     @Nullable
     public EcosArtifactToPatch getArtifactToPatch(ArtifactRef artifactRef) {
+        return toArtifactToPatch(getArtifactEntity(artifactRef));
+    }
 
-        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
+    /**
+     * Workspace-id variant — bypasses wsSysId resolution. See {@link EcosArtifactsDao#getArtifact(String, String, String)}.
+     */
+    @Nullable
+    public EcosArtifactToPatch getArtifactToPatch(String type, String extId, String workspaceId) {
+        return toArtifactToPatch(artifactsDao.getArtifact(type, extId, workspaceId));
+    }
+
+    @Nullable
+    private EcosArtifactToPatch toArtifactToPatch(@Nullable EcosArtifactEntity artifactEntity) {
+
         if (artifactEntity == null) {
             return null;
         }
@@ -145,8 +189,19 @@ public class EcosArtifactsService {
 
     @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public synchronized boolean setPatchedRev(ArtifactRef artifactRef, @Nullable Object artifact) {
+        return setPatchedRev(getArtifactEntity(artifactRef), artifact);
+    }
 
-        EcosArtifactEntity artifactEntity = getArtifactEntity(artifactRef);
+    /**
+     * Workspace-id variant — bypasses wsSysId resolution. See {@link EcosArtifactsDao#getArtifact(String, String, String)}.
+     */
+    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
+    public synchronized boolean setPatchedRev(String type, String extId, String workspaceId, @Nullable Object artifact) {
+        return setPatchedRev(artifactsDao.getArtifact(type, extId, workspaceId), artifact);
+    }
+
+    private boolean setPatchedRev(@Nullable EcosArtifactEntity artifactEntity, @Nullable Object artifact) {
+
         if (artifactEntity == null || artifactEntity.getLastRev() == null) {
             return false;
         }
@@ -155,7 +210,7 @@ public class EcosArtifactsService {
             return removePatchedRev(artifactEntity);
         }
 
-        String typeId = artifactRef.getType();
+        String typeId = artifactEntity.getType();
 
         byte[] patchedArtifactBytes = artifactsService.writeArtifactAsBytes(typeId, artifact);
         EcosContentEntity patchedContent = contentDao.upload(patchedArtifactBytes);
@@ -180,7 +235,7 @@ public class EcosArtifactsService {
         if (patchedMeta == null) {
             log.error(
                 "Patched artifact meta can't be received. " +
-                    "Patches won't be applied. Artifact: " + artifactRef
+                    "Patches won't be applied. Artifact: " + artifactsDao.toArtifactRef(artifactEntity)
             );
             return removePatchedRev(artifactEntity);
         }
@@ -235,8 +290,16 @@ public class EcosArtifactsService {
         return true;
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
-    public synchronized boolean uploadArtifact(ArtifactUploadDto uploadDto) {
+    /**
+     * Caller responsibility: serialize concurrent calls for the same {@code (type, extId, workspace)}.
+     * A lock here would be useless because this method is {@code @Transactional} (class-level) — the
+     * lock would release before the {@code TransactionInterceptor} commits, and two threads would
+     * still both pass the {@code getByExtId == null} check then both INSERT at commit time. The
+     * eapps-command path serializes in {@code ArtifactChangedListenerImpl} (outside the tx scope);
+     * {@code EcosArtifactsSourcesService} / {@code UpdateArtifactsExtIdPatch} are not protected
+     * (low practical race risk — they don't run concurrently with the same artifact).
+     */
+    public boolean uploadArtifact(ArtifactUploadDto uploadDto) {
 
         final SourceKey sourceKey = uploadDto.getSource().getSource();
 
@@ -272,7 +335,27 @@ public class EcosArtifactsService {
 
         String workspace = resolveUploadWorkspace(uploadDto, meta);
 
+        // Authorize against the *resolved* workspace, not uploadDto.workspace —
+        // for ECOS_APP sources resolveUploadWorkspace can re-home the artifact
+        // (CURRENT_WS placeholder, content-declared workspace, parent app ws).
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosArtifactRecords.ID, meta.getId(), workspace);
+
         EcosArtifactEntity artifactEntity = artifactsRepo.getByExtId(typeId, meta.getId(), workspace);
+
+        if (artifactEntity == null) {
+            // Try to claim a placeholder row created earlier for this (type, extId) — these have no
+            // committed revision yet, and are produced by `setEcosAppFull` / `getDepsEntities` when an
+            // ecos-app references an artifact before its actual content is uploaded. The first real
+            // upload re-homes the placeholder into the resolved workspace (instead of creating a
+            // duplicate row alongside). The re-home itself is deferred until after the upload-policy
+            // gate (below): if the policy denies the upload, mutating the placeholder's workspace
+            // here would still be flushed at commit and silently re-home the row to the wrong place.
+            EcosArtifactEntity placeholder =
+                artifactsRepo.findFirstByTypeAndExtIdAndLastRevIsNullAndDeletedFalseOrderByIdAsc(typeId, meta.getId());
+            if (placeholder != null) {
+                artifactEntity = placeholder;
+            }
+        }
 
         if (artifactEntity == null) {
 
@@ -280,12 +363,18 @@ public class EcosArtifactsService {
             artifactEntity.setExtId(meta.getId());
             artifactEntity.setType(typeId);
             artifactEntity.setWorkspace(workspace);
-            if (ArtifactRevSourceType.USER.equals(revSourceType)) {
+            boolean deployedByUser = ArtifactRevSourceType.USER.equals(revSourceType);
+            if (deployedByUser) {
                 artifactEntity.setDeployStatus(DeployStatus.DEPLOYED);
             } else {
                 artifactEntity.setDeployStatus(DeployStatus.DRAFT);
             }
             artifactEntity = artifactsRepo.save(artifactEntity);
+
+            if (deployedByUser) {
+                ArtifactRef deployedRef = artifactsDao.toArtifactRef(artifactEntity);
+                artifactDeployedListeners.forEach(it -> it.invoke(deployedRef));
+            }
         }
 
         EcosArtifactContext artifactContext = new EcosArtifactContext(typeContext, artifactEntity);
@@ -297,6 +386,15 @@ public class EcosArtifactsService {
                 artifactsRepo.save(artifactEntity);
             }
             return false;
+        }
+
+        // Policy passed — safe to re-home a claimed placeholder now (a real artifact found via
+        // primary lookup already has lastRev != null and workspace == workspace, so the condition
+        // only fires for placeholder-claim).
+        if (artifactEntity.getLastRev() == null && !Objects.equals(artifactEntity.getWorkspace(), workspace)) {
+            log.info("Re-homing placeholder artifact {}${} from workspace='{}' to '{}'",
+                typeId, meta.getId(), artifactEntity.getWorkspace(), workspace);
+            artifactEntity.setWorkspace(workspace);
         }
 
         // update artifact
@@ -366,8 +464,8 @@ public class EcosArtifactsService {
 
         artifactsRepo.save(artifactEntity);
 
-        String wsSysId = artifactsDao.toWsSysId(artifactEntity.getWorkspace());
-        artifactRevUpdateListeners.forEach(it -> it.invoke(ArtifactRef.create(typeId, meta.getId(), wsSysId)));
+        ArtifactRef notifyRef = artifactsDao.toArtifactRef(artifactEntity);
+        artifactRevUpdateListeners.forEach(it -> it.invoke(notifyRef));
 
         return true;
     }
@@ -441,11 +539,10 @@ public class EcosArtifactsService {
 
             EcosArtifactEntity artifactEntity = artifactsDao.getArtifact(ref);
             if (artifactEntity == null) {
-                String wsId = artifactsDao.resolveWorkspaceId(ref.getWsSysId());
                 artifactEntity = new EcosArtifactEntity();
                 artifactEntity.setExtId(ref.getId());
                 artifactEntity.setType(ref.getType());
-                artifactEntity.setWorkspace(wsId);
+                artifactEntity.setWorkspace(artifactsDao.normalizeWorkspace(ref.getWorkspace()));
                 artifactEntity.setDeployStatus(DeployStatus.CONTENT_WAITING);
                 artifactEntity = artifactsRepo.save(artifactEntity);
             }
@@ -464,18 +561,31 @@ public class EcosArtifactsService {
         if (!explicit.isEmpty()) {
             return explicit;
         }
+        String artifactWs = meta.getWorkspace();
+        boolean artifactDefersToDeployWs = CURRENT_WS_PLACEHOLDER.equals(artifactWs);
+
         // For ECOS_APP sources the workspace is embedded in the source id as a wsSysId prefix
         // (see `EcosAppService.appToSource`). `convertToIdInWs` resolves the prefix through the
         // ws-sys-id cache — keeps two same-extId apps in different workspaces fully independent.
         SourceKey sourceKey = uploadDto.getSource().getSource();
         if (sourceKey.getType() == ArtifactSourceType.ECOS_APP) {
-            return artifactsDao.normalizeWorkspace(
+            String appWs = artifactsDao.normalizeWorkspace(
                 workspaceService.convertToIdInWs(sourceKey.getId()).getWorkspace()
             );
+            // The app's workspace wins when the app itself is workspace-scoped, or when the
+            // artifact explicitly defers to the deploy workspace via the CURRENT_WS placeholder.
+            // A *global* app may still ship workspace-scoped artifacts by declaring a concrete
+            // `workspace` in the payload — fall through to that below.
+            if (!appWs.isEmpty() || artifactDefersToDeployWs) {
+                return appWs;
+            }
         }
-        // CLASSPATH/APPLICATION artifacts may carry a `workspace` field directly in the json/yaml
-        // payload — JsonArtifactController.getMeta extracts it. Use it as the last fallback.
-        return artifactsDao.normalizeWorkspace(meta.getWorkspace());
+        // CLASSPATH/APPLICATION artifacts (and global-app artifacts) may carry a `workspace` field
+        // directly in the json/yaml payload — JsonArtifactController.getMeta extracts it.
+        if (artifactDefersToDeployWs) {
+            return "";
+        }
+        return artifactsDao.normalizeWorkspace(artifactWs);
     }
 
     private MLText toNotNullMLText(String value) {
@@ -565,6 +675,7 @@ public class EcosArtifactsService {
                         .withSourceType(String.valueOf(revToGetMeta.getSourceType()))
                         .withSourceId(revToGetMeta.getSourceId())
                         .withWorkspace(entity.getWorkspace())
+                        .withCoDeployedArtifacts(getCoDeployedArtifacts(entity))
                         .build();
                     errors = deployer.deploy(type, revToDeploy.getContent().getData(), meta);
                 } catch (Exception e) {
@@ -611,6 +722,9 @@ public class EcosArtifactsService {
                     artifactsToUpdateSourceDeps.put(entity.getId(), entity);
 
                     deployedCount++;
+
+                    ArtifactRef deployedRef = artifactsDao.toArtifactRef(entity);
+                    artifactDeployedListeners.forEach(it -> it.invoke(deployedRef));
                 }
 
                 printDeployStatusChanged(deployStatusBefore, entity);
@@ -633,6 +747,48 @@ public class EcosArtifactsService {
         }
 
         return deployedCount > 0;
+    }
+
+    /**
+     * Artifacts owned by the same ecos-app in the same {@code (ecosApp, workspace)}, mapped to
+     * their primary records {@link EntityRef} (`appName/recordsSourceId@extId`, e.g.
+     * {@code emodel/type@order-pass}). Empty for global deploys (workspace == "") and for
+     * artifacts not owned by an ecos-app. Used by artifact handlers (e.g. BPMN) to rebind
+     * intra-app references when a global-app payload lands in a workspace.
+     * <p>
+     * The deploying artifact's own ref is intentionally kept in the list — an artifact never
+     * references itself by these ref attributes, so it can't match, and keeping it makes the
+     * result identical for every artifact in the same {@code (ecosApp, workspace)}. That lets
+     * the result be cached per-transaction (deploying a whole app touches many artifacts that
+     * all resolve the same list — see {@link TxnContext}) instead of re-querying the DB each time.
+     */
+    private List<EntityRef> getCoDeployedArtifacts(EcosArtifactEntity entity) {
+        String workspace = entity.getWorkspace();
+        String ecosApp = entity.getEcosApp();
+        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(ecosApp)) {
+            return Collections.emptyList();
+        }
+        Transaction txn = TxnContext.getTxnOrNull();
+        if (txn == null || !txn.isReadOnly()) {
+            return computeCoDeployedArtifacts(ecosApp, workspace);
+        }
+        Map<String, List<EntityRef>> cache = txn.getData(CO_DEPLOYED_ARTIFACTS_CACHE_KEY, _ -> new HashMap<>());
+        return cache.computeIfAbsent(ecosApp + "$" + workspace, _ -> computeCoDeployedArtifacts(ecosApp, workspace));
+    }
+
+    private List<EntityRef> computeCoDeployedArtifacts(String ecosApp, String workspace) {
+        List<EcosArtifactEntity> siblings = artifactsRepo.getArtifactsByEcosAppAndWorkspace(ecosApp, workspace);
+        if (siblings.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<EntityRef> refs = new ArrayList<>(siblings.size());
+        for (EcosArtifactEntity sibling : siblings) {
+            EntityRef ref = ecosArtifactTypesService.getArtifactRecordRef(sibling.getType(), sibling.getExtId());
+            if (EntityRef.isNotEmpty(ref)) {
+                refs.add(ref);
+            }
+        }
+        return refs;
     }
 
     private void printDeployStatusChanged(DeployStatus before, EcosArtifactEntity entity) {
@@ -775,6 +931,10 @@ public class EcosArtifactsService {
 
     public AllUserRevisionsResetStatus resetAllUserRevisions() {
 
+        if (!AuthContext.isRunAsSystemOrAdmin()) {
+            throw new SecurityException("Access denied");
+        }
+
         log.info("========= User all artifacts resetting started =========");
 
         int pageSize = 10;
@@ -803,7 +963,6 @@ public class EcosArtifactsService {
         return new AllUserRevisionsResetStatus(changedCounter, processedCounter);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(ArtifactRef artifactRef) {
 
         EcosArtifactEntity artifact = artifactsDao.getArtifact(artifactRef);
@@ -815,13 +974,15 @@ public class EcosArtifactsService {
         return resetUserRevision(artifact);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetUserRevision(EcosArtifactEntity artifact) {
         return resetRevision(artifact, rev -> ArtifactRevSourceType.USER.equals(rev.getSourceType()));
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public boolean resetRevision(EcosArtifactEntity artifact, Function1<EcosArtifactRevEntity, Boolean> resetWhile) {
+
+        appSystemArtifactPerms.checkWrite(
+            AppName.EAPPS, EcosArtifactRecords.ID, artifact.getExtId(), artifact.getWorkspace()
+        );
 
         if (artifact.getLastRev() == null) {
             return false;
@@ -889,7 +1050,6 @@ public class EcosArtifactsService {
         return true;
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     public void resetDeployStatus(ArtifactRef artifactRef) {
 
         log.info("Reset deploy status: " + artifactRef);
@@ -899,6 +1059,10 @@ public class EcosArtifactsService {
             log.warn("Artifact is not found: " + artifactRef);
             return;
         }
+
+        appSystemArtifactPerms.checkWrite(
+            AppName.EAPPS, EcosArtifactRecords.ID, artifact.getExtId(), artifact.getWorkspace()
+        );
 
         DeployStatus statusBefore = artifact.getDeployStatus();
         artifact.setDeployStatus(DeployStatus.DRAFT);
@@ -910,8 +1074,9 @@ public class EcosArtifactsService {
         artifactsRepo.save(artifact);
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void setEcosAppFull(List<ArtifactRef> artifacts, String ecosAppId, String workspace) {
+
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, ecosAppId, workspace);
 
         List<EcosArtifactEntity> currentArtifacts =
             artifactsRepo.findAllByEcosAppAndWorkspace(ecosAppId, artifactsDao.normalizeWorkspace(workspace));
@@ -937,11 +1102,19 @@ public class EcosArtifactsService {
             }
 
             if (moduleEntity == null) {
-                String wsId = artifactsDao.resolveWorkspaceId(artifactRef.getWsSysId());
+                // Re-deploy guard: when an ecos-app is uploaded a second time, `uploadZip` builds
+                // `artifactRefs` with the app's own workspace, but a workspace-scoped artifact has
+                // since been re-homed by `resolveUploadWorkspace` into its content-declared workspace.
+                // If this app already owns a row for (type, extId) in some other workspace, skip
+                // creating a placeholder here — `uploadArtifact` will keep the existing row.
+                if (artifactsRepo.existsByTypeAndExtIdAndEcosAppAndDeletedFalse(
+                        artifactRef.getType(), artifactRef.getId(), ecosAppId)) {
+                    continue;
+                }
                 moduleEntity = new EcosArtifactEntity();
                 moduleEntity.setExtId(artifactRef.getId());
                 moduleEntity.setType(artifactRef.getType());
-                moduleEntity.setWorkspace(wsId);
+                moduleEntity.setWorkspace(artifactsDao.normalizeWorkspace(artifactRef.getWorkspace()));
                 moduleEntity = artifactsRepo.save(moduleEntity);
             }
 
@@ -950,8 +1123,8 @@ public class EcosArtifactsService {
         }
     }
 
-    @Secured({AuthRole.ADMIN, AuthRole.SYSTEM})
     synchronized public void removeEcosApp(String ecosAppId, String workspace) {
+        appSystemArtifactPerms.checkWrite(AppName.EAPPS, EcosAppRecords.ID, ecosAppId, workspace);
         artifactsDao.removeEcosApp(ecosAppId, workspace);
     }
 
@@ -1033,6 +1206,56 @@ public class EcosArtifactsService {
         return lastArtifactRev.getContent().getData();
     }
 
+    /** Workspace id → workspace system id. For exposing artifact record ids in the platform {@code wsSysId:localId} form. */
+    public String toWsSysId(String workspaceId) {
+        return artifactsDao.toWsSysId(workspaceId);
+    }
+
+    /** Workspace system id → workspace id. For parsing incoming artifact record ids. */
+    public String resolveWorkspaceId(String wsSysId) {
+        return artifactsDao.resolveWorkspaceId(wsSysId);
+    }
+
+    /**
+     * Builds the local id used in artifact record refs: {@code type$wsSysId:localId}, or
+     * {@code type$localId} for global artifacts. This is the platform-convention form (a
+     * single-colon wsSysId prefix), not {@link ArtifactRef#toString()} (which is for logs).
+     */
+    public String toArtifactRecordLocalId(ArtifactRef ref) {
+        String wsSysId = ref.getWorkspace().isEmpty() ? "" : toWsSysId(ref.getWorkspace());
+        if (wsSysId.isEmpty()) {
+            if (!ref.getWorkspace().isEmpty()) {
+                log.warn("Cannot resolve workspace system id for workspace '{}' — "
+                    + "emitting a workspace-less artifact record id for {}", ref.getWorkspace(), ref);
+            }
+            return ref.getType() + "$" + ref.getId();
+        }
+        return ref.getType() + "$" + wsSysId + ":" + ref.getId();
+    }
+
+    /**
+     * Parses the local id of an artifact record ref ({@code type$wsSysId:localId} / {@code type$localId})
+     * into an {@link ArtifactRef}, resolving the workspace system id back to a workspace id.
+     */
+    public ArtifactRef parseArtifactRecordLocalId(String localId) {
+        if (localId == null || localId.isBlank()) {
+            return ArtifactRef.EMPTY;
+        }
+        int dollarIdx = localId.indexOf('$');
+        if (dollarIdx <= 0 || dollarIdx == localId.length() - 1) {
+            return ArtifactRef.valueOf(localId);
+        }
+        String type = localId.substring(0, dollarIdx);
+        String localPart = localId.substring(dollarIdx + 1);
+        int colonIdx = localPart.indexOf(':');
+        if (colonIdx <= 0) {
+            return ArtifactRef.create(type, localPart);
+        }
+        String wsSysId = localPart.substring(0, colonIdx);
+        String id = localPart.substring(colonIdx + 1);
+        return ArtifactRef.create(type, id, resolveWorkspaceId(wsSysId));
+    }
+
     private Optional<EcosArtifactDto> toModule(EcosArtifactRevEntity entity) {
 
         if (entity == null) {
@@ -1070,7 +1293,7 @@ public class EcosArtifactsService {
             return Optional.empty();
         }
 
-        String wsSysId = artifactsDao.toWsSysId(entity.getArtifact().getWorkspace());
+        String workspace = artifactsDao.normalizeWorkspace(entity.getArtifact().getWorkspace());
 
         return Optional.of(new EcosArtifactDto(
             entity.getArtifact().getExtId(),
@@ -1085,12 +1308,16 @@ public class EcosArtifactsService {
             entity.getExtId(),
             entity.getArtifact().getLastModifiedDate(),
             entity.getArtifact().getCreatedDate(),
-            wsSysId
+            workspace
         ));
     }
 
     public void addArtifactRevUpdateListener(Function1<ArtifactRef, Unit> listener) {
         artifactRevUpdateListeners.add(listener);
+    }
+
+    public void addArtifactDeployedListener(Function1<ArtifactRef, Unit> listener) {
+        artifactDeployedListeners.add(listener);
     }
 
     private boolean isArtifactRevisionsEquals(

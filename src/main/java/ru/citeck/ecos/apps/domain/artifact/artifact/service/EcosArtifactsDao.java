@@ -43,7 +43,9 @@ public class EcosArtifactsDao {
             .withAttMapping("sourceType", "lastRev.sourceType")
             .withAttMapping("sourceId", "lastRev.sourceId")
             .withAttMapping("modifiedIso", "lastModifiedDate")
+            .withAttMapping("_modified", "lastModifiedDate")
             .withAttMapping("createdIso", "createdDate")
+            .withAttMapping("_created", "createdDate")
             .withFieldVariants("type", ecosArtifactTypesService::getNonInternalTypesWithName)
             .build();
     }
@@ -158,8 +160,17 @@ public class EcosArtifactsDao {
     }
 
     public EcosArtifactEntity getArtifact(ArtifactRef ref) {
-        String wsId = resolveWorkspaceId(ref.getWsSysId());
-        return artifactsRepo.getByExtId(ref.getType(), ref.getId(), wsId);
+        return artifactsRepo.getByExtId(ref.getType(), ref.getId(), normalizeWorkspace(ref.getWorkspace()));
+    }
+
+    /**
+     * Direct workspace-id lookup that bypasses the wsSysId↔wsId round trip.
+     * Use when the caller already has the workspace id and the round trip would
+     * fail (e.g. virtual workspaces like {@code admin$workspace} that may not
+     * yet be materialized in ecos-model when this is called).
+     */
+    public EcosArtifactEntity getArtifact(String type, String extId, String workspaceId) {
+        return artifactsRepo.getByExtId(type, extId, normalizeWorkspace(workspaceId));
     }
 
     public List<EcosArtifactRevEntity> getArtifactRevisionsSince(ArtifactRef ref, Instant since, int skip, int max) {
@@ -167,7 +178,7 @@ public class EcosArtifactsDao {
             return Collections.emptyList();
         }
         int page = skip / max;
-        String wsId = resolveWorkspaceId(ref.getWsSysId());
+        String wsId = normalizeWorkspace(ref.getWorkspace());
         return artifactsRevRepo.getArtifactRevisionsSince(
             ref.getType(),
             ref.getId(),
@@ -214,7 +225,8 @@ public class EcosArtifactsDao {
     }
 
     /**
-     * Resolves wsSysId from ArtifactRef to workspace ID for DB lookup.
+     * Resolves a workspace system id to its workspace id. Used at the record-id boundary
+     * (EcosArtifactRecords) where incoming record ids carry a {@code wsSysId:localId} prefix.
      */
     public String resolveWorkspaceId(String wsSysId) {
         if (wsSysId == null || wsSysId.isEmpty()) {
@@ -230,7 +242,8 @@ public class EcosArtifactsDao {
     }
 
     /**
-     * Converts workspace ID (from DB) to wsSysId for ArtifactRef.
+     * Converts a workspace id to its workspace system id. Used at the record-id boundary
+     * (EcosArtifactRecords) to expose record ids in the platform {@code wsSysId:localId} form.
      */
     public String toWsSysId(String workspaceId) {
         if (workspaceId == null || workspaceId.isEmpty()) {
@@ -245,8 +258,7 @@ public class EcosArtifactsDao {
     }
 
     public ArtifactRef toArtifactRef(EcosArtifactEntity entity) {
-        String wsSysId = toWsSysId(entity.getWorkspace());
-        return ArtifactRef.create(entity.getType(), entity.getExtId(), wsSysId);
+        return ArtifactRef.create(entity.getType(), entity.getExtId(), normalizeWorkspace(entity.getWorkspace()));
     }
 
     private Specification<EcosArtifactEntity> getNonDeletedWithLastRevSpec() {

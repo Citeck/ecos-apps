@@ -7,6 +7,7 @@ import ru.citeck.ecos.apps.domain.ecosapp.dto.EcosAppDef
 import ru.citeck.ecos.apps.domain.ecosapp.service.EcosAppService
 import ru.citeck.ecos.commons.data.MLText
 import ru.citeck.ecos.commons.data.ObjectData
+import ru.citeck.ecos.commons.data.entity.EntityWithMeta
 import ru.citeck.ecos.context.lib.i18n.I18nContext
 import ru.citeck.ecos.ent.git.service.EcosVcsObjectGitService
 import ru.citeck.ecos.model.lib.workspace.WorkspaceService
@@ -22,9 +23,11 @@ import ru.citeck.ecos.records3.record.dao.mutate.RecordMutateDtoDao
 import ru.citeck.ecos.records3.record.dao.query.RecordsQueryDao
 import ru.citeck.ecos.records3.record.dao.query.dto.query.RecordsQuery
 import ru.citeck.ecos.records3.record.dao.query.dto.res.RecsQueryRes
+import ru.citeck.ecos.webapp.api.authority.EcosAuthoritiesApi
 import ru.citeck.ecos.webapp.api.constants.AppName
 import ru.citeck.ecos.webapp.api.entity.EntityRef
 import ru.citeck.ecos.webapp.lib.perms.RecordPerms
+import java.time.Instant
 import java.util.*
 import java.util.regex.Pattern
 
@@ -33,7 +36,8 @@ class EcosAppRecords(
     private val ecosAppService: EcosAppService,
     private val ecosVcsObjectGitService: EcosVcsObjectGitService,
     private val perms: AppSystemArtifactPerms,
-    private val workspaceService: WorkspaceService
+    private val workspaceService: WorkspaceService,
+    private val authorities: EcosAuthoritiesApi
 ) : AbstractRecordsDao(),
     RecordAttsDao,
     RecordsQueryDao,
@@ -46,8 +50,8 @@ class EcosAppRecords(
 
     override fun getRecordAtts(recordId: String): Any? {
         val idInWs = workspaceService.convertToIdInWs(recordId)
-        val appDef = ecosAppService.getById(idInWs.id, idInWs.workspace) ?: return EmptyAttValue.INSTANCE
-        return EcosAppRecord(appDef, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
+        val appDef = ecosAppService.getByIdWithMeta(idInWs.id, idInWs.workspace) ?: return EmptyAttValue.INSTANCE
+        return EcosAppRecord(appDef)
     }
 
     override fun queryRecords(recsQuery: RecordsQuery): Any? {
@@ -72,7 +76,7 @@ class EcosAppRecords(
                     recsQuery.page.maxItems,
                     recsQuery.page.skipCount,
                     recsQuery.sortBy
-                ).map { EcosAppRecord(it, ecosAppService, ecosVcsObjectGitService, perms, workspaceService) }
+                ).map { EcosAppRecord(it) }
             )
             result.setTotalCount(ecosAppService.getCount(predicate, recsQuery.workspaces))
         }
@@ -91,12 +95,12 @@ class EcosAppRecords(
 
     override fun getRecToMutate(recordId: String): EcosAppRecord {
         if (recordId.isBlank()) {
-            return EcosAppRecord(EcosAppDef.create {}, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
+            return EcosAppRecord(EntityWithMeta(EcosAppDef.create {}))
         }
         val idInWs = workspaceService.convertToIdInWs(recordId)
-        val appDef = ecosAppService.getById(idInWs.id, idInWs.workspace)
+        val appDef = ecosAppService.getByIdWithMeta(idInWs.id, idInWs.workspace)
             ?: error("ECOS application not found: $recordId")
-        return EcosAppRecord(appDef, ecosAppService, ecosVcsObjectGitService, perms, workspaceService)
+        return EcosAppRecord(appDef)
     }
 
     override fun delete(recordIds: List<String>): List<DelStatus> {
@@ -111,13 +115,12 @@ class EcosAppRecords(
         return ID
     }
 
-    class EcosAppRecord(
-        private val appDef: EcosAppDef,
-        private val ecosAppService: EcosAppService,
-        private val ecosVcsObjectGitService: EcosVcsObjectGitService,
-        private val perms: AppSystemArtifactPerms,
-        private val workspaceService: WorkspaceService
-    ) : EcosAppDef.Builder(appDef) {
+    inner class EcosAppRecord(
+        appDefEntity: EntityWithMeta<EcosAppDef>
+    ) : EcosAppDef.Builder(appDefEntity.entity) {
+
+        private val appDef = appDefEntity.entity
+        private val meta = appDefEntity.meta
 
         var appData: ByteArray? = null
 
@@ -174,8 +177,42 @@ class EcosAppRecords(
         }
 
         fun getPermissions(): RecordPerms {
-            val fullId = workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
-            return perms.getPerms(EntityRef.create(AppName.EAPPS, ID, fullId))
+            return perms.getPerms(
+                EntityRef.create(
+                    AppName.EAPPS,
+                    ID,
+                    workspaceService.addWsPrefixToId(appDef.id, appDef.workspace)
+                )
+            )
+        }
+
+        @AttName(RecordConstants.ATT_WORKSPACE)
+        fun getWorkspaceRef(): EntityRef {
+            return if (appDef.workspace.isBlank()) {
+                EntityRef.EMPTY
+            } else {
+                EntityRef.create(AppName.EMODEL, "workspace", appDef.workspace)
+            }
+        }
+
+        @AttName(RecordConstants.ATT_CREATOR)
+        fun getCreator(): EntityRef {
+            return authorities.getPersonRef(meta.creator)
+        }
+
+        @AttName(RecordConstants.ATT_CREATED)
+        fun getCreated(): Instant {
+            return meta.created
+        }
+
+        @AttName(RecordConstants.ATT_MODIFIED)
+        fun getModified(): Instant {
+            return meta.modified
+        }
+
+        @AttName(RecordConstants.ATT_MODIFIER)
+        fun getModifier(): EntityRef {
+            return authorities.getPersonRef(meta.modifier)
         }
     }
 

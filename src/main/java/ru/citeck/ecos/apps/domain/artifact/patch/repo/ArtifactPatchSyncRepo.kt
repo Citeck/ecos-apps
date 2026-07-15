@@ -18,7 +18,7 @@ interface ArtifactPatchSyncRepo :
 
     @Query(
         "SELECT sync FROM ArtifactPatchSyncEntity sync " +
-            "WHERE sync.artifactType=?1 AND sync.artifactExtId=?2"
+            "WHERE sync.artifactType=?1 AND sync.artifactExtId=?2 AND sync.workspace=?3"
     )
-    fun findByArtifact(type: String, extId: String): ArtifactPatchSyncEntity?
+    fun findByArtifact(type: String, extId: String, workspace: String): ArtifactPatchSyncEntity?
 }

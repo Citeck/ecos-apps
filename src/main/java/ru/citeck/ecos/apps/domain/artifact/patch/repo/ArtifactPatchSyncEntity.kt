@@ -14,6 +14,9 @@ class ArtifactPatchSyncEntity {
     lateinit var artifactType: String
     lateinit var artifactExtId: String
 
+    @Column(name = "workspace")
+    var workspace: String = ""
+
     var patchLastModified: Long = 0
     var artifactLastModified: Long = 0
 }

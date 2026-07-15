@@ -10,3 +10,11 @@ system: true
 sourceId: eapps/artifact
 
 journalRef: uiserv/journal@ecos-artifacts
+
+model:
+  attributes:
+    - id: ecosAppRef
+      name:
+        ru: ECOS Приложение
+        en: ECOS Application
+      type: ASSOC
