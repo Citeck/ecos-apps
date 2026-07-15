@@ -174,4 +174,30 @@ class EcosArtifactsServiceTest {
         assertTrue(ecosArtifactsService.deployArtifacts(deployer, Instant.now()))
         assertEquals(deployedArtifacts[jsonTestTypeId]!!.last(), firstArtifact)
     }
+
+    @Test
+    fun `artifact record local id round-trips ids containing a colon`() {
+
+        // Global BPMN element forms have ids with a ':' (e.g. bpmn-type-bpmn:SendTask). The record-id
+        // form uses ':' as the wsSysId separator, so the id's own ':' must be escaped, otherwise the
+        // ref is misparsed as workspace 'bpmn-type-bpmn' + id 'SendTask' and the artifact is "not found"
+        // (breaking download-revisions -> empty zip, and reset-user-rev -> silent no-op).
+        val colonRef = ArtifactRef.create("ui/form", "bpmn-type-bpmn:SendTask")
+
+        val encoded = ecosArtifactsService.toArtifactRecordLocalId(colonRef)
+        // the id's colon must not survive raw in the encoded local id (only the wsSysId separator may be ':')
+        assertEquals("ui/form", encoded.substringBefore('$'))
+        assertFalse(encoded.substringAfter('$').contains(':'), "id colon must be escaped: $encoded")
+
+        val parsed = ecosArtifactsService.parseArtifactRecordLocalId(encoded)
+        assertEquals(colonRef, parsed)
+        assertEquals("bpmn-type-bpmn:SendTask", parsed.id)
+        assertTrue(parsed.workspace.isEmpty())
+
+        // colon-free ids stay byte-for-byte identical (no change to existing record ids)
+        val plainRef = ArtifactRef.create("ui/form", "mash-test-form")
+        val plainEncoded = ecosArtifactsService.toArtifactRecordLocalId(plainRef)
+        assertEquals("ui/form\$mash-test-form", plainEncoded)
+        assertEquals(plainRef, ecosArtifactsService.parseArtifactRecordLocalId(plainEncoded))
+    }
 }

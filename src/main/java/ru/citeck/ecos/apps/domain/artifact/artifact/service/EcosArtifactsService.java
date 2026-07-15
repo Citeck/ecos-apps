@@ -43,6 +43,7 @@ import ru.citeck.ecos.commons.data.MLText;
 import ru.citeck.ecos.commons.io.file.EcosFile;
 import ru.citeck.ecos.commons.io.file.mem.EcosMemDir;
 import ru.citeck.ecos.commons.json.Json;
+import ru.citeck.ecos.commons.utils.NameUtils;
 import ru.citeck.ecos.context.lib.auth.AuthContext;
 import ru.citeck.ecos.context.lib.auth.AuthRole;
 import ru.citeck.ecos.records2.predicate.model.Predicate;
@@ -1217,25 +1218,39 @@ public class EcosArtifactsService {
     }
 
     /**
+     * Escapes only ':' inside an artifact id. Artifact ids may legitimately contain a colon (e.g. the
+     * global BPMN element forms {@code bpmn-type-bpmn:SendTask}), while the record-id form uses ':' as
+     * the {@code wsSysId:localId} separator. Escaping the id's colons keeps that separator unambiguous,
+     * so a global colon-id is no longer misread as {@code wsSysId:localId}. Only ':' is escaped, so
+     * colon-free ids stay byte-for-byte identical (no change to existing record ids).
+     */
+    private static final NameUtils.Escaper ARTIFACT_ID_ESCAPER = NameUtils.INSTANCE.getEscaper(":");
+
+    /**
      * Builds the local id used in artifact record refs: {@code type$wsSysId:localId}, or
      * {@code type$localId} for global artifacts. This is the platform-convention form (a
-     * single-colon wsSysId prefix), not {@link ArtifactRef#toString()} (which is for logs).
+     * single-colon wsSysId prefix), not {@link ArtifactRef#toString()} (which is for logs). The
+     * artifact id's own colons are escaped ({@link #ARTIFACT_ID_ESCAPER}) so they cannot collide with
+     * the wsSysId separator; {@link #parseArtifactRecordLocalId} unescapes them back.
      */
     public String toArtifactRecordLocalId(ArtifactRef ref) {
+        String escapedId = ARTIFACT_ID_ESCAPER.escape(ref.getId());
         String wsSysId = ref.getWorkspace().isEmpty() ? "" : toWsSysId(ref.getWorkspace());
         if (wsSysId.isEmpty()) {
             if (!ref.getWorkspace().isEmpty()) {
                 log.warn("Cannot resolve workspace system id for workspace '{}' — "
                     + "emitting a workspace-less artifact record id for {}", ref.getWorkspace(), ref);
             }
-            return ref.getType() + "$" + ref.getId();
+            return ref.getType() + "$" + escapedId;
         }
-        return ref.getType() + "$" + wsSysId + ":" + ref.getId();
+        return ref.getType() + "$" + wsSysId + ":" + escapedId;
     }
 
     /**
      * Parses the local id of an artifact record ref ({@code type$wsSysId:localId} / {@code type$localId})
-     * into an {@link ArtifactRef}, resolving the workspace system id back to a workspace id.
+     * into an {@link ArtifactRef}, resolving the workspace system id back to a workspace id. Colons in
+     * the artifact id itself are escaped by {@link #toArtifactRecordLocalId}, so the first raw ':' in
+     * the local part is unambiguously the wsSysId separator; the id is unescaped after splitting.
      */
     public ArtifactRef parseArtifactRecordLocalId(String localId) {
         if (localId == null || localId.isBlank()) {
@@ -1249,10 +1264,10 @@ public class EcosArtifactsService {
         String localPart = localId.substring(dollarIdx + 1);
         int colonIdx = localPart.indexOf(':');
         if (colonIdx <= 0) {
-            return ArtifactRef.create(type, localPart);
+            return ArtifactRef.create(type, ARTIFACT_ID_ESCAPER.unescape(localPart));
         }
         String wsSysId = localPart.substring(0, colonIdx);
-        String id = localPart.substring(colonIdx + 1);
+        String id = ARTIFACT_ID_ESCAPER.unescape(localPart.substring(colonIdx + 1));
         return ArtifactRef.create(type, id, resolveWorkspaceId(wsSysId));
     }
 
