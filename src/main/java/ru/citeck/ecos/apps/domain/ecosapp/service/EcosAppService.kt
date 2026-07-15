@@ -310,8 +310,9 @@ class EcosAppService(
      * e.g. "eapps/artifact@ui/form$wsSysId:my-form" → "eapps/artifact@ui/form$CURRENT_WS:my-form".
      * The placeholder is rebound to the target workspace on import.
      *
-     * Assumes artifact local ids do not contain ':' — the first ':' in `rest` is the wsSysId/localId
-     * separator (same assumption as the platform record-id `wsSysId:localId` form and `ArtifactRef.valueOf`).
+     * The first ':' in `rest` is the wsSysId/localId separator: artifact record ids produced by
+     * [EcosArtifactsService.toArtifactRecordLocalId] escape any ':' inside the id itself, so a raw ':'
+     * here can only be the wsSysId prefix separator (never part of the localId).
      */
     private fun artifactRefToCurrentWsPlaceholder(ref: EntityRef): EntityRef = rewriteArtifactRefRest(ref) { rest ->
         val colonIdx = rest.indexOf(':')
