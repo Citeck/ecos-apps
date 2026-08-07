@@ -178,10 +178,22 @@ class EcosPatchService(
         return true
     }
 
+    /**
+     * Entry point of the explicit "apply patch" action. Unlike the scheduler, it may be called for a
+     * patch in any status, including an already applied one.
+     */
     fun applyPatch(id: String) {
         val patch = recordsService.getAtts(EcosPatchDesc.getRef(id), EcosPatchEntity::class.java)
         if (patch.id.isBlank()) {
             error("Patch doesn't found by id $id")
+        }
+        // Restarting a finished batched patch means running it from the first batch again: its
+        // stored offset is at the end of the batch field, so without this reset there would be
+        // nothing left to process and the restart would silently do nothing. The offset is our own
+        // orchestration state, so it is dropped together with the executor state, exactly like a
+        // redeploy with a newer date does (see EcosPatchConfig).
+        if (patch.status == EcosPatchStatus.APPLIED && PatchBatchUtils.isBatched(patch.batch)) {
+            patch.state = ObjectData.create()
         }
         applyPatch(patch)
     }
@@ -219,6 +231,23 @@ class EcosPatchService(
         } else {
             null
         }
+        if (slice != null && slice.isEmpty) {
+            // Nothing left to process: the batch field is empty, or the offset is already at its end
+            // (an applied patch executed again without a state reset). Complete the patch locally —
+            // sending an empty slice to the target app would fail it, because executors such as
+            // 'mutate' and 'delete' reject an empty records list.
+            if (!patch.config[patch.batch.field].isArray()) {
+                // Nothing was and will be processed: most likely 'batch.field' doesn't match the
+                // config. Log it, otherwise such a patch would silently end up applied.
+                log.warn {
+                    "Patch '$patchId' is batched by field '${patch.batch.field}', " +
+                        "but its config doesn't contain an array in this field"
+                }
+            }
+            completePatchWithoutExecution(patch, slice.newOffset, patchId)
+            return
+        }
+
         val commandConfig = slice?.config ?: patch.config
         // A batched executor sees only its own state (nested under STATE_COMMAND_STATE), not the
         // orchestration state; a non-batched one owns the whole state object as before.
@@ -294,33 +323,57 @@ class EcosPatchService(
             }
 
             if (patch.status == EcosPatchStatus.APPLIED) {
-                val depsWaitingPatches = recordsService.query(
-                    RecordsQuery.create {
-                        withSourceId(EcosPatchDesc.SRC_ID)
-                        withQuery(
-                            Predicates.and(
-                                Predicates.eq(
-                                    EcosPatchDesc.ATT_STATUS,
-                                    EcosPatchStatus.DEPS_WAITING
-                                ),
-                                Predicates.contains(
-                                    EcosPatchDesc.ATT_DEPENDS_ON,
-                                    patch.targetApp + "$" + patch.patchId
-                                )
-                            )
+                wakeDependentPatches(patch)
+            }
+        }
+    }
+
+    /**
+     * Marks a batched patch as applied without calling the target app, for a batch that has nothing
+     * left to process. Keeps the executor state (STATE_COMMAND_STATE) as is — no execution happened,
+     * so there is no new state to store.
+     */
+    private fun completePatchWithoutExecution(patch: EcosPatchEntity, offset: Int, patchId: String) {
+        patch.errorsCount = 0
+        patch.lastError = null
+        patch.state[EcosPatchDesc.STATE_BATCH_OFFSET] = offset
+        patch.nextExecDate = null
+        patch.status = EcosPatchStatus.APPLIED
+        recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+        log.info { "Patch '$patchId' has no batch items to process and was marked as applied" }
+        wakeDependentPatches(patch)
+    }
+
+    /**
+     * Moves patches waiting for the just applied one back to PENDING, when all their dependencies
+     * are applied.
+     */
+    private fun wakeDependentPatches(patch: EcosPatchEntity) {
+        val depsWaitingPatches = recordsService.query(
+            RecordsQuery.create {
+                withSourceId(EcosPatchDesc.SRC_ID)
+                withQuery(
+                    Predicates.and(
+                        Predicates.eq(
+                            EcosPatchDesc.ATT_STATUS,
+                            EcosPatchStatus.DEPS_WAITING
+                        ),
+                        Predicates.contains(
+                            EcosPatchDesc.ATT_DEPENDS_ON,
+                            patch.targetApp + "$" + patch.patchId
                         )
-                    },
-                    EcosPatchEntity::class.java
+                    )
                 )
-                depsWaitingPatches.getRecords().forEach { depsWaitingPatch ->
-                    if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
-                        depsWaitingPatch.status = EcosPatchStatus.PENDING
-                        recordsService.mutate(
-                            EntityRef.create(EcosPatchDesc.SRC_ID, depsWaitingPatch.id),
-                            depsWaitingPatch
-                        )
-                    }
-                }
+            },
+            EcosPatchEntity::class.java
+        )
+        depsWaitingPatches.getRecords().forEach { depsWaitingPatch ->
+            if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
+                depsWaitingPatch.status = EcosPatchStatus.PENDING
+                recordsService.mutate(
+                    EntityRef.create(EcosPatchDesc.SRC_ID, depsWaitingPatch.id),
+                    depsWaitingPatch
+                )
             }
         }
     }

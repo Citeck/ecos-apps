@@ -52,6 +52,22 @@ class PatchBatchUtilsTest {
         val slice = PatchBatchUtils.buildBatch(configWith(), batch("records", 2), 0)
         assertThat(slice.total).isEqualTo(0)
         assertThat(slice.completed).isTrue()
+        assertThat(slice.isEmpty).isTrue()
+    }
+
+    @Test
+    fun `buildBatch offset at the end gives an empty slice`() {
+        val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 3)
+        assertThat(slice.config["records"].size()).isEqualTo(0)
+        assertThat(slice.newOffset).isEqualTo(3)
+        assertThat(slice.completed).isTrue()
+        assertThat(slice.isEmpty).isTrue()
+    }
+
+    @Test
+    fun `buildBatch non-empty slice is not empty`() {
+        assertThat(PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 0).isEmpty).isFalse()
+        assertThat(PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 2).isEmpty).isFalse()
     }
 
     @Test

@@ -32,13 +32,23 @@ object PatchBatchUtils {
         }
         thinConfig[batch.field] = sliceItems
 
-        return BatchSlice(thinConfig, end, total, end >= total)
+        return BatchSlice(thinConfig, end, total, end >= total, sliceItems.size())
     }
 
     data class BatchSlice(
         val config: ObjectData,
         val newOffset: Int,
         val total: Int,
-        val completed: Boolean
-    )
+        val completed: Boolean,
+        val size: Int
+    ) {
+        /**
+         * True when there is nothing left to process — the offset is already at the end of the
+         * batch field (an applied patch restarted without resetting its state) or the field itself
+         * is empty. Such a slice must not be sent to the target app: executors like 'mutate' and
+         * 'delete' reject an empty records list with an error.
+         */
+        val isEmpty: Boolean
+            get() = size == 0
+    }
 }
