@@ -94,7 +94,7 @@ class ImportDataPatchTest {
     }
 
     @Test
-    fun `patch with undeployed typeRef is parked in DEPS_WAITING and never applied`() {
+    fun patchWithUndeployedTypeRefIsParked() {
         val patchId = "import-data-deps-waiting"
         // sourceId 'nonexistent-src' is not registered as any artifact type => getTypeIdForRecordRef == ""
         // => allDeployed() == false => the patch must stay in DEPS_WAITING and never reach APPLIED.
@@ -127,7 +127,7 @@ class ImportDataPatchTest {
     }
 
     @Test
-    fun `import-data patch upserts records once the type artifact is deployed`() {
+    fun importDataPatchRunsOnceTypeIsDeployed() {
         // 1. Deploy a real artifact of the jsontest type whose extId == typeRef localId.
         //    USER source => uploadArtifact marks it DEPLOYED, so the dependsOnRefs gate passes.
         AuthContext.runAsSystem {

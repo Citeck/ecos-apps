@@ -77,7 +77,7 @@ class EcosArtifactsPatchWorkspaceTest {
     }
 
     @Test
-    fun `save patch with explicit workspace persists it`() {
+    fun savePatchWithExplicitWorkspacePersistsIt() {
         val patchId = "patch-${UUID.randomUUID()}"
         val ws = "ws-${UUID.randomUUID()}"
 
@@ -95,7 +95,7 @@ class EcosArtifactsPatchWorkspaceTest {
     }
 
     @Test
-    fun `legacy admin-workspace-menu patch without workspace auto-fills to admin workspace`() {
+    fun legacyAdminMenuPatchAutoFillsAdminWorkspace() {
         val patchId = "patch-${UUID.randomUUID()}"
 
         val saved = AuthContext.runAsSystem {
@@ -110,7 +110,7 @@ class EcosArtifactsPatchWorkspaceTest {
     }
 
     @Test
-    fun `non-admin-menu patch without workspace stays global`() {
+    fun nonAdminMenuPatchWithoutWorkspaceStaysGlobal() {
         val patchId = "patch-${UUID.randomUUID()}"
 
         val saved = AuthContext.runAsSystem {
@@ -123,7 +123,7 @@ class EcosArtifactsPatchWorkspaceTest {
     }
 
     @Test
-    fun `applyOutOfSyncPatches keeps sync out of sync when target artifact is missing`() {
+    fun patchSyncStaysOutOfSyncWhenTargetIsMissing() {
         val ws = "ws-${UUID.randomUUID()}"
         val artifactId = "missing-${UUID.randomUUID()}"
         val patchId = "patch-${UUID.randomUUID()}"
@@ -153,7 +153,7 @@ class EcosArtifactsPatchWorkspaceTest {
     }
 
     @Test
-    fun `applyOutOfSyncPatches patches artifact at the right workspace`() {
+    fun outOfSyncPatchIsAppliedAtItsWorkspace() {
         val ws = "ws-${UUID.randomUUID()}"
         val artifactId = "patchable-${UUID.randomUUID()}"
         val patchId = "patch-${UUID.randomUUID()}"

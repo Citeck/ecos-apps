@@ -26,7 +26,7 @@ class ApplyEcosPatchAction(
             error("Permission denied")
         }
         AuthContext.runAsSystem {
-            ecosPatchService.applyPatch(value.recordRef.getLocalId())
+            ecosPatchService.queuePatchApply(value.recordRef.getLocalId())
         }
         return null
     }

@@ -30,7 +30,7 @@ class ImportDataBatchingTest {
     @Autowired lateinit var counter: BatchCounter
 
     @Test
-    fun `batched patch processes all records across batches`() {
+    fun batchedPatchProcessesAllRecordsAcrossBatches() {
         AuthContext.runAsSystem {
             val recs = (1..5).map { ObjectData.create().set("code", it) }
             records.mutate(

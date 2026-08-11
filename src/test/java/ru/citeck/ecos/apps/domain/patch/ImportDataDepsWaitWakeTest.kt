@@ -98,7 +98,7 @@ class ImportDataDepsWaitWakeTest {
     }
 
     @Test
-    fun `DEPS_WAITING patch is reactively woken when its dependsOnRefs artifact is deployed`() {
+    fun depsWaitingPatchIsWokenByArtifactDeploy() {
         val patchId = "import-data-deps-wait-wake"
 
         // 1. Deploy the patch while its typeRef artifact is NOT deployed yet => gate parks it in
@@ -141,7 +141,7 @@ class ImportDataDepsWaitWakeTest {
                 .isEqualTo(DeployStatus.DEPLOYED)
         }
 
-        // 3. The deploy hook must reactively wake the parked patch (DEPS_WAITING -> PENDING ->
+        // 3. The deploy hook must reactively wake the parked patch (DEPS_WAITING -> IN_PROGRESS ->
         //    APPLIED) without any other external trigger — proving the reactive wake works, since
         //    the scheduler no longer polls DEPS_WAITING patches.
         waitUntil(

@@ -16,13 +16,13 @@ class PatchBatchUtilsTest {
     }
 
     @Test
-    fun `isBatched true only when field present`() {
+    fun isBatchedTrueOnlyWhenFieldPresent() {
         assertThat(PatchBatchUtils.isBatched(batch("records", 20))).isTrue()
         assertThat(PatchBatchUtils.isBatched(PatchBatchConfig())).isFalse()
     }
 
     @Test
-    fun `buildBatch slices records and preserves shared config`() {
+    fun buildBatchSlicesAndKeepsSharedConfig() {
         val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3, 4, 5), batch("records", 2), 0)
         assertThat(slice.total).isEqualTo(5)
         assertThat(slice.newOffset).isEqualTo(2)
@@ -33,7 +33,7 @@ class PatchBatchUtilsTest {
     }
 
     @Test
-    fun `buildBatch last slice sets completed`() {
+    fun buildBatchLastSliceSetsCompleted() {
         val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3, 4, 5), batch("records", 2), 4)
         assertThat(slice.config["records"].size()).isEqualTo(1)
         assertThat(slice.newOffset).isEqualTo(5)
@@ -41,14 +41,14 @@ class PatchBatchUtilsTest {
     }
 
     @Test
-    fun `buildBatch default size is 20`() {
+    fun buildBatchDefaultSizeIs20() {
         val cfg = configWith(*IntArray(25) { it }.toTypedArray().toIntArray())
         val slice = PatchBatchUtils.buildBatch(cfg, PatchBatchConfig(field = "records"), 0)
         assertThat(slice.config["records"].size()).isEqualTo(20)
     }
 
     @Test
-    fun `buildBatch empty list completes immediately`() {
+    fun buildBatchEmptyListCompletesImmediately() {
         val slice = PatchBatchUtils.buildBatch(configWith(), batch("records", 2), 0)
         assertThat(slice.total).isEqualTo(0)
         assertThat(slice.completed).isTrue()
@@ -56,7 +56,7 @@ class PatchBatchUtilsTest {
     }
 
     @Test
-    fun `buildBatch offset at the end gives an empty slice`() {
+    fun buildBatchOffsetAtTheEndGivesEmptySlice() {
         val slice = PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 3)
         assertThat(slice.config["records"].size()).isEqualTo(0)
         assertThat(slice.newOffset).isEqualTo(3)
@@ -65,13 +65,13 @@ class PatchBatchUtilsTest {
     }
 
     @Test
-    fun `buildBatch non-empty slice is not empty`() {
+    fun buildBatchNonEmptySliceIsNotEmpty() {
         assertThat(PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 0).isEmpty).isFalse()
         assertThat(PatchBatchUtils.buildBatch(configWith(1, 2, 3), batch("records", 2), 2).isEmpty).isFalse()
     }
 
     @Test
-    fun `buildBatch slice elements do not alias original config`() {
+    fun buildBatchSliceElementsDoNotAliasOriginalConfig() {
         val config = configWith(1, 2, 3, 4, 5)
         val slice = PatchBatchUtils.buildBatch(config, batch("records", 2), 0)
 

@@ -48,6 +48,15 @@ class EcosPatchService(
         private const val SCHEDULER_ID = "ecos-patches"
         private val ECOS_PATCHES_LOCK_KEY = EcosPatchService::class.jvmName + "-$SCHEDULER_ID-lock"
 
+        // Patch executions one job tick may perform for one app, shared by all its sweeps. Both a
+        // backstop against a patch that keeps asking to be executed again immediately, and the
+        // guarantee that a busy app cannot starve the others.
+        private const val MAX_PATCH_STEPS_PER_APP_PER_TICK = 1000
+
+        // Attempts of the explicit apply action to queue a patch, see queuePatchApply.
+        private const val QUEUE_ATTEMPTS = 3
+        private val QUEUE_RETRY_DELAY = Duration.ofMillis(100)
+
         private val log = KotlinLogging.logger {}
 
         // Patch types that were registered before the patch-type-meta registry existed. They may
@@ -101,17 +110,51 @@ class EcosPatchService(
             ) {
                 ecosAppLockService.doInSyncOrSkip(ECOS_PATCHES_LOCK_KEY) { lockCtx ->
                     reconcileDepsWaitingPatches()
-                    val apps = watcherJob.activeApps
-                    log.trace { "Apply patches for apps: $apps" }
-                    apps.forEach { applyPatches(it, lockCtx) }
+                    applyPatchesWhileThereIsWork(lockCtx)
                 }
             }
         }
     }
 
-    private fun applyPatches(appName: String, lockCtx: LockContext) {
-        var iterationsLimit = 1000
-        while (lockCtx.isLocked() && iterationsLimit > 0) {
+    /**
+     * Sweeps all active apps until a whole sweep applies nothing, and only then lets the tick end —
+     * the job's fixed delay must be paid when the applying thread is idle, never while it still has
+     * work. One sweep is not enough: a patch reaching APPLIED hands the patches depending on it to
+     * the job ([wakeDependentPatches]), and those may belong to an app this sweep already passed.
+     *
+     * This only works because a wake hands the patch straight to the job ([queueWokenPatch]) rather
+     * than writing PENDING: PENDING is what [isAppPatchesSettled] watches, so waking that way would
+     * make the app "unsettled" for the next [EcosPatchProperties.appReadyThresholdDuration] and the
+     * re-sweep would find nothing to do.
+     *
+     * The sweeping and the budgeting live in [PatchSweep]; what a step means is this class's business.
+     * A step is one patch execution, and while most steps move a patch forward (batch offset
+     * advances, nextExecDate is pushed out, status changes), a patch whose executor keeps asking to
+     * run again immediately would hold the thread forever — which is what the budget bounds.
+     */
+    private fun applyPatchesWhileThereIsWork(lockCtx: LockContext) {
+        val steps = PatchSweep.run(
+            maxStepsPerApp = MAX_PATCH_STEPS_PER_APP_PER_TICK,
+            isActive = { lockCtx.isLocked() },
+            apps = {
+                val apps = watcherJob.activeApps
+                log.trace { "Apply patches for apps: $apps" }
+                apps
+            },
+            step = { appName, stepsLimit -> applyPatches(appName, lockCtx, stepsLimit) }
+        )
+        if (steps > 0) {
+            log.debug { "Patch job tick performed $steps patch executions" }
+        }
+    }
+
+    /**
+     * @return how many patches of the app were applied or moved to another status, capped by
+     *         [stepsLimit] — the app's remaining share of [MAX_PATCH_STEPS_PER_APP_PER_TICK].
+     */
+    private fun applyPatches(appName: String, lockCtx: LockContext, stepsLimit: Int): Int {
+        var steps = 0
+        while (lockCtx.isLocked() && steps < stepsLimit) {
             val availableApps = watcherJob.activeApps
             if (!availableApps.contains(appName)) {
                 break
@@ -119,8 +162,9 @@ class EcosPatchService(
             if (!applyPatch(appName, availableApps)) {
                 break
             }
-            iterationsLimit--
+            steps++
         }
+        return steps
     }
 
     private fun applyPatch(appName: String, availableApps: Set<String>): Boolean {
@@ -173,32 +217,102 @@ class EcosPatchService(
             return true
         }
 
-        applyPatch(patch)
+        executePatch(patch)
 
         return true
     }
 
     /**
-     * Entry point of the explicit "apply patch" action. Unlike the scheduler, it may be called for a
-     * patch in any status, including an already applied one.
+     * Entry point of the explicit "apply patch" action. It applies nothing itself: patches are
+     * executed by the patch job alone, so this only queues the patch and returns. The job picks it
+     * up on one of its next ticks, when the applying thread is free.
+     *
+     * Executing the patch here instead put a second driver on a patch the job could be running at
+     * the same moment: both read the stored batch offset, executed a batch and wrote their own
+     * result back, which left a patch whose data was fully applied in FAILED.
+     *
+     * May be called for a patch in any status, including an already applied one.
      */
-    fun applyPatch(id: String) {
-        val patch = recordsService.getAtts(EcosPatchDesc.getRef(id), EcosPatchEntity::class.java)
-        if (patch.id.isBlank()) {
-            error("Patch doesn't found by id $id")
+    fun queuePatchApply(id: String) {
+        // Whoever else writes the row in the same instant — a second apply action, or the job as it
+        // takes the patch over — makes ecos-data's optimistic lock reject this update. Re-reading is
+        // all it takes: the next attempt sees the row as it now stands and decides again.
+        PatchConcurrencyRetry.retrying("queueing patch '$id'", QUEUE_ATTEMPTS, QUEUE_RETRY_DELAY) {
+            queuePatchForJob(id)
         }
+    }
+
+    private fun queuePatchForJob(id: String) {
+        val patch = recordsService.getAtts(EcosPatchDesc.getRef(id), EcosPatchInfo::class.java)
+        if (patch.id.isBlank()) {
+            error("Patch is not found by id $id")
+        }
+        if (isQueuedForJob(patch)) {
+            // Already in the job's queue — the action's intent is satisfied, and writing the row
+            // would only compete with the job for it.
+            log.info {
+                "Patch '${patch.targetApp}\$${patch.patchId}' is already in a status " +
+                    "the patch job picks up, nothing to queue"
+            }
+            return
+        }
+        val atts = ObjectData.create()
+        // IN_PROGRESS with a due nextExecDate is the one state the job query selects regardless of
+        // the `manual` flag — a manual patch queued as PENDING would never be picked up, since
+        // PENDING is reserved for the automatic launch of non-manual patches.
+        atts[EcosPatchDesc.ATT_STATUS] = EcosPatchStatus.IN_PROGRESS
+        atts[EcosPatchDesc.ATT_NEXT_EXEC_DATE] = Instant.now()
+        // A patch that used up the retry delays carries errorsCount above the distribution, so its
+        // very next failure would drop nextExecDate back to null and park it out of the job's reach
+        // again. An explicit apply is a fresh start and gets the full retry budget back.
+        atts[EcosPatchDesc.ATT_ERRORS_COUNT] = 0
+        // ...and the error text of the previous run goes with it, otherwise the journal shows a
+        // freshly relaunched patch alongside a failure that is no longer its state.
+        atts[EcosPatchDesc.ATT_LAST_ERROR] = null
         // Restarting a finished batched patch means running it from the first batch again: its
         // stored offset is at the end of the batch field, so without this reset there would be
         // nothing left to process and the restart would silently do nothing. The offset is our own
         // orchestration state, so it is dropped together with the executor state, exactly like a
         // redeploy with a newer date does (see EcosPatchConfig).
         if (patch.status == EcosPatchStatus.APPLIED && PatchBatchUtils.isBatched(patch.batch)) {
-            patch.state = ObjectData.create()
+            atts[EcosPatchDesc.ATT_STATE] = ObjectData.create()
         }
-        applyPatch(patch)
+        recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), atts)
+        log.info { "Patch '${patch.targetApp}\$${patch.patchId}' is queued for the patch job" }
     }
 
-    fun applyPatch(patch: EcosPatchEntity) {
+    /**
+     * True when the patch is already in a status the job's query selects, so queueing it again would
+     * change nothing. Only the status/nextExecDate half of the query is mirrored — whether the job
+     * can actually reach the patch also depends on its target app being active, its dependsOnApps
+     * being up and the app's patches having settled, none of which this says anything about. A
+     * FAILED patch that is due counts too: the job is
+     * about to run it, quite possibly right now, and rewriting the row under a running job is the
+     * lost update this whole change exists to prevent. What the explicit apply does rescue is a
+     * FAILED patch the job canNOT reach: one still waiting out its retry delay, or one that used up
+     * the delays and was left with no nextExecDate at all.
+     *
+     * The price of that choice: applying a FAILED patch that is due right now does nothing, so its
+     * error state is not reset either, and a patch on its last retry needs a second apply — after
+     * the job has spent that retry — before the reset takes effect.
+     */
+    private fun isQueuedForJob(patch: EcosPatchInfo): Boolean {
+        return when (patch.status) {
+            EcosPatchStatus.PENDING -> !patch.manual
+            EcosPatchStatus.IN_PROGRESS, EcosPatchStatus.FAILED -> {
+                val nextExecDate = patch.nextExecDate
+                nextExecDate != null && !nextExecDate.isAfter(Instant.now())
+            }
+            else -> false
+        }
+    }
+
+    /**
+     * Executes one step of the patch and stores the outcome. Private on purpose: this is the one
+     * place a patch is actually applied, and it may only ever run on the job thread — see
+     * [queuePatchApply] for how everything else asks for a patch to be applied.
+     */
+    private fun executePatch(patch: EcosPatchEntity) {
 
         // New-registry types wait for the target app to publish its patch metadata; pre-registry
         // types may run on apps that don't publish, so they skip only this registration wait.
@@ -273,10 +387,7 @@ class EcosPatchService(
         log.info { "Patch command completed. Patch: $patchId" }
 
         val commRes = result.getResultAs(EcosPatchCommandExecutor.CommandRes::class.java)
-        var errorMsg = result.primaryError?.message
-        if (errorMsg.isNullOrBlank() && commRes == null) {
-            errorMsg = "Command result is null. Json: " + result.result
-        }
+        val errorMsg = PatchCommandErrors.getErrorMessage(result, commRes)
         if (!errorMsg.isNullOrBlank()) {
             patch.errorsCount++
             if (patch.errorsCount > errorDelayDistribution.size) {
@@ -345,8 +456,8 @@ class EcosPatchService(
     }
 
     /**
-     * Moves patches waiting for the just applied one back to PENDING, when all their dependencies
-     * are applied.
+     * Hands the patches that were waiting for the just applied one to the job, once all of their
+     * dependencies are applied.
      */
     private fun wakeDependentPatches(patch: EcosPatchEntity) {
         val depsWaitingPatches = recordsService.query(
@@ -365,17 +476,40 @@ class EcosPatchService(
                     )
                 )
             },
-            EcosPatchEntity::class.java
+            EcosPatchInfo::class.java
         )
         depsWaitingPatches.getRecords().forEach { depsWaitingPatch ->
             if (!isAnyPatchNotApplied(depsWaitingPatch.dependsOn)) {
-                depsWaitingPatch.status = EcosPatchStatus.PENDING
-                recordsService.mutate(
-                    EntityRef.create(EcosPatchDesc.SRC_ID, depsWaitingPatch.id),
-                    depsWaitingPatch
-                )
+                queueWokenPatch(depsWaitingPatch.id)
             }
         }
+    }
+
+    /**
+     * Hands a parked patch back to the job, in the same status [queuePatchApply] uses. The error
+     * state is deliberately left alone, unlike there: a wake is the normal flow resuming, not an
+     * operator restarting a patch, so it neither zeroes `errorsCount` nor clears `lastError`.
+     *
+     * Waking the patch into PENDING instead looks more natural but does not work:
+     *
+     * - PENDING is what [isAppPatchesSettled] watches, so waking by writing PENDING re-arms that
+     *   gate for the WHOLE app for [EcosPatchProperties.appReadyThresholdDuration] — every link of
+     *   a dependsOn chain then cost that much dead time, and the job's re-sweep found nothing to do;
+     * - the job's PENDING branch only takes non-manual patches, so a `manual` patch parked in
+     *   DEPS_WAITING/TARGET_WAITING (it got there because an operator started it) would be woken
+     *   into a status nothing ever picks up, and would sit there forever.
+     *
+     * Only these two attributes are written, never the whole entity: [wakeTargetWaitingPatches] runs
+     * on the registry-update callback, outside the patch job's lock, so writing back an entity read
+     * a moment earlier could restore a stale state and offset over what the job just stored.
+     */
+    private fun queueWokenPatch(patchId: String) {
+        recordsService.mutate(
+            EntityRef.create(EcosPatchDesc.SRC_ID, patchId),
+            ObjectData.create()
+                .set(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.IN_PROGRESS)
+                .set(EcosPatchDesc.ATT_NEXT_EXEC_DATE, Instant.now())
+        )
     }
 
     /**
@@ -398,12 +532,11 @@ class EcosPatchService(
                         Predicates.eq(EcosPatchDesc.ATT_STATUS, EcosPatchStatus.TARGET_WAITING)
                     )
                 },
-                EcosPatchEntity::class.java
+                EcosPatchInfo::class.java
             )
             targetWaitingPatches.getRecords().forEach { patch ->
                 if (patchTypeMetaRegistry.isAppRegistered(patch.targetApp)) {
-                    patch.status = EcosPatchStatus.PENDING
-                    recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+                    queueWokenPatch(patch.id)
                 }
             }
         } catch (e: Throwable) {
@@ -456,8 +589,7 @@ class EcosPatchService(
                 }
                 val refs = PatchRefsDeployChecker.resolveRefs(patch.config, paths)
                 if (refsDeployChecker.allDeployed(refs)) {
-                    patch.status = EcosPatchStatus.PENDING
-                    recordsService.mutate(EntityRef.create(EcosPatchDesc.SRC_ID, patch.id), patch)
+                    queueWokenPatch(patch.id)
                 }
             }
 

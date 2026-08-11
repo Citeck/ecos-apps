@@ -25,7 +25,7 @@ class PatchDeploySyncTest {
     lateinit var repo: PatchDeploySyncRepo
 
     @Test
-    fun `upsert creates then bumps, and markSynced is conditional on the observed deploy date`() {
+    fun markSyncedIsConditionalOnObservedDeployDate() {
         // Isolated key + assertions only on affected-row counts => deterministic and idempotent
         // across reruns regardless of any row left by a previous run.
         val key = "test-cas-key"

@@ -16,6 +16,7 @@ object EcosPatchDesc {
     const val ATT_STATUS = "status"
     const val ATT_ERRORS_COUNT = "errorsCount"
     const val ATT_PATCH_ID = "patchId"
+    const val ATT_LAST_ERROR = "lastError"
     const val ATT_DEPENDS_ON = "dependsOn"
     const val ATT_NEXT_EXEC_DATE = "nextExecDate"
     const val ATT_DEPENDS_ON_APPS = "dependsOnApps"

@@ -176,7 +176,7 @@ class EcosArtifactsServiceTest {
     }
 
     @Test
-    fun `artifact record local id round-trips ids containing a colon`() {
+    fun localIdRoundTripsIdsContainingColon() {
 
         // Global BPMN element forms have ids with a ':' (e.g. bpmn-type-bpmn:SendTask). The record-id
         // form uses ':' as the wsSysId separator, so the id's own ':' must be escaped, otherwise the
