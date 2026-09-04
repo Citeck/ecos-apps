@@ -10,7 +10,7 @@
     <parent>
         <groupId>ru.citeck.ecos.webapp</groupId>
         <artifactId>ecos-webapp-spring-hibernate-parent</artifactId>
-        <version>3.28.2</version>
+        <version>3.33.0</version>
     </parent>
 
     <properties>
@@ -51,6 +51,33 @@
 
     <build>
         <plugins>
+            <!--
+                maven-archetype-plugin refuses to generate into an already existing project directory,
+                so without this cleanup any second build without 'clean' fails with
+                "A Maven project already exists in the directory ...". Version comes from
+                pluginManagement of the parent (${maven-clean-plugin.version}).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-generated-citeck-app</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.outputDirectory}/generated-citeck-application</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
