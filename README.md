@@ -29,6 +29,42 @@ To start your application in the dev profile, simply run:
 
 If your IDE supports starting Spring Boot applications directly, then you can easily run the class 'ru.citeck.ecos.apps.EcosAppsApp' without additional setup.
 
+With Citeck Launcher, stop `eapps` in the launcher before starting the local
+application with both `dev,dev_local` profiles:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev,dev_local
+```
+
+The application loads its configuration from the launcher's Config Server at
+`http://localhost:8761/config/` and registers itself automatically. Its local
+port is 8089; the admin UI remains available at
+`http://localhost/gateway/eapps/admin/wallboard`. The `dev_local` profile makes
+service addresses accessible from the host. Stop the local process before
+starting the container again.
+
+### COREDEV-631: Spring Boot Admin compatibility
+
+The parent is `ecos-webapp-spring-hibernate-parent:3.34.9-SNAPSHOT`, containing
+the switch from `jackson-datatype-hibernate5` to `jackson-datatype-hibernate6`.
+Hibernate 6 uses Jakarta Persistence; the old Jackson module fails to render
+`sba-settings.js` because it references `javax.persistence.Transient`. Install
+the patched `ecos-webapp-commons` with `mvn install` before local verification.
+
+Spring Boot Admin 3.5.9 fixes the `variables.css` template for Thymeleaf 3.1.4
+and newer. See the [upstream release notes](https://github.com/codecentric/spring-boot-admin/releases/tag/3.5.9).
+
+Verification on 2026-10-09: the commons regression test passed. In the full
+`eapps` run, 98 of 99 tests passed; one could not start RabbitMQ because of a
+random Testcontainers port collision and passed on its own in a clean build.
+The build with the final parent reported `BUILD SUCCESS`. Gateway checks returned
+HTTP 200 for wallboard, `sba-settings.js`, `variables.css`, the `instances` API
+(with `Accept: application/json`), and the main JS/CSS assets. The local `eapps`
+instance reported `UP`. Wallboard was also opened through Playwright with the
+installed Chromium: the screenshot was inspected, with no JavaScript errors
+or HTTP 4xx/5xx responses. All applications reported `UP` except `edi-sim`
+(`OFFLINE`).
+
 ### Building for production
 
 To build the application for production, run:
