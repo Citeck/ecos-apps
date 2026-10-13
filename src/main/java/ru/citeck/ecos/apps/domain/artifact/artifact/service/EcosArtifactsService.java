@@ -760,8 +760,9 @@ public class EcosArtifactsService {
      * The deploying artifact's own ref is intentionally kept in the list — an artifact never
      * references itself by these ref attributes, so it can't match, and keeping it makes the
      * result identical for every artifact in the same {@code (ecosApp, workspace)}. That lets
-     * the result be cached per-transaction (deploying a whole app touches many artifacts that
-     * all resolve the same list — see {@link TxnContext}) instead of re-querying the DB each time.
+     * the result be reused during an uninterrupted read-only transaction scope instead of
+     * re-querying the DB for every artifact. A transition to writable mode invalidates this
+     * derived list so the next read-only scope sees the current app inventory.
      */
     private List<EntityRef> getCoDeployedArtifacts(EcosArtifactEntity entity) {
         String workspace = entity.getWorkspace();
@@ -773,7 +774,7 @@ public class EcosArtifactsService {
         if (txn == null || !txn.isReadOnly()) {
             return computeCoDeployedArtifacts(ecosApp, workspace);
         }
-        Map<String, List<EntityRef>> cache = txn.getData(CO_DEPLOYED_ARTIFACTS_CACHE_KEY, _ -> new HashMap<>());
+        Map<String, List<EntityRef>> cache = txn.getReadOnlyCache(CO_DEPLOYED_ARTIFACTS_CACHE_KEY);
         return cache.computeIfAbsent(ecosApp + "$" + workspace, _ -> computeCoDeployedArtifacts(ecosApp, workspace));
     }
 

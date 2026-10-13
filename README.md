@@ -43,28 +43,6 @@ port is 8089; the admin UI remains available at
 service addresses accessible from the host. Stop the local process before
 starting the container again.
 
-### COREDEV-631: Spring Boot Admin compatibility
-
-The published parent is `ecos-webapp-spring-hibernate-parent:3.34.9`, containing
-the switch from `jackson-datatype-hibernate5` to `jackson-datatype-hibernate6`.
-Hibernate 6 uses Jakarta Persistence; the old Jackson module fails to render
-`sba-settings.js` because it references `javax.persistence.Transient`. Maven
-fetches the released parent from Nexus; no local installation of commons is needed.
-
-Spring Boot Admin 3.5.9 fixes the `variables.css` template for Thymeleaf 3.1.4
-and newer. See the [upstream release notes](https://github.com/codecentric/spring-boot-admin/releases/tag/3.5.9).
-
-Hotfix verification on 2026-10-09: the full `mvn -DCI=true verify` for commons
-3.34.9 passed, including the Jackson regression test. A clean `mvn clean verify`
-for `eapps` 2.28.1 with the published parent 3.34.9 reported 99 tests, no failures,
-errors or skips, and `BUILD SUCCESS`. Gateway checks returned
-HTTP 200 for wallboard, `sba-settings.js`, `variables.css`, the `instances` API
-(with `Accept: application/json`), and the main JS/CSS assets. The local `eapps`
-instance reported `UP`. Wallboard was also opened through Playwright with the
-installed Chromium: the screenshot was inspected, with no JavaScript errors
-or HTTP 4xx/5xx responses. All applications reported `UP` except `edi-sim`
-(`OFFLINE`).
-
 ### Building for production
 
 To build the application for production, run:

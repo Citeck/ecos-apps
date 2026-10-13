@@ -43,30 +43,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev,dev_local
 на адреса, доступные с хоста. Перед возвратом к контейнеру остановите локальный
 процесс и запустите `eapps` в лончере.
 
-### COREDEV-631: совместимость Spring Boot Admin
-
-Parent обновлён до опубликованного `ecos-webapp-spring-hibernate-parent:3.34.9`.
-Эта версия заменяет `jackson-datatype-hibernate5` на `jackson-datatype-hibernate6`,
-восстанавливая `sba-settings.js`: Hibernate 6 использует Jakarta Persistence,
-а старый Jackson-модуль обращается к `javax.persistence.Transient`.
-Maven получает релизный parent из Nexus; локальная установка commons для запуска
-приложения не требуется.
-
-Spring Boot Admin обновлён до 3.5.9, где исправлен шаблон `variables.css`,
-несовместимый с ограничениями Thymeleaf 3.1.4 и новее.
-Подробности: [Spring Boot Admin 3.5.9](https://github.com/codecentric/spring-boot-admin/releases/tag/3.5.9).
-
-Проверка хотфикса 09.10.2026: полный `mvn -DCI=true verify` для commons 3.34.9
-завершился без ошибок (включая регрессионный тест Jackson). Чистый
-`mvn clean verify` для `eapps` 2.28.1 с опубликованным parent 3.34.9:
-99 тестов, 0 ошибок, 0 пропусков, `BUILD SUCCESS`. На локально запущенном
-`eapps` через gateway проверены HTTP 200 для wallboard, `sba-settings.js`,
-`variables.css`, API `instances` (с `Accept: application/json`) и основных JS/CSS
-ресурсов; локальный `eapps` имеет статус `UP`. Дополнительно wallboard открыт
-через Playwright с установленным Chromium: страница отображается, скриншот
-проверен, ошибок JavaScript и ответов HTTP 4xx/5xx нет. Все приложения имеют
-статус `UP`, кроме `edi-sim` (`OFFLINE`).
-
 ### Сборка для production
 
 Для сборки приложения в production-режиме выполните:
