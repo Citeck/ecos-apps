@@ -152,11 +152,19 @@ public class ApplicationsWatcherJob {
             boolean forceUpdateChangedSources = this.forceUpdate;
             this.forceUpdate = false;
 
+            if (isContextClosed.get()) {
+                return;
+            }
+
+            // Broadcast status collection waits for the command TTL even when apps reply
+            // immediately. Keep this idle wait outside the watcher observation.
+            List<RemoteAppStatus> remoteStatuses = remoteAppService.getAppsStatus();
+
             EcosObs observation = ecosMicrometerContext.createObs("ecos.apps.watcher");
 
             observation.observeJ(() -> {
                 if (!isContextClosed.get()) {
-                    updateAllApps();
+                    updateAllApps(remoteStatuses);
                 }
                 if (!isContextClosed.get()) {
                     updateArtifacts(forceUpdateChangedSources);
@@ -228,11 +236,10 @@ public class ApplicationsWatcherJob {
     }
 
     @Synchronized
-    private void updateAllApps() {
+    private void updateAllApps(List<RemoteAppStatus> remoteStatuses) {
 
         log.trace("All apps updating started");
 
-        List<RemoteAppStatus> remoteStatuses = remoteAppService.getAppsStatus();
         Map<String, RemoteAppStatus> newStatuses = new HashMap<>();
 
         remoteStatuses.forEach(status -> newStatuses.put(status.getAppInstanceId(), status));
